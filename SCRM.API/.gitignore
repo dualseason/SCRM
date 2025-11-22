@@ -231,7 +231,6 @@ yarn.lock
 
 # Application specific
 uploads/
-data/
 logs/
 certificates/
 private-keys/
