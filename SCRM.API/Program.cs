@@ -28,9 +28,11 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.Configure<RocketMQSettings>(
     builder.Configuration.GetSection("RocketMQ"));
 
-// Add RocketMQ services (using Mock versions for testing)
-builder.Services.AddSingleton<IRocketMQProducerService, MockRocketMQProducerService>();
-builder.Services.AddSingleton<IRocketMQConsumerService, MockRocketMQConsumerService>();
+// Add RocketMQ services
+// Note: MockRocketMQ services have been moved to TEST project
+// Add actual implementations when ready
+// builder.Services.AddSingleton<IRocketMQProducerService, RocketMQProducerService>();
+// builder.Services.AddSingleton<IRocketMQConsumerService, RocketMQConsumerService>();
 
 // Add SignalR services
 builder.Services.AddSignalR(config =>
@@ -132,8 +134,9 @@ builder.Services.AddAuthorization(options =>
 
 // Add Bulk Operations service
 builder.Services.AddScoped<IBulkOperationService, BulkOperationService>();
-builder.Services.AddScoped<DatabaseInitializationService>();
-builder.Services.AddScoped<PermissionInitializationService>();
+// Note: DatabaseInitializationService and PermissionInitializationService have been moved to TEST project
+// builder.Services.AddScoped<DatabaseInitializationService>();
+// builder.Services.AddScoped<PermissionInitializationService>();
 
 // Add CORS for SignalR (required for Android app)
 builder.Services.AddCors(options =>

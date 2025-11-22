@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -85,15 +86,9 @@ namespace SCRM.Services
                 _logger.LogDebug("当前连接统计 - 总连接数: {TotalConnections}, 在线用户数: {OnlineUsers}",
                     connections.Count(), onlineCount);
 
-                // 如果使用的是 MockRocketMQConsumer，这里可以触发消息处理
-                if (_rocketMQConsumer is MockRocketMQConsumerService mockConsumer)
-                {
-                    var receivedMessages = mockConsumer.GetReceivedMessages();
-                    foreach (var message in receivedMessages.Take(5)) // 每次处理最多5条消息
-                    {
-                        await ProcessRocketMQMessage(message);
-                    }
-                }
+                // Note: MockRocketMQConsumerService has been moved to TEST project
+                // In production, this will integrate with actual RocketMQ implementation
+                // For now, we'll just log the connection stats
             }
             catch (Exception ex)
             {
@@ -101,14 +96,21 @@ namespace SCRM.Services
             }
         }
 
-        private async Task ProcessRocketMQMessage(ReceivedMessageInfo message)
+        private async Task ProcessRocketMQMessage(object message)
         {
+            // Since ReceivedMessageInfo was part of MockRocketMQConsumerService, using object instead
+            // or create a simple message wrapper if needed
+            var topic = message?.GetType().GetProperty("Topic")?.GetValue(message)?.ToString() ?? "unknown";
+            var tag = message?.GetType().GetProperty("Tag")?.GetValue(message)?.ToString() ?? "";
+            var content = message?.ToString() ?? "";
+
+            _logger.LogInformation("处理 RocketMQ 消息 - 主题: {Topic}, 标签: {Tag}, 消息内容: {Message}", topic, tag, content);
+
             try
             {
-                _logger.LogInformation("处理 RocketMQ 消息 - 主题: {Topic}, 标签: {Tag}, 消息内容: {Message}",
-                    message.Topic, message.Tag, message.Message);
+                _logger.LogInformation("处理 RocketMQ 消息 - 主题: {Topic}, 标���: {Tag}, 消息内容: {Message}", topic, tag, content);
 
-                switch (message.Topic)
+                switch (topic)
                 {
                     case "scrm_user_events":
                         await ProcessUserEvent(message);
@@ -120,28 +122,34 @@ namespace SCRM.Services
                         await ProcessNotificationEvent(message);
                         break;
                     default:
-                        _logger.LogWarning("未知的 RocketMQ 消息主题: {Topic}", message.Topic);
+                        _logger.LogWarning("未知的 RocketMQ 消息主题: {Topic}", topic);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "处理 RocketMQ 消息时发生错误 - 消息ID: {MessageId}", message.MessageId);
+                var messageId = message?.GetType().GetProperty("MessageId")?.GetValue(message)?.ToString() ?? "unknown";
+                _logger.LogError(ex, "处理 RocketMQ 消息时发生错误 - 消息ID: {MessageId}", messageId);
             }
         }
 
-        private async Task ProcessUserEvent(ReceivedMessageInfo message)
+        private async Task ProcessUserEvent(object messageObj)
         {
             try
             {
+                var tag = messageObj?.GetType().GetProperty("Tag")?.GetValue(messageObj)?.ToString() ?? "";
+                var msgContent = messageObj?.ToString() ?? "";
+                var messageId = messageObj?.GetType().GetProperty("MessageId")?.GetValue(messageObj)?.ToString() ?? "";
+                var receivedAt = messageObj?.GetType().GetProperty("ReceivedAt")?.GetValue(messageObj) ?? DateTime.UtcNow;
+
                 // 发送用户事件到所有连接的客户端
                 await _signalRMessageService.SendMessageToAllAsync(new
                 {
                     EventType = "UserEvent",
-                    Action = message.Tag,
-                    Message = message.Message,
-                    MessageId = message.MessageId,
-                    Timestamp = message.ReceivedAt
+                    Action = tag,
+                    Message = msgContent,
+                    MessageId = messageId,
+                    Timestamp = receivedAt
                 }, "UserEvent");
 
                 // 如果是特定用户事件，也可以只发送给特定用户
@@ -149,7 +157,7 @@ namespace SCRM.Services
                 // 示例：await _signalRMessageService.SendMessageToUserAsync(userId, message, "UserEvent");
 
                 _logger.LogInformation("用户事件已通过 SignalR 转发 - 标签: {Tag}, 消息ID: {MessageId}",
-                    message.Tag, message.MessageId);
+                    tag, messageId);
             }
             catch (Exception ex)
             {
@@ -157,22 +165,27 @@ namespace SCRM.Services
             }
         }
 
-        private async Task ProcessOrderEvent(ReceivedMessageInfo message)
+        private async Task ProcessOrderEvent(object messageObj)
         {
             try
             {
+                var tag = messageObj?.GetType().GetProperty("Tag")?.GetValue(messageObj)?.ToString() ?? "";
+                var msgContent = messageObj?.ToString() ?? "";
+                var messageId = messageObj?.GetType().GetProperty("MessageId")?.GetValue(messageObj)?.ToString() ?? "";
+                var receivedAt = messageObj?.GetType().GetProperty("ReceivedAt")?.GetValue(messageObj) ?? DateTime.UtcNow;
+
                 // 发送订单事件到所有客户端
                 await _signalRMessageService.SendMessageToAllAsync(new
                 {
                     EventType = "OrderEvent",
-                    Action = message.Tag,
-                    Message = message.Message,
-                    MessageId = message.MessageId,
-                    Timestamp = message.ReceivedAt
+                    Action = tag,
+                    Message = msgContent,
+                    MessageId = messageId,
+                    Timestamp = receivedAt
                 }, "OrderEvent");
 
                 _logger.LogInformation("订单事件已通过 SignalR 转发 - 标签: {Tag}, 消息ID: {MessageId}",
-                    message.Tag, message.MessageId);
+                    tag, messageId);
             }
             catch (Exception ex)
             {
@@ -180,22 +193,27 @@ namespace SCRM.Services
             }
         }
 
-        private async Task ProcessNotificationEvent(ReceivedMessageInfo message)
+        private async Task ProcessNotificationEvent(object messageObj)
         {
             try
             {
+                var tag = messageObj?.GetType().GetProperty("Tag")?.GetValue(messageObj)?.ToString() ?? "";
+                var msgContent = messageObj?.ToString() ?? "";
+                var messageId = messageObj?.GetType().GetProperty("MessageId")?.GetValue(messageObj)?.ToString() ?? "";
+                var receivedAt = messageObj?.GetType().GetProperty("ReceivedAt")?.GetValue(messageObj) ?? DateTime.UtcNow;
+
                 // 发送通知事件到所有客户端
                 await _signalRMessageService.SendMessageToAllAsync(new
                 {
                     EventType = "NotificationEvent",
-                    Type = message.Tag,
-                    Message = message.Message,
-                    MessageId = message.MessageId,
-                    Timestamp = message.ReceivedAt
+                    Type = tag,
+                    Message = msgContent,
+                    MessageId = messageId,
+                    Timestamp = receivedAt
                 }, "NotificationEvent");
 
                 _logger.LogInformation("通知事件已通过 SignalR 转发 - 标签: {Tag}, 消息ID: {MessageId}",
-                    message.Tag, message.MessageId);
+                    tag, messageId);
             }
             catch (Exception ex)
             {
