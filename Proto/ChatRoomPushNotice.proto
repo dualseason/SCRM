@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 聊天室消息
+message ChatRoomMessage {
+  // 显示名称消息
+  message DisplayNameMessage {
+    string UserName = 1;  // 用户名
+    string ShowName = 2;  // 显示名称
+    string Inviter = 3;   // 邀请人
+    int32 Flag = 4;       // 标志
+  }
+
+  string UserName = 1;                         // 用户名
+  string NickName = 2;                         // 昵称
+  repeated string MemberList = 3;              // 成员列表
+  string Owner = 4;                            // 群主
+  string Notice = 5;                           // 公告
+  repeated DisplayNameMessage ShowNameList = 6; // 显示名称列表
+  string SelfDisplayName = 7;                  // 自己的显示名称
+  string Avatar = 8;                           // 头像
+  int32 Verify = 9;                            // 验证
+  bool MsgSilent = 10;                         // 消息免打扰
+  string Remark = 11;                          // 备注
+  int32 Type = 12;                             // 类型
+  bool IsUnusual = 30;                         // 是否异常
+}
+
+// 聊天室推送通知消息
+message ChatRoomPushNoticeMessage {
+  string WeChatId = 1;                    // 微信ID
+  repeated ChatRoomMessage ChatRooms = 2; // 聊天室列表
+  int32 Size = 3;                         // 大小
+  int32 Count = 4;                        // 数量
+  int32 Page = 5;                         // 页码
+  int64 TaskId = 6;                       // 任务ID
+}

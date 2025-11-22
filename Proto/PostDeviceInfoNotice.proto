@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message PostDeviceInfoNoticeMessage {
+  string PhoneBrand = 1;
+  string PhoneModel = 2;
+  int32 OSVerNumber = 3;
+  repeated DeviceAppInfoMessage AppInfos = 4;
+  string NetType = 5;
+  string WeChatId = 6;
+  string IMEI = 7;
+  string IMSI1 = 8;
+  string IMSI2 = 9;
+  string Number1 = 10;
+  string Number2 = 11;
+  bool IsHook = 12;
+  bool WxSupport = 13;
+
+  message DeviceAppInfoMessage {
+    string PackageName = 1;
+    string AppName = 2;
+    int32 VerNumber = 3;
+    string Version = 4;
+  }
+}

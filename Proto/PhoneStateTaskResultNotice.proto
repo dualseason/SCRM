@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message PhoneStateTaskResultNoticeMessage {
+  string WeChatId = 1;
+  string Imei = 2;
+  int32 BatteryLevel = 3;
+  int32 ChargingState = 4;
+  string NetType = 5;
+  int64 SdcardFree = 6;
+  int64 SdcardTotal = 7;
+}

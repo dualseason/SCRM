@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message ScreenShotTaskResultNoticeMessage {
+  string WeChatId = 1;
+  bool Success = 2;
+  string ErrMsg = 3;
+  string Url = 4;
+  int64 TaskId = 5;
+}

@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message RequestContactsInfoTaskMessage {
+  string WeChatId = 1;
+  string Contact = 2;
+  bool Local = 3;
+}

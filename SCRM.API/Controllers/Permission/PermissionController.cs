@@ -1,9 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SCRM.Attributes;
-using SCRM.Constants;
-using SCRM.Data;
+using SCRM.Services.Auth;
+using SCRM.Models.Constants;
+using SCRM.Services.Data;
 using SCRM.Models.Identity;
 using SCRM.Services;
 using System.Collections.Generic;

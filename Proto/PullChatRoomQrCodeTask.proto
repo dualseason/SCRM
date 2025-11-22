@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// PullChatRoomQrCodeTask Message
+// Extracted from: PullChatRoomQrCodeTask.java
+message PullChatRoomQrCodeTaskMessage {
+  string WeChatId = 1;
+  string ChatRoomId = 2;
+  int64 taskId = 3;
+}

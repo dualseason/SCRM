@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 通话记录消息
+message CallLogMessage {
+  int32 Id = 1;          // ID
+  string Number = 2;     // 号码
+  int32 Type = 3;        // 类型
+  int64 Date = 4;        // 日期
+  int32 Duration = 5;    // 持续时间
+  string Record = 6;     // 记录
+  int32 SimId = 7;       // SIM卡ID
+  int32 BlockType = 8;   // 拦截类型
+}
+
+// 通话记录推送通知消息
+message CallLogPushNoticeMessage {
+  string WeChatId = 1;          // 微信ID
+  string IMEI = 2;              // 设备IMEI
+  CallLogMessage Messages = 3;  // 通话记录消息
+}

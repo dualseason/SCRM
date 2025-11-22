@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 联系人标签删除通知消息
+message ContactLabelDelNoticeMessage {
+  string WeChatId = 1;  // 微信ID
+  int32 LabelId = 2;    // 标签ID
+}

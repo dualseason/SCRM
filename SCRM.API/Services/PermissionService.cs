@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using SCRM.Data;
+using SCRM.Services.Data;
 using SCRM.Models.Identity;
 using SCRM.Services;
 using System;
@@ -13,19 +13,17 @@ namespace SCRM.Services
 {
     public class PermissionService : IPermissionService
     {
+        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+
         private readonly ApplicationDbContext _context;
         private readonly IMemoryCache _cache;
-        private readonly ILogger<PermissionService> _logger;
-
+        
         public PermissionService(
             ApplicationDbContext context,
-            IMemoryCache cache,
-            ILogger<PermissionService> logger)
+            IMemoryCache cache)
         {
             _context = context;
-            _cache = cache;
-            _logger = logger;
-        }
+            _cache = cache;        }
 
         public async Task<bool> HasPermissionAsync(int userId, string permissionCode)
         {
@@ -94,7 +92,7 @@ namespace SCRM.Services
                     .Distinct()
                     .ToListAsync();
 
-                _logger.LogDebug("Loaded {Count} permissions for user {UserId}", permissions.Count, userId);
+                _logger.Debug("Loaded {Count} permissions for user {UserId}", permissions.Count, userId);
                 return permissions;
             });
         }
@@ -117,7 +115,7 @@ namespace SCRM.Services
                     .Select(ur => ur.Role.Name)
                     .ToListAsync();
 
-                _logger.LogDebug("Loaded {Count} roles for user {UserId}", roles.Count, userId);
+                _logger.Debug("Loaded {Count} roles for user {UserId}", roles.Count, userId);
                 return roles;
             });
         }
@@ -136,7 +134,7 @@ namespace SCRM.Services
                     .ThenBy(p => p.SortOrder)
                     .ToListAsync();
 
-                _logger.LogDebug("Loaded {Count} permissions from database", permissions.Count);
+                _logger.Debug("Loaded {Count} permissions from database", permissions.Count);
                 return permissions;
             });
         }
@@ -156,7 +154,7 @@ namespace SCRM.Services
                     .OrderBy(r => r.Name)
                     .ToListAsync();
 
-                _logger.LogDebug("Loaded {Count} roles from database", roles.Count);
+                _logger.Debug("Loaded {Count} roles from database", roles.Count);
                 return roles;
             });
         }
@@ -197,7 +195,7 @@ namespace SCRM.Services
                     Permissions = permissions
                 };
 
-                _logger.LogDebug("Loaded permission info for user {UserId}: {RolesCount} roles, {PermissionsCount} permissions",
+                _logger.Debug("Loaded permission info for user {UserId}: {RolesCount} roles, {PermissionsCount} permissions",
                     userId, roles.Count, permissions.Count);
 
                 return userPermissionInfo;
@@ -218,7 +216,7 @@ namespace SCRM.Services
                 _cache.Remove(key);
             }
 
-            _logger.LogDebug("Cleared permission cache for user {UserId}", userId);
+            _logger.Debug("Cleared permission cache for user {UserId}", userId);
         }
 
         public void ClearAllCache()
@@ -234,7 +232,7 @@ namespace SCRM.Services
                 _cache.Remove(key);
             }
 
-            _logger.LogDebug("Cleared all permission/role caches");
+            _logger.Debug("Cleared all permission/role caches");
         }
     }
 }

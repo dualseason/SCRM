@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// PullCallLogTask Message
+// Extracted from: PullCallLogTask.java
+message PullCallLogTaskMessage {
+  string WeChatId = 1;
+  string IMEI = 2;
+  int64 StartTime = 3;
+  int64 EndTime = 4;
+  int64 TaskId = 5;
+}

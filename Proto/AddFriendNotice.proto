@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "TransportMessage.proto";
+
+// 添加好友通知消息
+message AddFriendNoticeMessage {
+  string WeChatId = 1;  // 微信ID
+  string FriendId = 2;  // 好友ID
+  string FriendNo = 3;  // 好友编号
+  string FriendNick = 4;  // 好友昵称
+  string Reason = 5;  // 原因
+  string Avatar = 6;  // 头像
+  int32 Source = 7;  // 来源
+  string SourceUser = 8;  // 来源用户
+  EnumGender Gender = 9;  // 性别
+  string Province = 10;  // 省份
+  string City = 11;  // 城市
+}

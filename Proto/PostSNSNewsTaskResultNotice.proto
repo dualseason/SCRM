@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "TransportMessage.proto";
+
+message PostSNSNewsTaskResultNoticeMessage {
+  bool Success = 1;
+  EnumErrorCode Code = 2;
+  string ErrMsg = 3;
+  int64 TaskId = 4;
+  ExtraProperties Extra = 7;
+  string WeChatId = 8;
+
+  message ExtraProperties {
+    int64 CircleId = 1;
+  }
+}

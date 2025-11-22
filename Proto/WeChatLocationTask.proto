@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message WeChatLocationTaskMessage {
+  string WeChatId = 1;
+  bool NoCache = 2;
+}

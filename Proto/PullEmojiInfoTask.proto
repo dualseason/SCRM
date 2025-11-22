@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// PullEmojiInfoTask Message
+// Extracted from: PullEmojiInfoTask.java
+message PullEmojiInfoTaskMessage {
+  string WeChatId = 1;
+  string Md5 = 2;
+  int64 TaskId = 3;
+}

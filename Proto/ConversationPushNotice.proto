@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 会话消息
+message ConversMessage {
+  string UserName = 1;     // 用户名
+  string Digest = 2;       // 摘要
+  string DigestUser = 3;   // 摘要用户
+  bool IsSend = 4;         // 是否发送
+  int32 MsgCnt = 5;        // 消息计数
+  int32 UnreadCnt = 6;     // 未读计数
+  int64 UpdateTime = 7;    // 更新时间
+  bool IsTop = 8;          // 是否置顶
+  bool IsSilent = 9;       // 是否免打扰
+  string ShowName = 11;    // 显示名称
+  string Avatar = 12;      // 头像
+  int32 AtCount = 13;      // @计数
+  string Remark = 15;      // 备注
+  bool IsUnusual = 30;     // 是否异常
+}
+
+// 会话推送通知消息
+message ConversationPushNoticeMessage {
+  string WeChatId = 1;                  // 微信ID
+  repeated ConversMessage Convers = 2;  // 会话列表
+  int32 Size = 3;                       // 大小
+  int32 Count = 4;                      // 数量
+  int32 Page = 5;                       // 页码
+  int64 TaskId = 6;                     // 任务ID
+  int32 Offset = 7;                     // 偏移量
+  int32 NextOffset = 8;                 // 下一个偏移量
+}

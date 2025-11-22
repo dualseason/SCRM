@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message GroupMemberAddTaskDetailMessage {
+  string wxId = 1;
+  string alias = 2;
+  string nickname = 3;
+  string avatar = 4;
+  int32 gender = 5;
+  string country = 6;
+  string province = 7;
+  string city = 8;
+  int32 updateTime = 9;
+  int32 status = 10;
+  int32 sendTime = 11;
+}
+
+message GroupMemberAddProgressMessage {
+  int32 status = 1;
+  int32 suspendType = 2;
+  double progress = 3;
+  int32 totalQuantity = 4;
+  int32 waitSendQuantity = 5;
+  int32 sendingQuantity = 6;
+  int32 sendedQuantity = 7;
+  int32 passedQuantity = 8;
+  int32 ignoredQuantity = 9;
+  repeated GroupMemberAddTaskDetailMessage detailList = 10;
+  int32 waitPassedQuantity = 11;
+  int32 unPassedQuantity = 12;
+  int32 unableToAddQuantity = 13;
+  string wxId = 14;
+}

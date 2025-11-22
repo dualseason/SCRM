@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message QueryHbStatusTaskMessage {
+  string WeChatId = 1;
+  string HbUrl = 2;
+}

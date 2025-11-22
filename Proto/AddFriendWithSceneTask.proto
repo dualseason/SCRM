@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 通过场景添加好友任务消息
+message AddFriendWithSceneTaskMessage {
+  string WeChatId = 1;  // 微信ID
+  string Friend = 2;  // 好友
+  string Message = 3;  // 消息
+  int32 Scene = 4;  // 场景
+  string Remark = 5;  // 备注
+  int64 TaskId = 6;  // 任务ID
+  string Label = 7;  // 标签
+  int32 Permission = 11;  // 权限
+}

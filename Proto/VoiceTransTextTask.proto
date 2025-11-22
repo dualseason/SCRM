@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message VoiceTransTextTaskMessage {
+  string WeChatId = 1;
+  string FriendId = 2;
+  int64 MsgSvrId = 3;
+  int64 TaskId = 4;
+}

@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message RequestTalkContentTaskMessage {
+  string WeChatId = 1;
+  int64 MsgSvrId = 2;
+}

@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message WeChatGroupSendTaskMessage {
+  int64 TaskId = 1;
+  repeated string FriendIds = 3;
+  EnumGroupMsgContentType ContentType = 4;
+  string Content = 5;
+  string WeChatId = 6;
+  int32 Duration = 7;
+  bool Original = 8;
+
+  enum EnumGroupMsgContentType {
+    Text = 0;
+    Picture = 1;
+    Voice = 2;
+    Video = 3;
+  }
+}

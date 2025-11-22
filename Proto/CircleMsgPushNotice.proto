@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "CircleNewPublishNotice.proto";
+
+// 朋友圈消息推送通知消息
+message CircleMsgPushNoticeMessage {
+  string WeChatId = 1;                      // 微信ID
+  repeated CircleCommentMessage Comments = 2; // 评论列表
+  repeated CircleLikeMessage Likes = 3;       // 点赞列表
+  int64 TaskId = 4;                         // 任务ID
+}

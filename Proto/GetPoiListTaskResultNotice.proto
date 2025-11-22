@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message GetPoiListTaskResultNoticeMessage {
+  string WeChatId = 1;
+  repeated string PoiList = 2;
+  string Keyword = 4;
+  int64 TaskId = 5;
+}

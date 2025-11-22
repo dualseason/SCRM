@@ -1,0 +1,8 @@
+# .antigravity
+rules:
+  - "永远用中文和我交流"
+ 
+agent_permissions:
+  terminal: true  # 允许 AI 操作终端
+  browser: true   # 允许 AI 打开浏览器
+  file_edit: true # 允许 AI 修改文件

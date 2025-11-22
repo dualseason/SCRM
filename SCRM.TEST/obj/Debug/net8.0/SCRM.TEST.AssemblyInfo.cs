@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SCRM.TEST")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+e93374d93de42bbd25b6aebc21fb0c7e5858442c")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1f336a81ecce3c22b717ef3cb64f021cc6f9487c")]
 [assembly: System.Reflection.AssemblyProductAttribute("SCRM.TEST")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SCRM.TEST")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

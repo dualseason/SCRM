@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// TriggerWechatPushTask Message
+// Extracted from: TriggerWechatPushTask.java
+message TriggerWechatPushTaskMessage {
+  string WeChatId = 1;
+}

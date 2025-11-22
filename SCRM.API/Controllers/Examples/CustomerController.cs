@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SCRM.Attributes;
-using SCRM.Constants;
+using SCRM.Services.Auth;
+using SCRM.Models.Constants;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 

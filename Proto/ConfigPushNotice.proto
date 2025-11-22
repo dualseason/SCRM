@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 布尔配置消息
+message BoolConfigMessage {
+  string Key = 1;    // 键
+  bool Value = 2;    // 值
+  string Name = 3;   // 名称
+  string Desc = 4;   // 描述
+}
+
+// 整数配置消息
+message IntConfigMessage {
+  string Key = 1;    // 键
+  int32 Value = 2;   // 值
+  string Name = 3;   // 名称
+  string Desc = 4;   // 描述
+}
+
+// 字符串配置消息
+message StrConfigMessage {
+  string Key = 1;    // 键
+  string Value = 2;  // 值
+  string Name = 3;   // 名称
+  string Desc = 4;   // 描述
+}
+
+// 配置推送通知消息
+message ConfigPushNoticeMessage {
+  string IMEI = 1;                          // 设备IMEI
+  string WeChatId = 2;                      // 微信ID
+  repeated BoolConfigMessage BoolConfs = 7; // 布尔配置列表
+  repeated IntConfigMessage IntConfs = 8;   // 整数配置列表
+  repeated StrConfigMessage StrConfs = 9;   // 字符串配置列表
+}

@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 会话删除通知消息
+message ConvDelNoticeMessage {
+  string WeChatId = 1;  // 微信ID
+  string FriendId = 3;  // 好友ID
+  string ConvName = 4;  // 会话名称
+  string Avatar = 5;    // 头像
+}

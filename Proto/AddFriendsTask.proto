@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 添加好友任务消息
+message AddFriendsTaskMessage {
+  string WeChatId = 1;  // 微信ID
+  repeated string Phones = 2;  // 电话号码列表
+  string message = 3;  // 消息
+  int64 TaskId = 4;  // 任务ID
+  string Label = 5;  // 标签
+  string Remark = 6;  // 备注
+  string FiledStr1 = 7;  // 字段字符串1
+  string FiledStr2 = 8;  // 字段字符串2
+  string FiledStr3 = 9;  // 字段字符串3
+  int64 CustomId = 10;  // 自定义ID
+  int32 Permission = 11;  // 权限
+}

@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "FriendAddNotice.proto";
+
+// FriendPushNotice definition
+// Restored from FriendPushNotice.java
+message FriendPushNoticeMessage {
+    string WeChatId = 1;
+    repeated FriendMessage Friends = 2;
+    int32 Size = 3;
+    int32 Count = 4;
+    int32 Page = 5;
+    int64 TaskId = 6;
+}

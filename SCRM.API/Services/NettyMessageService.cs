@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SCRM.Netty;
+using SCRM.Core.Netty;
 using System;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
@@ -13,16 +13,14 @@ namespace SCRM.Services
 {
     public class NettyMessageService : INettyService, INettyMessageService, IHostedService
     {
-        private readonly ILogger<NettyMessageService> _logger;
-        private readonly INettyServer _nettyServer;
+        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+
+                private readonly INettyServer _nettyServer;
         private readonly ConcurrentDictionary<string, TcpClient> _tcpClients = new ConcurrentDictionary<string, TcpClient>();
 
         public NettyMessageService(
-            ILogger<NettyMessageService> logger,
             INettyServer nettyServer)
-        {
-            _logger = logger;
-            _nettyServer = nettyServer;
+        {            _nettyServer = nettyServer;
         }
 
         public async Task StartAsync()
@@ -32,12 +30,12 @@ namespace SCRM.Services
                 if (!_nettyServer.IsRunning)
                 {
                     await _nettyServer.StartAsync();
-                    _logger.LogInformation("Netty message service started successfully");
+                    _logger.Information("Netty message service started successfully");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to start Netty message service");
+                _logger.Error(ex, "Failed to start Netty message service");
                 throw;
             }
         }
@@ -49,7 +47,7 @@ namespace SCRM.Services
                 if (_nettyServer.IsRunning)
                 {
                     await _nettyServer.StopAsync();
-                    _logger.LogInformation("Netty message service stopped successfully");
+                    _logger.Information("Netty message service stopped successfully");
                 }
 
                 // 关闭所有TCP客户端连接
@@ -61,14 +59,14 @@ namespace SCRM.Services
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Error closing TCP client");
+                        _logger.Warning(ex, "Error closing TCP client");
                     }
                 }
                 _tcpClients.Clear();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to stop Netty message service");
+                _logger.Error(ex, "Failed to stop Netty message service");
             }
         }
 
@@ -78,7 +76,7 @@ namespace SCRM.Services
             {
                 if (!_nettyServer.IsRunning)
                 {
-                    _logger.LogWarning("Netty server is not running");
+                    _logger.Warning("Netty server is not running");
                     return false;
                 }
 
@@ -104,12 +102,12 @@ namespace SCRM.Services
                     {
                         var stream = client.GetStream();
                         await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
-                        _logger.LogInformation("Message sent to TCP client: {ClientId}", targetId);
+                        _logger.Information("Message sent to TCP client: {ClientId}", targetId);
                         return true;
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogError(ex, "Error sending message to TCP client: {ClientId}", targetId);
+                        _logger.Error(ex, "Error sending message to TCP client: {ClientId}", targetId);
                         _tcpClients.TryRemove(targetId, out _);
                     }
                 }
@@ -127,19 +125,19 @@ namespace SCRM.Services
                         }
                         catch (Exception ex)
                         {
-                            _logger.LogWarning(ex, "Error sending message to client: {ClientId}", clientInfo.Key);
+                            _logger.Warning(ex, "Error sending message to client: {ClientId}", clientInfo.Key);
                             _tcpClients.TryRemove(clientInfo.Key, out _);
                         }
                     }));
                 }
 
                 await Task.WhenAll(sendTasks);
-                _logger.LogInformation("Broadcast message sent to {Count} TCP clients", _tcpClients.Count);
+                _logger.Information("Broadcast message sent to {Count} TCP clients", _tcpClients.Count);
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending message via Netty");
+                _logger.Error(ex, "Error sending message via Netty");
                 return false;
             }
         }
@@ -171,6 +169,8 @@ namespace SCRM.Services
         // 内部消息类
         public class NettyNetMessage
         {
+        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+
             public string Type { get; set; } = string.Empty;
             public string TargetType { get; set; } = string.Empty;
             public string TargetId { get; set; } = string.Empty;

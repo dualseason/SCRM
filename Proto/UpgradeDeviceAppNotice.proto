@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message DeviceAppUpgradeMessage {
+  int32 VerNumber = 1;
+  string Version = 2;
+  string PackageName = 3;
+  string PackageUrl = 4;
+}
+
+message UpgradeDeviceAppNoticeMessage {
+  string WeChatId = 1;
+  string IMEI = 2;
+  repeated DeviceAppUpgradeMessage AppInfos = 3;
+}

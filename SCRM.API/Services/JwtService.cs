@@ -3,8 +3,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
-using SCRM.Configurations;
-using SCRM.Data;
+using SCRM.Models.Configurations;
+using SCRM.Services.Data;
 using SCRM.Models.Identity;
 using SCRM.Services;
 using System;
@@ -19,22 +19,20 @@ namespace SCRM.Services
 {
     public class JwtService : IJwtService
     {
+        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+
         private readonly ApplicationDbContext _context;
         private readonly JwtSettings _jwtSettings;
         private readonly IMemoryCache _cache;
-        private readonly ILogger<JwtService> _logger;
-
+        
         public JwtService(
             ApplicationDbContext context,
             IOptions<JwtSettings> jwtSettings,
-            IMemoryCache cache,
-            ILogger<JwtService> logger)
+            IMemoryCache cache)
         {
             _context = context;
             _jwtSettings = jwtSettings.Value;
-            _cache = cache;
-            _logger = logger;
-        }
+            _cache = cache;        }
 
         public async Task<string> GenerateTokenAsync(User user)
         {
@@ -98,7 +96,7 @@ namespace SCRM.Services
 
             _cache.Set(cacheKey, refreshToken, cacheOptions);
 
-            _logger.LogInformation("Generated refresh token for user {UserId}", user.Id);
+            _logger.Information("Generated refresh token for user {UserId}", user.Id);
             return refreshToken;
         }
 
@@ -114,7 +112,7 @@ namespace SCRM.Services
 
             if (!isValid)
             {
-                _logger.LogWarning("Invalid refresh token for user {UserId}", userId);
+                _logger.Warning("Invalid refresh token for user {UserId}", userId);
             }
 
             return isValid;
@@ -144,7 +142,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Token validation failed");
+                _logger.Error(ex, "Token validation failed");
                 return null;
             }
         }
@@ -155,7 +153,7 @@ namespace SCRM.Services
             {
                 var cacheKey = $"refresh_token_{userId}";
                 _cache.Remove(cacheKey);
-                _logger.LogInformation("Revoked refresh token for user {UserId}", userId);
+                _logger.Information("Revoked refresh token for user {UserId}", userId);
             }
         }
 

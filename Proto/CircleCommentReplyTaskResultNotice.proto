@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "TransportMessage.proto";
+
+// 朋友圈评论回复任务结果通知消息
+message CircleCommentReplyTaskResultNoticeMessage {
+  bool Success = 1;          // 是否成功
+  EnumErrorCode Code = 2;    // 错误码
+  string ErrMsg = 3;         // 错误信息
+  int64 CommentId = 4;       // 评论ID
+  int64 ReplyCommentId = 5;  // 回复评论ID
+  int64 TaskId = 6;          // 任务ID
+  int64 PusblishTime = 7;    // 发布时间
+  int64 CircleId = 8;        // 朋友圈ID
+  string WeChatId = 9;       // 微信ID
+}

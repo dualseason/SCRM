@@ -1,7 +1,7 @@
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using SCRM.Configurations;
+using SCRM.Models.Configurations;
 using StackExchange.Redis;
 using System;
 using System.Collections.Generic;
@@ -13,29 +13,27 @@ namespace SCRM.Services
 {
     public class SimpleRedisCacheService : IRedisCacheService
     {
+        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+
         private readonly IDistributedCache _distributedCache;
-        private readonly ILogger<SimpleRedisCacheService> _logger;
-        private readonly RedisSettings _settings;
+                private readonly RedisSettings _settings;
         private readonly IConnectionMultiplexer? _connectionMultiplexer;
 
         public SimpleRedisCacheService(
             IDistributedCache distributedCache,
-            ILogger<SimpleRedisCacheService> logger,
             IOptions<RedisSettings> settings)
         {
-            _distributedCache = distributedCache;
-            _logger = logger;
-            _settings = settings.Value;
+            _distributedCache = distributedCache;            _settings = settings.Value;
 
             try
             {
                 var connectionString = _settings.ConnectionString ?? "localhost:6379";
                 _connectionMultiplexer = ConnectionMultiplexer.Connect(connectionString);
-                _logger.LogInformation("Redis connected successfully");
+                _logger.Information("Redis connected successfully");
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Redis connection failed, using distributed cache fallback");
+                _logger.Warning(ex, "Redis connection failed, using distributed cache fallback");
             }
         }
 
@@ -54,7 +52,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error setting cache value for key: {Key}", key);
+                _logger.Error(ex, "Error setting cache value for key: {Key}", key);
                 throw;
             }
         }
@@ -71,7 +69,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting cache value for key: {Key}", key);
+                _logger.Error(ex, "Error getting cache value for key: {Key}", key);
                 return default;
             }
         }
@@ -85,7 +83,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error removing cache value for key: {Key}", key);
+                _logger.Error(ex, "Error removing cache value for key: {Key}", key);
                 return false;
             }
         }
@@ -99,7 +97,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error checking if key exists: {Key}", key);
+                _logger.Error(ex, "Error checking if key exists: {Key}", key);
                 return false;
             }
         }
@@ -121,7 +119,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error setting expiry for key: {Key}", key);
+                _logger.Error(ex, "Error setting expiry for key: {Key}", key);
                 return false;
             }
         }
@@ -138,7 +136,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error setting multiple cache values");
+                _logger.Error(ex, "Error setting multiple cache values");
                 throw;
             }
         }
@@ -158,7 +156,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting multiple cache values");
+                _logger.Error(ex, "Error getting multiple cache values");
                 throw;
             }
         }
@@ -173,7 +171,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error removing multiple cache values");
+                _logger.Error(ex, "Error removing multiple cache values");
                 return 0;
             }
         }
@@ -298,7 +296,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting keys with pattern: {Pattern}", pattern);
+                _logger.Error(ex, "Error deleting keys with pattern: {Pattern}", pattern);
                 return false;
             }
         }
@@ -316,7 +314,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting keys with pattern: {Pattern}", pattern);
+                _logger.Error(ex, "Error getting keys with pattern: {Pattern}", pattern);
                 return Enumerable.Empty<string>();
             }
         }
@@ -334,7 +332,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error counting keys with pattern: {Pattern}", pattern);
+                _logger.Error(ex, "Error counting keys with pattern: {Pattern}", pattern);
                 return 0;
             }
         }
@@ -368,7 +366,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting Redis stats");
+                _logger.Error(ex, "Error getting Redis stats");
                 return new RedisStats
                 {
                     ConnectedClients = 0,
@@ -437,7 +435,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting server info");
+                _logger.Error(ex, "Error getting server info");
                 return new RedisServerInfo
                 {
                     Version = "Error",

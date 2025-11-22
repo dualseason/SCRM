@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// TriggerChatRoomPushTask Message
+// Extracted from: TriggerChatRoomPushTask.java
+message TriggerChatRoomPushTaskMessage {
+  string WeChatId = 1;
+  int32 Flag = 2;
+  int64 TaskId = 3;
+}

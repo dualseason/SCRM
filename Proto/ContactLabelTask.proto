@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 联系人标签任务消息
+message ContactLabelTaskMessage {
+  string WeChatId = 1;   // 微信ID
+  string LabelName = 2;  // 标签名称
+  int32 LabelId = 3;     // 标签ID
+  string AddList = 4;    // 添加列表
+  string DelList = 5;    // 删除列表
+  int64 taskId = 6;      // 任务ID
+}

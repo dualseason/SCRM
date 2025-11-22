@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "TransportMessage.proto";
+
+// FindContactTaskResultNotice definition
+// Restored from FindContactTaskResultNotice.java
+message FindContactTaskResultNoticeMessage {
+    string WeChatId = 1;
+    string SearchText = 2;
+    bool Success = 3;
+    bool IsFriend = 4;
+    string UserName = 5;
+    string Alias = 6;
+    string NickName = 7;
+    EnumGender Gender = 8;
+    string Country = 9;
+    string Province = 10;
+    string City = 11;
+    string Avatar = 12;
+    string ErrMsg = 13;
+}

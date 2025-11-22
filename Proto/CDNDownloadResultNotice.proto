@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// CDN下载结果通知消息
+message CDNDownloadResultNoticeMessage {
+  string WeChatId = 1;  // 微信ID
+  bool Success = 2;     // 是否成功
+  string ErrMsg = 3;    // 错误信息
+  string FileId = 4;    // 文件ID
+  int64 MsgSvrId = 5;   // 消息服务器ID
+  string Url = 6;       // URL
+}

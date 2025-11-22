@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// TriggerCirclePushTask Message
+// Extracted from: TriggerCirclePushTask.java
+message TriggerCirclePushTaskMessage {
+  string WeChatId = 1;
+  int64 StartTime = 2;
+  repeated int64 CircleIds = 3;
+  int64 TaskId = 4;
+}

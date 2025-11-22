@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message UnreadMessage {
+  string UserName = 1;
+  int32 UnreadCnt = 2;
+  int64 UpdateTime = 3;
+  bool IsSilent = 4;
+}
+
+message UnreadListPushNoticeMessage {
+  string WeChatId = 1;
+  repeated UnreadMessage Convers = 2;
+  int64 TaskId = 3;
+}

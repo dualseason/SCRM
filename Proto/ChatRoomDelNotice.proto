@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 聊天室删除通知消息
+message ChatRoomDelNoticeMessage {
+  string WeChatId = 1;  // 微信ID
+  string RoomId = 2;    // 聊天室ID
+}

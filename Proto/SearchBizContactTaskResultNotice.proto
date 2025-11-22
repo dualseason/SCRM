@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "BizContactPushNotice.proto";
+
+message SearchBizContactTaskResultNoticeMessage {
+  string WeChatId = 1;
+  string KeyWord = 2;
+  int32 Type = 3;
+  int64 TaskId = 4;
+  repeated BizContactMessage Items = 5;
+}

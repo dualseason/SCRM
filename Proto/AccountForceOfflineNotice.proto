@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "TransportMessage.proto";
+
+// 账号强制下线通知消息
+message AccountForceOfflineNoticeMessage {
+  EnumForceOfflineReason Reason = 1;  // 下线原因
+  string Message = 2;  // 消息内容
+  string WeChatId = 3;  // 微信ID
+}

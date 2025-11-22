@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 联系人标签删除任务消息
+message ContactLabelDeleteTaskMessage {
+  string WeChatId = 1;  // 微信ID
+  int32 LabelId = 2;    // 标签ID
+  int64 taskId = 3;     // 任务ID
+}

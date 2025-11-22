@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message GetContactInfoTaskMessage {
+  string WeChatId = 1;
+  string Contact = 2;
+  string Chatroom = 3;
+  string Ticket = 4;
+  int64 TaskId = 5;
+}

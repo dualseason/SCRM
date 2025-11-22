@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "CircleNewPublishNotice.proto";
+
+// 朋友圈详情通知消息
+message CircleDetailNoticeMessage {
+  string WeChatId = 1;                 // 微信ID
+  CircleInformationMessage Circle = 2; // 朋友圈信息
+}

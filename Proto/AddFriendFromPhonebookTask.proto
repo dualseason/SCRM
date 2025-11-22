@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 从通讯录添加好友任务消息
+message AddFriendFromPhonebookTaskMessage {
+  string WeChatId = 1;  // 微信ID
+  int32 Count = 2;  // 数量
+  bool Reset = 3;  // 重置
+  string Message = 4;  // 消息
+  int64 TaskId = 5;  // 任务ID
+  int32 Index = 6;  // 索引
+}

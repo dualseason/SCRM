@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// PullChatRoomQrCodeTaskResultNotice Message
+// Extracted from: PullChatRoomQrCodeTaskResultNotice.java
+message PullChatRoomQrCodeTaskResultNoticeMessage {
+  bool Success = 1;
+  string ChatRoomId = 2;
+  string QrCodeUrl = 3;
+  int64 TaskId = 4;
+  string WeChatId = 5;
+  string ErrMsg = 6;
+}

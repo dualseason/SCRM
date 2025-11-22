@@ -2,15 +2,17 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using SCRM.Authorization;
-using SCRM.Data;
-using SCRM.Models.Identity;
+using SCRM.Services.Auth;
+using SCRM.Services.Data;
+using SCRM.Models.Entities;
 using SCRM.Services;
-using SCRM.Configurations;
-using SCRM.Hubs;
-using SCRM.Netty;
-using SCRM.Middleware;
+using SCRM.Models.Configurations;
+using SCRM.Core.Netty;
+using SCRM.Services.Middleware;
 using System.Text;
+using Serilog;
+using System.Globalization;
+using SCRM.Shared.Core;
 
 public class Program
 {
@@ -18,173 +20,186 @@ public class Program
     {
         var builder = WebApplication.CreateBuilder(args);
 
+        // 初始化配置文件
+        if (!SCRM.Shared.Core.AppConfigurationManager.InitSettings("server"))
+        {
+            Console.WriteLine("初始化配置文件失败，请检查配置文件路径");
+            return;
+        }
+
+        // 初始化 Serilog（Debug & Console）
+        SCRM.Shared.Core.Utility.logger = new LoggerConfiguration()
+            .WriteTo.Debug(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
+
+        // EF 错误日志（仅 Warning 及以上）
+        SCRM.Shared.Core.Utility.efLogger = new LoggerConfiguration()
+            .MinimumLevel.Warning()
+            .WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning,
+                          outputTemplate: "{Timestamp:HH:mm:ss.fff} 【EF错误】 {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning,
+                              outputTemplate: "{Timestamp:HH:mm:ss.fff} 【EF错误】 {Message:lj}{NewLine}{Exception}")
+            .CreateLogger();
+
+        // PostgreSQL 日志持久化
+        var pgConnectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+        var columnWriters = new Dictionary<string, Serilog.Sinks.PostgreSQL.ColumnWriterBase>
+        {
+            {"Timestamp", new Serilog.Sinks.PostgreSQL.TimestampColumnWriter(NpgsqlTypes.NpgsqlDbType.TimestampTz)},
+            {"Level", new Serilog.Sinks.PostgreSQL.LevelColumnWriter(true, NpgsqlTypes.NpgsqlDbType.Text)},
+            {"Message", new Serilog.Sinks.PostgreSQL.RenderedMessageColumnWriter(NpgsqlTypes.NpgsqlDbType.Text)},
+            {"Exception", new Serilog.Sinks.PostgreSQL.ExceptionColumnWriter(NpgsqlTypes.NpgsqlDbType.Text)}
+        };
+
+        SCRM.Shared.Core.Utility.loggerToDB = new LoggerConfiguration()
+            .WriteTo.PostgreSQL(pgConnectionString,
+                              tableName: "Logs",
+                              needAutoCreateTable: true,
+                              columnOptions: columnWriters)
+            .CreateLogger();
+
+        // 将 Serilog 注入 ASP.NET Core 主机
+        Log.Logger = SCRM.Shared.Core.Utility.logger;
+
+        builder.Host.UseSerilog();
+
         // Add services to the container.
+        // Add EF Core PostgreSQL
+        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Add EF Core PostgreSQL
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        // Add Connection Manager
+        builder.Services.AddSingleton<IConnectionManager, ConnectionManager>();
 
-// Configure RocketMQ settings
-builder.Services.Configure<RocketMQSettings>(
-    builder.Configuration.GetSection("RocketMQ"));
+        // Add Netty services
+        builder.Services.AddSingleton<SCRM.Core.Netty.MessageRouter>();
+        builder.Services.AddSingleton<INettyServer, NettyServer>();
+        builder.Services.AddSingleton<INettyMessageService, NettyMessageService>();
+        builder.Services.AddHostedService<NettyMessageService>();
 
-// Add RocketMQ services
-// Note: MockRocketMQ services have been moved to TEST project
-// Add actual implementations when ready
-// builder.Services.AddSingleton<IRocketMQProducerService, RocketMQProducerService>();
-// builder.Services.AddSingleton<IRocketMQConsumerService, RocketMQConsumerService>();
+        // Configure Redis settings
+        builder.Services.Configure<RedisSettings>(
+            builder.Configuration.GetSection("Redis"));
 
-// Add SignalR services
-builder.Services.AddSignalR(config =>
-{
-    config.EnableDetailedErrors = true;
-    config.KeepAliveInterval = TimeSpan.FromSeconds(15);
-    config.ClientTimeoutInterval = TimeSpan.FromSeconds(30);
-    config.HandshakeTimeout = TimeSpan.FromSeconds(15);
-});
+        // Add Redis services
+        builder.Services.AddStackExchangeRedisCache(options =>
+        {
+            options.Configuration = builder.Configuration.GetSection("Redis:ConnectionString").Value;
+            options.InstanceName = builder.Configuration.GetSection("Redis:InstanceName").Value;
+        });
 
-// Add Connection Manager
-builder.Services.AddSingleton<IConnectionManager, ConnectionManager>();
+        // Add Memory Cache service for PermissionService
+        builder.Services.AddMemoryCache();
 
-// Add SignalR Message Service
-builder.Services.AddSingleton<ISignalRMessageService, SignalRMessageService>();
+        builder.Services.AddSingleton<IRedisCacheService, SimpleRedisCacheService>();
 
-// Add RocketMQ-SignalR Integration as Background Service
-builder.Services.AddHostedService<RocketMQSignalRIntegration>();
+        // Configure JWT settings
+        builder.Services.Configure<JwtSettings>(
+            builder.Configuration.GetSection("JwtSettings"));
 
-// Add Netty services
-builder.Services.AddSingleton<INettyServer, NettyServer>();
-builder.Services.AddSingleton<INettyMessageService, NettyMessageService>();
-builder.Services.AddHostedService<NettyMessageService>();
+        // Add JWT services
+        builder.Services.AddScoped<IJwtService, JwtService>();
 
-// Configure Redis settings
-builder.Services.Configure<RedisSettings>(
-    builder.Configuration.GetSection("Redis"));
+        // Configure Authentication
+        var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
+        var key = Encoding.UTF8.GetBytes(jwtSettings?.SecretKey ?? "DefaultSecretKey123456789");
 
-// Add Redis services
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetSection("Redis:ConnectionString").Value;
-    options.InstanceName = builder.Configuration.GetSection("Redis:InstanceName").Value;
-});
+        builder.Services.AddAuthentication(options =>
+        {
+            options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+            options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+        })
+        .AddJwtBearer(options =>
+        {
+            options.RequireHttpsMetadata = false;
+            options.SaveToken = true;
+            options.TokenValidationParameters = new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtSettings?.Issuer,
+                ValidateAudience = true,
+                ValidAudience = jwtSettings?.Audience,
+                ValidateLifetime = true,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = new SymmetricSecurityKey(key),
+                ClockSkew = TimeSpan.Zero
+            };
+        });
 
-// Add Memory Cache service for PermissionService
-builder.Services.AddMemoryCache();
+        // Add Authorization services
+        // Add Authorization services
+        builder.Services.AddScoped<IPermissionService, PermissionService>();
+        builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
+        builder.Services.AddScoped<IAuthorizationHandler, SCRMAuthorizationHandler>();
 
-builder.Services.AddSingleton<IRedisCacheService, SimpleRedisCacheService>();
+        // Configure middleware options
+        builder.Services.Configure<RateLimitOptions>(builder.Configuration.GetSection("RateLimiting"));
+        builder.Services.Configure<HealthCheckOptions>(builder.Configuration.GetSection("HealthChecks"));
 
-// Configure JWT settings
-builder.Services.Configure<JwtSettings>(
-    builder.Configuration.GetSection("JwtSettings"));
+        builder.Services.AddAuthorization(options =>
+        {
+            // Add policy-based authorization
+            options.AddPolicy("RequireAdminRole", policy =>
+                policy.RequireRole("Admin", "SuperAdmin"));
 
-// Add JWT services
-builder.Services.AddScoped<IJwtService, JwtService>();
+            options.AddPolicy("CanManageUsers", policy =>
+                policy.AddRequirements(new SCRMRequirement(permissions: new[] { "user.manage" })));
 
-// Configure Authentication
-var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
-var key = Encoding.UTF8.GetBytes(jwtSettings?.SecretKey ?? "DefaultSecretKey123456789");
+            options.AddPolicy("CanViewCustomers", policy =>
+                policy.AddRequirements(new SCRMRequirement(permissions: new[] { "customer.view" })));
 
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-})
-.AddJwtBearer(options =>
-{
-    options.RequireHttpsMetadata = false;
-    options.SaveToken = true;
-    options.TokenValidationParameters = new TokenValidationParameters
-    {
-        ValidateIssuer = true,
-        ValidIssuer = jwtSettings?.Issuer,
-        ValidateAudience = true,
-        ValidAudience = jwtSettings?.Audience,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key),
-        ClockSkew = TimeSpan.Zero
-    };
-});
+            options.AddPolicy("SalesOrManager", policy =>
+                policy.AddRequirements(new SCRMRequirement(roles: new[] { "Sales", "Manager", "Admin" })));
+        });
 
-// Add Authorization services
-builder.Services.AddScoped<IPermissionService, PermissionService>();
-builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
-builder.Services.AddScoped<IAuthorizationHandler, PermissionsAuthorizationHandler>();
-builder.Services.AddScoped<IAuthorizationHandler, RolesAuthorizationHandler>();
+        // Add Bulk Operations service
 
-// Configure middleware options
-builder.Services.Configure<RateLimitOptions>(builder.Configuration.GetSection("RateLimiting"));
-builder.Services.Configure<HealthCheckOptions>(builder.Configuration.GetSection("HealthChecks"));
 
-builder.Services.AddAuthorization(options =>
-{
-    // Add policy-based authorization
-    options.AddPolicy("RequireAdminRole", policy =>
-        policy.RequireRole("Admin", "SuperAdmin"));
+        // Add CORS
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy("AllowAll", builder =>
+            {
+                builder.SetIsOriginAllowed(_ => true)
+                       .AllowAnyMethod()
+                       .AllowAnyHeader()
+                       .AllowCredentials();
+            });
+        });
 
-    options.AddPolicy("CanManageUsers", policy =>
-        policy.AddRequirements(new PermissionRequirement("user.manage")));
+        builder.Services.AddControllers();
+        // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
+        builder.Services.AddEndpointsApiExplorer();
+        builder.Services.AddSwaggerGen();
 
-    options.AddPolicy("CanViewCustomers", policy =>
-        policy.AddRequirements(new PermissionRequirement("customer.view")));
+        var app = builder.Build();
 
-    options.AddPolicy("SalesOrManager", policy =>
-        policy.AddRequirements(new RolesRequirement("Sales", "Manager", "Admin")));
-});
+        // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
 
-// Add Bulk Operations service
-builder.Services.AddScoped<IBulkOperationService, BulkOperationService>();
-// Note: DatabaseInitializationService and PermissionInitializationService have been moved to TEST project
-// builder.Services.AddScoped<DatabaseInitializationService>();
-// builder.Services.AddScoped<PermissionInitializationService>();
+        // Enable CORS
+        app.UseCors("AllowAll");
 
-// Add CORS for SignalR (required for Android app)
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", builder =>
-    {
-        builder.SetIsOriginAllowed(_ => true)
-               .AllowAnyMethod()
-               .AllowAnyHeader()
-               .AllowCredentials();
-    });
-});
+        // Add Health Check middleware
+        app.UseMiddleware<HealthCheckMiddleware>();
 
-builder.Services.AddControllers();
-// Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+        // Add Rate Limiting middleware
+        app.UseMiddleware<RateLimitingMiddleware>();
 
-var app = builder.Build();
+        app.UseHttpsRedirection();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+        // Add Authentication & Authorization middleware
+        app.UseAuthentication();
+        app.UseAuthorization();
 
-// Enable CORS
-app.UseCors("AllowAll");
+        // Map controllers
+        app.MapControllers();
 
-// Add Health Check middleware
-app.UseMiddleware<HealthCheckMiddleware>();
-
-// Add Rate Limiting middleware
-app.UseMiddleware<RateLimitingMiddleware>();
-
-app.UseHttpsRedirection();
-
-// Add Authentication & Authorization middleware
-app.UseAuthentication();
-app.UseAuthorization();
-
-// Map SignalR Hub
-app.MapHub<SCRMHub>("/scrmhub");
-
-// Map controllers
-app.MapControllers();
-
-      app.Run();
+        app.Run();
     }
 }

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message QwConversMessage {
+  string UserName = 1;
+  string Digest = 2;
+  bool IsSend = 4;
+  int32 MsgCnt = 5;
+  int32 UnreadCnt = 6;
+  int64 UpdateTime = 7;
+  bool IsTop = 8;
+  bool IsSilent = 9;
+  string ShowName = 11;
+  string Avatar = 12;
+  int32 AtCount = 13;
+  string Parent = 14;
+  string ParentName = 15;
+  string Owner = 16;
+  string UserList = 17;
+  int32 RoomFlag = 18;
+}
+
+message QwConversPushNoticeMessage {
+  string WeChatId = 1;
+  repeated QwConversMessage Convers = 2;
+  int32 Size = 3;
+  int32 Count = 4;
+  int32 Page = 5;
+  int64 TaskId = 6;
+}

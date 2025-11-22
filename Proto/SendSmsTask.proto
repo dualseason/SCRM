@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+message SendSmsTaskMessage {
+  string WeChatId = 1;
+  string Imei = 2;
+  string Number = 3;
+  string Content = 4;
+  int64 TaskId = 5;
+}

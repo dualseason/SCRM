@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
-using SCRM.Data;
+using SCRM.Services.Data;
 
 #nullable disable
 
@@ -22,7 +22,7 @@ namespace SCRM.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
-            modelBuilder.Entity("SCRM.Entities.Order", b =>
+            modelBuilder.Entity("SCRM.Models.Entities.Order", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -93,7 +93,7 @@ namespace SCRM.Migrations
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("SCRM.Entities.User", b =>
+            modelBuilder.Entity("SCRM.Models.Entities.User", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -347,9 +347,9 @@ namespace SCRM.Migrations
                     b.ToTable("UserRoles");
                 });
 
-            modelBuilder.Entity("SCRM.Entities.Order", b =>
+            modelBuilder.Entity("SCRM.Models.Entities.Order", b =>
                 {
-                    b.HasOne("SCRM.Entities.User", null)
+                    b.HasOne("SCRM.Models.Entities.User", null)
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
