@@ -5,6 +5,7 @@ using SCRM.Core.Netty;
 using Jubo.JuLiao.IM.Wx.Proto;
 using DotNetty.Transport.Channels;
 using System.Threading.Tasks;
+using SCRM.Services;
 
 namespace SCRM.TEST.Netty
 {
@@ -13,10 +14,13 @@ namespace SCRM.TEST.Netty
         private readonly MessageRouter _router;
         private readonly Mock<IChannelHandlerContext> _mockContext;
         private readonly Mock<IChannel> _mockChannel;
+        private readonly ConnectionManager _connectionManager;
 
         public MessageRouterTests(TestInitializer initializer) : base(initializer)
         {
-            _router = new MessageRouter();
+            var mockLogger = new Mock<Microsoft.Extensions.Logging.ILogger<ConnectionManager>>();
+            _connectionManager = new ConnectionManager(mockLogger.Object);
+            _router = new MessageRouter(_connectionManager);
             _mockContext = new Mock<IChannelHandlerContext>();
             _mockChannel = new Mock<IChannel>();
             _mockContext.Setup(x => x.Channel).Returns(_mockChannel.Object);

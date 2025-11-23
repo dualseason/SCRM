@@ -262,3 +262,5 @@ azure-pipelines.yml
 
 # User secrets
 secrets.json
+*.vsidx
+*.VC.db

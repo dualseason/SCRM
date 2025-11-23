@@ -94,5 +94,104 @@ namespace SCRM.Services
                 EnumMsgType.GetGroupSendHistoryTask.ToString(),
                 connectionId);
         }
+        /// <summary>
+        /// 发送发布朋友圈任务
+        /// </summary>
+        public async Task<bool> SendPostSNSNewsTaskAsync(string connectionId, string content, List<string> attachments, long taskId)
+        {
+            var task = new PostSNSNewsTaskMessage
+            {
+                Content = content,
+                TaskId = taskId
+            };
+            // Note: Attachment handling would go here, simplified for now
+            
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.PostSnsnewsTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送触发好友列表推送任务
+        /// </summary>
+        public async Task<bool> SendTriggerFriendPushTaskAsync(string connectionId, long taskId)
+        {
+            var task = new TriggerFriendPushTaskMessage
+            {
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.TriggerFriendPushTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送触发群聊列表推送任务
+        /// </summary>
+        public async Task<bool> SendTriggerChatRoomPushTaskAsync(string connectionId, long taskId)
+        {
+            var task = new TriggerChatRoomPushTaskMessage
+            {
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.TriggerChatroomPushTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送触发朋友圈推送任务
+        /// </summary>
+        public async Task<bool> SendTriggerCirclePushTaskAsync(string connectionId, long taskId)
+        {
+            var task = new TriggerCirclePushTaskMessage
+            {
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.TriggerCirclePushTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送一键点赞任务
+        /// </summary>
+        public async Task<bool> SendOneKeyLikeTaskAsync(string connectionId, long taskId)
+        {
+            var task = new OneKeyLikeTaskMessage
+            {
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.OneKeyLikeTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送消息撤回任务
+        /// </summary>
+        public async Task<bool> SendRevokeMessageTaskAsync(string connectionId, string friendId, long msgSvrId, long taskId)
+        {
+            var task = new RevokeMessageTaskMessage
+            {
+                FriendId = friendId,
+                MsgId = msgSvrId,
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.RevokeMessageTask.ToString(),
+                connectionId);
+        }
     }
 }

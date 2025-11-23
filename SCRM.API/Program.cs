@@ -65,6 +65,7 @@ public class Program
         builder.Host.UseSerilog();
 
         // Add services to the container.
+        builder.Services.AddMemoryCache();
         // Add EF Core PostgreSQL
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
@@ -116,8 +117,13 @@ public class Program
 
         // Add Bulk Operations service
 
-
-        // Add CORS
+        // Netty & C&C Services
+        builder.Services.AddSingleton<ConnectionManager>();
+        builder.Services.AddSingleton<MessageRouter>();
+        builder.Services.AddSingleton<NettyServer>();
+        builder.Services.AddSingleton<NettyMessageService>();
+        builder.Services.AddSingleton<ClientTaskService>();
+        builder.Services.AddHostedService<NettyMessageService>(provider => provider.GetRequiredService<NettyMessageService>());        // Add CORS
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAll", builder =>
@@ -141,6 +147,13 @@ public class Program
         {
             app.UseSwagger();
             app.UseSwaggerUI();
+            
+            // Redirect root to Swagger UI
+            app.MapGet("/", async context =>
+            {
+                context.Response.Redirect("/swagger");
+                await Task.CompletedTask;
+            });
         }
 
         // Enable CORS
