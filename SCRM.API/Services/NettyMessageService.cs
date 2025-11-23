@@ -2,25 +2,25 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SCRM.Core.Netty;
 using System;
-using System.Collections.Concurrent;
-using System.Net.Sockets;
-using System.Text;
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Jubo.JuLiao.IM.Wx.Proto;
+using Google.Protobuf.WellKnownTypes;
 
 namespace SCRM.Services
 {
-    public class NettyMessageService : INettyService, INettyMessageService, IHostedService
+    public class NettyMessageService : INettyService, IHostedService
     {
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
-
-                private readonly INettyServer _nettyServer;
-        private readonly ConcurrentDictionary<string, TcpClient> _tcpClients = new ConcurrentDictionary<string, TcpClient>();
+        private readonly NettyServer _nettyServer;
+        private readonly ConnectionManager _connectionManager;
 
         public NettyMessageService(
-            INettyServer nettyServer)
-        {            _nettyServer = nettyServer;
+            NettyServer nettyServer,
+            ConnectionManager connectionManager)
+        {
+            _nettyServer = nettyServer;
+            _connectionManager = connectionManager;
         }
 
         public async Task StartAsync()
@@ -49,20 +49,6 @@ namespace SCRM.Services
                     await _nettyServer.StopAsync();
                     _logger.Information("Netty message service stopped successfully");
                 }
-
-                // 关闭所有TCP客户端连接
-                foreach (var client in _tcpClients.Values)
-                {
-                    try
-                    {
-                        client.Close();
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.Warning(ex, "Error closing TCP client");
-                    }
-                }
-                _tcpClients.Clear();
             }
             catch (Exception ex)
             {
@@ -70,7 +56,7 @@ namespace SCRM.Services
             }
         }
 
-        public async Task<bool> SendMessageToNettyAsync(object message, string messageType = "", string targetId = "", string targetType = "", string topic = "", string tag = "")
+        public async Task<bool> SendMessageToNettyAsync(object? message, string messageType = "", string targetId = "", string targetType = "", string topic = "", string tag = "")
         {
             try
             {
@@ -80,59 +66,49 @@ namespace SCRM.Services
                     return false;
                 }
 
-                var nettyMessage = new NettyNetMessage
+                // 构造 TransportMessage
+                var transportMessage = new TransportMessage
                 {
-                    Type = messageType,
-                    TargetType = targetType,
-                    TargetId = targetId,
-                    Content = message,
-                    Topic = topic,
-                    Tag = tag,
-                    Timestamp = DateTime.UtcNow,
-                    Source = "SCRM_API"
+                    Id = DateTime.UtcNow.Ticks, // 简单生成ID
+                    AccessToken = "", // 需要时填充
+                    MsgType = System.Enum.TryParse<EnumMsgType>(messageType, out var typeEnum) ? typeEnum : EnumMsgType.UnknownMsg,
+                    RefMessageId = 0
                 };
 
-                string jsonMessage = JsonSerializer.Serialize(nettyMessage);
-                byte[] messageBytes = Encoding.UTF8.GetBytes(jsonMessage);
-
-                // 如果有特定的TCP客户端，则直接发送
-                if (!string.IsNullOrEmpty(targetId) && _tcpClients.TryGetValue(targetId, out var client))
+                if (message != null)
                 {
-                    try
+                    transportMessage.Content = Any.Pack((Google.Protobuf.IMessage)message);
+                }
+
+                // 如果有特定的目标ID (ConnectionId)
+                if (!string.IsNullOrEmpty(targetId))
+                {
+                    var channel = _connectionManager.GetChannel(targetId);
+                    if (channel != null && channel.Active)
                     {
-                        var stream = client.GetStream();
-                        await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
-                        _logger.Information("Message sent to TCP client: {ClientId}", targetId);
+                        await channel.WriteAndFlushAsync(transportMessage);
+                        _logger.Information("Message sent to client: {ClientId}", targetId);
                         return true;
                     }
-                    catch (Exception ex)
+                    else
                     {
-                        _logger.Error(ex, "Error sending message to TCP client: {ClientId}", targetId);
-                        _tcpClients.TryRemove(targetId, out _);
+                         _logger.Warning("Client not found or inactive: {ClientId}", targetId);
+                         return false;
                     }
                 }
 
-                // 广播给所有TCP客户端
-                var sendTasks = new List<Task>();
-                foreach (var clientInfo in _tcpClients.ToList())
+                // 广播给所有连接 (示例逻辑，实际可能需要更精细的广播)
+                var connections = await _connectionManager.GetAllConnectionsAsync();
+                foreach (var conn in connections)
                 {
-                    sendTasks.Add(Task.Run(async () =>
+                    var channel = _connectionManager.GetChannel(conn.ConnectionId);
+                    if (channel != null && channel.Active)
                     {
-                        try
-                        {
-                            var stream = clientInfo.Value.GetStream();
-                            await stream.WriteAsync(messageBytes, 0, messageBytes.Length);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.Warning(ex, "Error sending message to client: {ClientId}", clientInfo.Key);
-                            _tcpClients.TryRemove(clientInfo.Key, out _);
-                        }
-                    }));
+                        await channel.WriteAndFlushAsync(transportMessage);
+                    }
                 }
-
-                await Task.WhenAll(sendTasks);
-                _logger.Information("Broadcast message sent to {Count} TCP clients", _tcpClients.Count);
+                
+                _logger.Information("Broadcast message sent");
                 return true;
             }
             catch (Exception ex)
@@ -144,7 +120,8 @@ namespace SCRM.Services
 
         public async Task<int> GetConnectedClientsCountAsync()
         {
-            return await Task.FromResult(_tcpClients.Count);
+            var stats = _connectionManager.GetStatistics();
+            return await Task.FromResult(stats.TotalConnections);
         }
 
         public async Task<bool> IsNettyServerRunningAsync()
@@ -165,24 +142,8 @@ namespace SCRM.Services
         {
             return StopAsync();
         }
-
-        // 内部消息类
-        public class NettyNetMessage
-        {
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
-
-            public string Type { get; set; } = string.Empty;
-            public string TargetType { get; set; } = string.Empty;
-            public string TargetId { get; set; } = string.Empty;
-            public object Content { get; set; } = new { };
-            public string? Topic { get; set; }
-            public string? Tag { get; set; }
-            public DateTime Timestamp { get; set; } = DateTime.UtcNow;
-            public string? Source { get; set; }
-        }
     }
 
-    // 让NettyMessageService实现INettyService接口
     public interface INettyService
     {
         Task StartAsync();

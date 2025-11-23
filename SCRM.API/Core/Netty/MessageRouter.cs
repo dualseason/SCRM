@@ -9,13 +9,15 @@ namespace SCRM.Core.Netty
 {
     public class MessageRouter
     {
+        private readonly Serilog.ILogger _logger = Utility.logger;
+
         public MessageRouter()
         {
         }
 
         public async Task RouteMessage(TransportMessage message, IChannelHandlerContext context)
         {
-            Utility.logger.Information("Routing message: Id={Id}, Type={MsgType}, Token={Token}", 
+            _logger.Information("Routing message: Id={Id}, Type={MsgType}, Token={Token}", 
                 message.Id, message.MsgType, message.AccessToken);
 
             try
@@ -40,19 +42,19 @@ namespace SCRM.Core.Netty
                         break;
 
                     default:
-                        Utility.logger.Warning("Unhandled message type: {MsgType}", message.MsgType);
+                        _logger.Warning("Unhandled message type: {MsgType}", message.MsgType);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                Utility.logger.Error(ex, "Error routing message type: {MsgType}", message.MsgType);
+                _logger.Error(ex, "Error routing message type: {MsgType}", message.MsgType);
             }
         }
 
         private Task HandleHeartBeat(TransportMessage message, IChannelHandlerContext context)
         {
-            Utility.logger.Debug("HeartBeat received from {RemoteAddress}", context.Channel.RemoteAddress);
+            _logger.Debug("HeartBeat received from {RemoteAddress}", context.Channel.RemoteAddress);
             
             var response = new TransportMessage
             {
@@ -66,19 +68,19 @@ namespace SCRM.Core.Netty
 
         private Task HandleDeviceAuth(TransportMessage message, IChannelHandlerContext context)
         {
-            Utility.logger.Information("Device auth request received");
+            _logger.Information("Device auth request received");
             return Task.CompletedTask;
         }
 
         private Task HandleTalkToFriend(TransportMessage message, IChannelHandlerContext context)
         {
-            Utility.logger.Information("TalkToFriend task received");
+            _logger.Information("TalkToFriend task received");
             return Task.CompletedTask;
         }
 
         private Task HandleWeChatStatus(TransportMessage message, IChannelHandlerContext context)
         {
-            Utility.logger.Information("WeChat status change: {MsgType}", message.MsgType);
+            _logger.Information("WeChat status change: {MsgType}", message.MsgType);
             return Task.CompletedTask;
         }
     }

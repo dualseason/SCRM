@@ -12,12 +12,13 @@ using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
 using System.Security.Claims;
+using SCRM.Models.Dtos;
 using System.Text;
 using System.Threading.Tasks;
 
 namespace SCRM.Services
 {
-    public class JwtService : IJwtService
+    public class JwtService
     {
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 

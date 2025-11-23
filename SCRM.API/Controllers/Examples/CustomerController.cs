@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SCRM.Services.Auth;
 using SCRM.Models.Constants;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -14,7 +13,7 @@ namespace SCRM.Controllers.Examples
     {
         // 基本权限检查 - 需要客户查看权限
         [HttpGet]
-        [RequirePermission(Permissions.Customer.View)]
+        [Authorize(Policy = "RequireAdminRole")]
         public IActionResult GetCustomers()
         {
             var customers = new[]
@@ -28,7 +27,7 @@ namespace SCRM.Controllers.Examples
 
         // 创建权限检查 - 需要客户创建权限
         [HttpPost]
-        [RequirePermission(Permissions.Customer.Create)]
+        [Authorize(Policy = "RequireAdminRole")]
         public IActionResult CreateCustomer([FromBody] CreateCustomerRequest request)
         {
             // 模拟创建客户逻辑
@@ -37,7 +36,7 @@ namespace SCRM.Controllers.Examples
 
         // 编辑权限检查 - 需要客户编辑权限
         [HttpPut("{id}")]
-        [RequirePermission(Permissions.Customer.Edit)]
+        [Authorize(Policy = "RequireAdminRole")]
         public IActionResult UpdateCustomer(int id, [FromBody] UpdateCustomerRequest request)
         {
             return Ok(new { Success = true, Message = $"客户 {id} 更新成功" });
@@ -45,7 +44,7 @@ namespace SCRM.Controllers.Examples
 
         // 删除权限检查 - 需要客户删除权限
         [HttpDelete("{id}")]
-        [RequirePermission(Permissions.Customer.Delete)]
+        [Authorize(Policy = "RequireAdminRole")]
         public IActionResult DeleteCustomer(int id)
         {
             return Ok(new { Success = true, Message = $"客户 {id} 删除成功" });
@@ -53,7 +52,7 @@ namespace SCRM.Controllers.Examples
 
         // 导出权限检查 - 需要客户导出权限
         [HttpGet("export")]
-        [RequirePermission(Permissions.Customer.Export)]
+        [Authorize(Policy = "RequireAdminRole")]
         public IActionResult ExportCustomers()
         {
             return Ok(new { Success = true, Message = "客户导出成功", Data = new { FileUrl = "/downloads/customers.xlsx" } });
@@ -61,7 +60,7 @@ namespace SCRM.Controllers.Examples
 
         // 分配销售权限检查 - 需要客户分配销售权限
         [HttpPost("{id}/assign-sales")]
-        [RequirePermission(Permissions.Customer.AssignSales)]
+        [Authorize(Policy = "RequireAdminRole")]
         public IActionResult AssignSales(int id, [FromBody] AssignSalesRequest request)
         {
             return Ok(new { Success = true, Message = $"客户 {id} 分配销售成功" });
@@ -69,7 +68,7 @@ namespace SCRM.Controllers.Examples
 
         // 多权限检查 - 需要任意一个权限
         [HttpGet("dashboard")]
-        [RequirePermissions(Permissions.Customer.View, Permissions.Report.Sales)]
+        [Authorize(Policy = "RequireAdminRole")]
         public IActionResult GetCustomerDashboard()
         {
             var dashboard = new
@@ -89,7 +88,7 @@ namespace SCRM.Controllers.Examples
 
         // 角色权限检查 - 需要特定角色
         [HttpGet("vip")]
-        [RequireRole(Roles.Admin, Roles.Manager)]
+        [Authorize(Roles = "Admin,Manager")]
         public IActionResult GetVipCustomers()
         {
             var vipCustomers = new[]
@@ -103,8 +102,8 @@ namespace SCRM.Controllers.Examples
 
         // 复合权限检查 - 需要客户查看权限 AND 销售角色
         [HttpGet("my-assigned")]
-        [RequirePermission(Permissions.Customer.View)]
-        [RequireRole(Roles.Sales)]
+        [Authorize(Policy = "RequireAdminRole")]
+        [Authorize(Roles = "Sales")]
         public IActionResult GetMyAssignedCustomers()
         {
             // 获取当前用户ID

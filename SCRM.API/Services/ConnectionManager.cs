@@ -5,15 +5,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using SCRM.Shared.Core;
+using SCRM.Models;
+using DotNetty.Transport.Channels;
 
 namespace SCRM.Services
 {
-    public class ConnectionManager : IConnectionManager
+    public class ConnectionManager
     {
         private readonly ILogger<ConnectionManager> _logger;
         private readonly ConcurrentDictionary<string, UserConnectionInfo> _connections = new ConcurrentDictionary<string, UserConnectionInfo>();
         private readonly ConcurrentDictionary<string, HashSet<string>> _userConnections = new ConcurrentDictionary<string, HashSet<string>>();
         private readonly ConcurrentDictionary<string, HashSet<string>> _deviceTypeConnections = new ConcurrentDictionary<string, HashSet<string>>();
+        private readonly ConcurrentDictionary<string, IChannel> _activeChannels = new ConcurrentDictionary<string, IChannel>();
 
         public ConnectionManager(ILogger<ConnectionManager> logger)
         {
@@ -37,11 +40,17 @@ namespace SCRM.Services
 
             // 添加到用户连接映射
             var userConns = _userConnections.GetOrAdd(userId, _ => new HashSet<string>());
-            userConns.Add(connectionId);
+            lock (userConns)
+            {
+                userConns.Add(connectionId);
+            }
 
             // 添加到设备类型连接映射
             var deviceConns = _deviceTypeConnections.GetOrAdd(deviceType, _ => new HashSet<string>());
-            deviceConns.Add(connectionId);
+            lock (deviceConns)
+            {
+                deviceConns.Add(connectionId);
+            }
 
             _logger.LogInformation("连接已添加 - 用户ID: {UserId}, 连接ID: {ConnectionId}, 设备类型: {DeviceType}",
                 userId, connectionId, deviceType);
@@ -56,20 +65,26 @@ namespace SCRM.Services
                 // 从用户连接映射中移除
                 if (_userConnections.TryGetValue(connectionInfo.UserId, out var userConns))
                 {
-                    userConns.Remove(connectionId);
-                    if (userConns.Count == 0)
+                    lock (userConns)
                     {
-                        _userConnections.TryRemove(connectionInfo.UserId, out _);
+                        userConns.Remove(connectionId);
+                        if (userConns.Count == 0)
+                        {
+                            _userConnections.TryRemove(connectionInfo.UserId, out _);
+                        }
                     }
                 }
 
                 // 从设备类型连接映射中移除
                 if (_deviceTypeConnections.TryGetValue(connectionInfo.DeviceType, out var deviceConns))
                 {
-                    deviceConns.Remove(connectionId);
-                    if (deviceConns.Count == 0)
+                    lock (deviceConns)
                     {
-                        _deviceTypeConnections.TryRemove(connectionInfo.DeviceType, out _);
+                        deviceConns.Remove(connectionId);
+                        if (deviceConns.Count == 0)
+                        {
+                            _deviceTypeConnections.TryRemove(connectionInfo.DeviceType, out _);
+                        }
                     }
                 }
 
@@ -78,6 +93,37 @@ namespace SCRM.Services
             }
 
             return Task.CompletedTask;
+        }
+
+        public void RegisterChannel(string connectionId, IChannel channel)
+        {
+            _activeChannels.AddOrUpdate(connectionId, channel, (key, oldValue) => channel);
+        }
+
+        public void RemoveChannel(string connectionId)
+        {
+            _activeChannels.TryRemove(connectionId, out _);
+        }
+
+        public IChannel? GetChannel(string connectionId)
+        {
+            _activeChannels.TryGetValue(connectionId, out var channel);
+            return channel;
+        }
+
+        public IChannel? GetChannelByUserId(string userId)
+        {
+            if (_userConnections.TryGetValue(userId, out var connectionIds))
+            {
+                foreach (var connId in connectionIds)
+                {
+                    if (_activeChannels.TryGetValue(connId, out var channel) && channel.Active)
+                    {
+                        return channel;
+                    }
+                }
+            }
+            return null;
         }
 
         public Task<IEnumerable<UserConnectionInfo>> GetConnectionsByUserAsync(string userId)

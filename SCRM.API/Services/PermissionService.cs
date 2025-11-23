@@ -8,10 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using SCRM.Models.Dtos;
 
 namespace SCRM.Services
 {
-    public class PermissionService : IPermissionService
+    public class PermissionService
     {
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 

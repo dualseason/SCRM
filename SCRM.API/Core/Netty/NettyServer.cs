@@ -5,11 +5,14 @@ using System;
 using System.Net;
 using System.Threading.Tasks;
 using SCRM.Shared.Core;
+using SCRM.Services;
 
 namespace SCRM.Core.Netty
 {
-    public class NettyServer : INettyServer
+    public class NettyServer
     {
+        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+
         private readonly IServiceProvider _serviceProvider;
         private IChannel _channel;
         private readonly IEventLoopGroup _bossGroup;
@@ -39,8 +42,9 @@ namespace SCRM.Core.Netty
                         pipeline.AddLast(new ProtobufEncoder());
 
                         var messageRouter = (MessageRouter)_serviceProvider.GetService(typeof(MessageRouter))!;
+                        var connectionManager = (ConnectionManager)_serviceProvider.GetService(typeof(ConnectionManager))!;
                         
-                        pipeline.AddLast(new NettyMessageHandler(messageRouter));
+                        pipeline.AddLast(new NettyMessageHandler(messageRouter, connectionManager));
                     }));
 
             return bootstrap;
@@ -52,15 +56,15 @@ namespace SCRM.Core.Netty
             {
                 if (_channel == null || !_channel.Open)
                 {
-                    Utility.logger.Information("Starting Netty server on port {Port}", Port);
+                    _logger.Information("Starting Netty server on port {Port}", Port);
                     var bootstrap = CreateBootstrap();
                     _channel = await bootstrap.BindAsync(IPAddress.Any, Port);
-                    Utility.logger.Information("Netty server started successfully on port {Port}", Port);
+                    _logger.Information("Netty server started successfully on port {Port}", Port);
                 }
             }
             catch (Exception ex)
             {
-                Utility.logger.Error(ex, "Failed to start Netty server");
+                _logger.Error(ex, "Failed to start Netty server");
                 throw;
             }
         }
@@ -71,9 +75,9 @@ namespace SCRM.Core.Netty
             {
                 if (_channel != null && _channel.Open)
                 {
-                    Utility.logger.Information("Stopping Netty server");
+                    _logger.Information("Stopping Netty server");
                     await _channel.CloseAsync();
-                    Utility.logger.Information("Netty server stopped successfully");
+                    _logger.Information("Netty server stopped successfully");
                 }
 
                 await Task.WhenAll(
@@ -83,7 +87,7 @@ namespace SCRM.Core.Netty
             }
             catch (Exception ex)
             {
-                Utility.logger.Error(ex, "Failed to stop Netty server");
+                _logger.Error(ex, "Failed to stop Netty server");
                 throw;
             }
         }

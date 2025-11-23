@@ -8,13 +8,13 @@ using System.Threading.Tasks;
 
 namespace SCRM.TEST.Netty
 {
-    public class MessageRouterTests
+    public class MessageRouterTests : TestBase
     {
         private readonly MessageRouter _router;
         private readonly Mock<IChannelHandlerContext> _mockContext;
         private readonly Mock<IChannel> _mockChannel;
 
-        public MessageRouterTests()
+        public MessageRouterTests(TestInitializer initializer) : base(initializer)
         {
             _router = new MessageRouter();
             _mockContext = new Mock<IChannelHandlerContext>();

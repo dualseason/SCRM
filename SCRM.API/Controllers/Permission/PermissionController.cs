@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using SCRM.Services.Auth;
 using SCRM.Models.Constants;
 using SCRM.Services.Data;
 using SCRM.Models.Identity;
@@ -18,16 +17,16 @@ namespace SCRM.Controllers.Permission
     public class PermissionController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly IPermissionService _permissionService;
+        private readonly PermissionService _permissionService;
 
-        public PermissionController(ApplicationDbContext context, IPermissionService permissionService)
+        public PermissionController(ApplicationDbContext context, PermissionService permissionService)
         {
             _context = context;
             _permissionService = permissionService;
         }
 
         [HttpGet]
-        [RequirePermission(Permissions.Permission.View)]
+        [Authorize(Policy = "RequireAdminRole")]
         public async Task<IActionResult> GetAllPermissions()
         {
             try
@@ -42,7 +41,7 @@ namespace SCRM.Controllers.Permission
         }
 
         [HttpGet("grouped")]
-        [RequirePermission(Permissions.Permission.View)]
+        [Authorize(Policy = "RequireAdminRole")]
         public async Task<IActionResult> GetGroupedPermissions()
         {
             try
@@ -61,7 +60,7 @@ namespace SCRM.Controllers.Permission
         }
 
         [HttpGet("user/{userId}")]
-        [RequirePermission(Permissions.User.View)]
+        [Authorize(Policy = "RequireAdminRole")]
         public async Task<IActionResult> GetUserPermissions(int userId)
         {
             try
@@ -164,7 +163,7 @@ namespace SCRM.Controllers.Permission
         }
 
         [HttpGet("cache/clear")]
-        [RequirePermission(Permissions.System.Maintenance)]
+        [Authorize(Policy = "RequireAdminRole")]
         public IActionResult ClearCache()
         {
             try

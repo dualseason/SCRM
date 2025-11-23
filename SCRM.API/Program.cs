@@ -2,13 +2,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using SCRM.Services.Auth;
+
 using SCRM.Services.Data;
 using SCRM.Models.Entities;
 using SCRM.Services;
 using SCRM.Models.Configurations;
 using SCRM.Core.Netty;
-using SCRM.Services.Middleware;
+
 using System.Text;
 using Serilog;
 using System.Globalization;
@@ -68,38 +68,12 @@ public class Program
         // Add EF Core PostgreSQL
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
-
-        // Add Connection Manager
-        builder.Services.AddSingleton<IConnectionManager, ConnectionManager>();
-
-        // Add Netty services
-        builder.Services.AddSingleton<SCRM.Core.Netty.MessageRouter>();
-        builder.Services.AddSingleton<INettyServer, NettyServer>();
-        builder.Services.AddSingleton<INettyMessageService, NettyMessageService>();
-        builder.Services.AddHostedService<NettyMessageService>();
-
-        // Configure Redis settings
-        builder.Services.Configure<RedisSettings>(
-            builder.Configuration.GetSection("Redis"));
-
-        // Add Redis services
-        builder.Services.AddStackExchangeRedisCache(options =>
-        {
-            options.Configuration = builder.Configuration.GetSection("Redis:ConnectionString").Value;
-            options.InstanceName = builder.Configuration.GetSection("Redis:InstanceName").Value;
-        });
-
-        // Add Memory Cache service for PermissionService
-        builder.Services.AddMemoryCache();
-
-        builder.Services.AddSingleton<IRedisCacheService, SimpleRedisCacheService>();
-
         // Configure JWT settings
         builder.Services.Configure<JwtSettings>(
             builder.Configuration.GetSection("JwtSettings"));
 
         // Add JWT services
-        builder.Services.AddScoped<IJwtService, JwtService>();
+        builder.Services.AddScoped<JwtService>();
 
         // Configure Authentication
         var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
@@ -128,29 +102,16 @@ public class Program
         });
 
         // Add Authorization services
-        // Add Authorization services
-        builder.Services.AddScoped<IPermissionService, PermissionService>();
-        builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
-        builder.Services.AddScoped<IAuthorizationHandler, SCRMAuthorizationHandler>();
-
-        // Configure middleware options
-        builder.Services.Configure<RateLimitOptions>(builder.Configuration.GetSection("RateLimiting"));
-        builder.Services.Configure<HealthCheckOptions>(builder.Configuration.GetSection("HealthChecks"));
+        builder.Services.AddScoped<PermissionService>();
 
         builder.Services.AddAuthorization(options =>
         {
-            // Add policy-based authorization
+            // Add simple role-based authorization
             options.AddPolicy("RequireAdminRole", policy =>
                 policy.RequireRole("Admin", "SuperAdmin"));
 
-            options.AddPolicy("CanManageUsers", policy =>
-                policy.AddRequirements(new SCRMRequirement(permissions: new[] { "user.manage" })));
-
-            options.AddPolicy("CanViewCustomers", policy =>
-                policy.AddRequirements(new SCRMRequirement(permissions: new[] { "customer.view" })));
-
-            options.AddPolicy("SalesOrManager", policy =>
-                policy.AddRequirements(new SCRMRequirement(roles: new[] { "Sales", "Manager", "Admin" })));
+            options.AddPolicy("RequireManagerRole", policy =>
+                policy.RequireRole("Manager", "Admin", "SuperAdmin"));
         });
 
         // Add Bulk Operations service
@@ -189,7 +150,8 @@ public class Program
         app.UseMiddleware<HealthCheckMiddleware>();
 
         // Add Rate Limiting middleware
-        app.UseMiddleware<RateLimitingMiddleware>();
+        // Add Rate Limiting middleware
+        // app.UseRateLimiter(); // TODO: Configure built-in rate limiter if needed
 
         app.UseHttpsRedirection();
 

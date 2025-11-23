@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using SCRM.Services.Auth;
 using SCRM.Services.Data;
 using SCRM.Models.Identity;
 using SCRM.Services;
@@ -20,11 +19,11 @@ namespace SCRM.Controllers.Auth
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 
         private readonly ApplicationDbContext _context;
-        private readonly IJwtService _jwtService;
+        private readonly JwtService _jwtService;
         
         public AuthController(
             ApplicationDbContext context,
-            IJwtService jwtService)
+            JwtService jwtService)
         {
             _context = context;
             _jwtService = jwtService;        }
