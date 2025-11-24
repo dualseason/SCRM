@@ -10,8 +10,6 @@ D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\SCRM.API.deps.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\SCRM.API.runtimeconfig.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\appsettings.Development.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\appsettings.json
-D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\appsettings.Production.json
-D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\appsettings.Staging.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\SCRM.API.staticwebassets.endpoints.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\SCRM.API.exe
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\testhost.exe
@@ -116,14 +114,12 @@ D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Confi
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Configuration.KeyPerFile.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Configuration.UserSecrets.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Configuration.Xml.dll
-D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Diagnostics.Abstractions.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Diagnostics.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Diagnostics.HealthChecks.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Features.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.FileProviders.Composite.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.FileProviders.Embedded.dll
-D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Hosting.Abstractions.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Hosting.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Http.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\refs\Microsoft.Extensions.Identity.Core.dll
@@ -349,7 +345,6 @@ D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Microsoft.Extensions.Logging.dl
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Microsoft.Extensions.Logging.Abstractions.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Microsoft.Extensions.Logging.Configuration.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Microsoft.Extensions.Logging.Console.dll
-D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Microsoft.Extensions.ObjectPool.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Microsoft.Extensions.Options.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Microsoft.Extensions.Options.ConfigurationExtensions.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Microsoft.Extensions.Primitives.dll
@@ -391,7 +386,6 @@ D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\System.Diagnostics.DiagnosticSo
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\System.IdentityModel.Tokens.Jwt.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\System.IO.Pipelines.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\System.Memory.Data.dll
-D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\System.Net.WebSockets.WebSocketProtocol.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\System.Runtime.Caching.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\System.Security.Cryptography.ProtectedData.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\System.Text.Encodings.Web.dll
@@ -1230,3 +1224,17 @@ E:\fan\work\code\vs\SCRM\SCRM.TEST\bin\Debug\net8.0\SCRM.API.pdb
 E:\fan\work\code\vs\SCRM\SCRM.TEST\obj\Debug\net8.0\SCRM.TEST.csproj.Up2Date
 E:\fan\work\code\vs\SCRM\SCRM.TEST\obj\Debug\net8.0\SCRM.TEST.genruntimeconfig.cache
 E:\fan\work\code\vs\SCRM\SCRM.TEST\obj\Debug\net8.0\ref\SCRM.TEST.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Google.Protobuf.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\protobuf-net.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\protobuf-net.Core.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.AspNetCore.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Extensions.Hosting.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Extensions.Logging.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Formatting.Compact.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Settings.Configuration.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Sinks.Console.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Sinks.Debug.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Sinks.File.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Sinks.PeriodicBatching.dll
+D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\Serilog.Sinks.PostgreSQL.dll

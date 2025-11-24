@@ -37,9 +37,16 @@ namespace SCRM.TEST.Netty
                 AccessToken = "test-token"
             };
 
-            TransportMessage? sentMessage = null;
+            object? sentMessage = null;
+            var mockChannelId = "test-channel-id-12345";
+
+            // Mock the Channel ID
+            var channelIdMock = new Mock<DotNetty.Transport.Channels.IChannelId>();
+            channelIdMock.Setup(x => x.AsLongText()).Returns(mockChannelId);
+            _mockChannel.Setup(x => x.Id).Returns(channelIdMock.Object);
+
             _mockContext.Setup(x => x.WriteAndFlushAsync(It.IsAny<object>()))
-                .Callback<object>(msg => sentMessage = msg as TransportMessage)
+                .Callback<object>(msg => sentMessage = msg)
                 .Returns(Task.CompletedTask);
 
             // Act
@@ -47,8 +54,12 @@ namespace SCRM.TEST.Netty
 
             // Assert
             sentMessage.Should().NotBeNull();
-            sentMessage!.MsgType.Should().Be(EnumMsgType.MsgReceivedAck);
-            sentMessage.RefMessageId.Should().Be(123);
+            sentMessage.Should().BeOfType<TransportMessage>();
+
+            var transportMessage = sentMessage as TransportMessage;
+            transportMessage!.MsgType.Should().Be(EnumMsgType.MsgReceivedAck);
+            transportMessage.Id.Should().Be(123);
+            transportMessage.RefMessageId.Should().Be(123);
         }
 
         [Fact]
