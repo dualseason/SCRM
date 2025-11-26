@@ -13031,23 +13031,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\duals\\.nuget\\packages\\": {},
+    "C:\\Users\\Administrator\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\Code\\SCRM.SOLUTION\\SCRM.TEST\\SCRM.TEST.csproj",
+      "projectUniqueName": "E:\\Code\\SCRM\\SCRM.TEST\\SCRM.TEST.csproj",
       "projectName": "SCRM.TEST",
-      "projectPath": "D:\\Code\\SCRM.SOLUTION\\SCRM.TEST\\SCRM.TEST.csproj",
-      "packagesPath": "C:\\Users\\duals\\.nuget\\packages\\",
-      "outputPath": "D:\\Code\\SCRM.SOLUTION\\SCRM.TEST\\obj\\",
+      "projectPath": "E:\\Code\\SCRM\\SCRM.TEST\\SCRM.TEST.csproj",
+      "packagesPath": "C:\\Users\\Administrator\\.nuget\\packages\\",
+      "outputPath": "E:\\Code\\SCRM\\SCRM.TEST\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\duals\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\Administrator\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -13063,8 +13063,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\SCRM.API.csproj": {
-              "projectPath": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\SCRM.API.csproj"
+            "E:\\Code\\SCRM\\SCRM.API\\SCRM.API.csproj": {
+              "projectPath": "E:\\Code\\SCRM\\SCRM.API\\SCRM.API.csproj"
             }
           }
         }
@@ -13079,7 +13079,7 @@
         "auditLevel": "low",
         "auditMode": "direct"
       },
-      "SdkAnalysisLevel": "9.0.300"
+      "SdkAnalysisLevel": "10.0.100"
     },
     "frameworks": {
       "net8.0": {
@@ -13162,7 +13162,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }
