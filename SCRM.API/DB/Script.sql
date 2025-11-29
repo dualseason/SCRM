@@ -1596,9 +1596,431 @@ COMMENT ON TABLE public.message_forward_details IS '消息转发详情表';
 
 
 
--- public.official_accounts definition
+-- 五、朋友圈模块所需表
 
--- Drop table
+-- DROP SEQUENCE moments_posts_post_id_seq;
+
+CREATE SEQUENCE moments_posts_post_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE moments_comments_comment_id_seq;
+
+CREATE SEQUENCE moments_comments_comment_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE moments_likes_like_id_seq;
+
+CREATE SEQUENCE moments_likes_like_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- public.moments_posts definition
+
+-- DROP TABLE moments_posts;
+
+CREATE TABLE moments_posts (
+	post_id bigserial NOT NULL,
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	content text NULL, -- 朋友圈文案
+	content_type int2 DEFAULT 1 NULL, -- 内容类型：1-文字 2-图片 3-视频 4-链接 5-混合
+	location varchar(200) NULL, -- 位置信息
+	like_count int4 DEFAULT 0 NULL, -- 点赞数
+	comment_count int4 DEFAULT 0 NULL, -- 评论数
+	visibility int2 DEFAULT 1 NULL, -- 可见范围：1-所有人 2-仅朋友 3-部分可见 4-隐身
+	is_top bool DEFAULT false NULL, -- 是否置顶
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	published_at timestamp NULL, -- 发布时间
+	deleted_at timestamp NULL, -- 删除时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT moments_posts_pkey PRIMARY KEY (post_id),
+	CONSTRAINT fk_post_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_moments_posts_account ON public.moments_posts USING btree (account_id);
+CREATE INDEX idx_moments_posts_published ON public.moments_posts USING btree (published_at);
+CREATE INDEX idx_moments_posts_deleted ON public.moments_posts USING btree (is_deleted);
+CREATE INDEX idx_moments_posts_visibility ON public.moments_posts USING btree (visibility);
+COMMENT ON TABLE public.moments_posts IS '朋友圈文章表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.moments_posts.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.moments_posts.content IS '朋友圈文案';
+COMMENT ON COLUMN public.moments_posts.content_type IS '内容类型：1-文字 2-图片 3-视频 4-链接 5-混合';
+COMMENT ON COLUMN public.moments_posts.location IS '位置信息';
+COMMENT ON COLUMN public.moments_posts.like_count IS '点赞数';
+COMMENT ON COLUMN public.moments_posts.comment_count IS '评论数';
+COMMENT ON COLUMN public.moments_posts.visibility IS '可见范围：1-所有人 2-仅朋友 3-部分可见 4-隐身';
+COMMENT ON COLUMN public.moments_posts.is_top IS '是否置顶';
+COMMENT ON COLUMN public.moments_posts.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.moments_posts.published_at IS '发布时间';
+COMMENT ON COLUMN public.moments_posts.deleted_at IS '删除时间';
+COMMENT ON COLUMN public.moments_posts.created_at IS '创建时间';
+COMMENT ON COLUMN public.moments_posts.updated_at IS '更新时间';
+
+
+-- public.moments_likes definition
+
+-- DROP TABLE moments_likes;
+
+CREATE TABLE moments_likes (
+	like_id bigserial NOT NULL,
+	post_id int8 NOT NULL, -- 朋友圈ID
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	liked_by_wxid varchar(100) NOT NULL, -- 点赞者WXID
+	liked_by_account_id int8 NULL, -- 点赞者账号ID（如果是本系统用户）
+	like_type int2 DEFAULT 1 NULL, -- 点赞类型：1-赞 2-emoji点赞
+	emoji_id varchar(100) NULL, -- emoji表情ID
+	liked_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 点赞时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT moments_likes_pkey PRIMARY KEY (like_id),
+	CONSTRAINT uk_post_like UNIQUE (post_id, liked_by_wxid),
+	CONSTRAINT fk_like_post FOREIGN KEY (post_id) REFERENCES moments_posts(post_id),
+	CONSTRAINT fk_like_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_like_by_account FOREIGN KEY (liked_by_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_moments_likes_post ON public.moments_likes USING btree (post_id);
+CREATE INDEX idx_moments_likes_account ON public.moments_likes USING btree (account_id);
+CREATE INDEX idx_moments_likes_liked_by ON public.moments_likes USING btree (liked_by_account_id);
+CREATE INDEX idx_moments_likes_time ON public.moments_likes USING btree (liked_at);
+COMMENT ON TABLE public.moments_likes IS '朋友圈点赞表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.moments_likes.post_id IS '朋友圈ID';
+COMMENT ON COLUMN public.moments_likes.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.moments_likes.liked_by_wxid IS '点赞者WXID';
+COMMENT ON COLUMN public.moments_likes.liked_by_account_id IS '点赞者账号ID（如果是本系统用户）';
+COMMENT ON COLUMN public.moments_likes.like_type IS '点赞类型：1-赞 2-emoji点赞';
+COMMENT ON COLUMN public.moments_likes.emoji_id IS 'emoji表情ID';
+COMMENT ON COLUMN public.moments_likes.liked_at IS '点赞时间';
+COMMENT ON COLUMN public.moments_likes.created_at IS '创建时间';
+
+
+-- public.moments_comments definition
+
+-- DROP TABLE moments_comments;
+
+CREATE TABLE moments_comments (
+	comment_id bigserial NOT NULL,
+	post_id int8 NOT NULL, -- 朋友圈ID
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	comment_by_wxid varchar(100) NOT NULL, -- 评论者WXID
+	comment_by_account_id int8 NULL, -- 评论者账号ID（如果是本系统用户）
+	reply_to_comment_id int8 NULL, -- 回复的评论ID
+	reply_to_wxid varchar(100) NULL, -- 回复的对象WXID
+	comment_content text NOT NULL, -- 评论内容
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	commented_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 评论时间
+	deleted_at timestamp NULL, -- 删除时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT moments_comments_pkey PRIMARY KEY (comment_id),
+	CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES moments_posts(post_id),
+	CONSTRAINT fk_comment_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_comment_by_account FOREIGN KEY (comment_by_account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_comment_reply FOREIGN KEY (reply_to_comment_id) REFERENCES moments_comments(comment_id)
+);
+CREATE INDEX idx_moments_comments_post ON public.moments_comments USING btree (post_id);
+CREATE INDEX idx_moments_comments_account ON public.moments_comments USING btree (account_id);
+CREATE INDEX idx_moments_comments_by ON public.moments_comments USING btree (comment_by_account_id);
+CREATE INDEX idx_moments_comments_time ON public.moments_comments USING btree (commented_at);
+CREATE INDEX idx_moments_comments_deleted ON public.moments_comments USING btree (is_deleted);
+COMMENT ON TABLE public.moments_comments IS '朋友圈评论表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.moments_comments.post_id IS '朋友圈ID';
+COMMENT ON COLUMN public.moments_comments.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.moments_comments.comment_by_wxid IS '评论者WXID';
+COMMENT ON COLUMN public.moments_comments.comment_by_account_id IS '评论者账号ID（如果是本系统用户）';
+COMMENT ON COLUMN public.moments_comments.reply_to_comment_id IS '回复的评论ID';
+COMMENT ON COLUMN public.moments_comments.reply_to_wxid IS '回复的对象WXID';
+COMMENT ON COLUMN public.moments_comments.comment_content IS '评论内容';
+COMMENT ON COLUMN public.moments_comments.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.moments_comments.commented_at IS '评论时间';
+COMMENT ON COLUMN public.moments_comments.deleted_at IS '删除时间';
+COMMENT ON COLUMN public.moments_comments.created_at IS '创建时间';
+COMMENT ON COLUMN public.moments_comments.updated_at IS '更新时间';
+
+
+-- 六、钱包与红包模块所需表
+
+-- DROP SEQUENCE wallet_transactions_transaction_id_seq;
+
+CREATE SEQUENCE wallet_transactions_transaction_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE red_packets_packet_id_seq;
+
+CREATE SEQUENCE red_packets_packet_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE red_packet_records_record_id_seq;
+
+CREATE SEQUENCE red_packet_records_record_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- public.wallet_transactions definition
+
+-- DROP TABLE wallet_transactions;
+
+CREATE TABLE wallet_transactions (
+	transaction_id bigserial NOT NULL,
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	transaction_type int2 NOT NULL, -- 交易类型：1-收入 2-支出 3-转账 4-红包
+	related_account_id int8 NULL, -- 相关账号ID
+	related_wxid varchar(100) NULL, -- 相关微信WXID
+	amount numeric(15, 2) NOT NULL, -- 交易金额
+	balance_before numeric(15, 2) NULL, -- 交易前余额
+	balance_after numeric(15, 2) NULL, -- 交易后余额
+	description varchar(500) NULL, -- 交易描述
+	transaction_status int2 DEFAULT 1 NULL, -- 交易状态：1-待确认 2-已确认 3-失败 4-已撤销
+	transaction_at timestamp NULL, -- 交易时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT wallet_transactions_pkey PRIMARY KEY (transaction_id),
+	CONSTRAINT fk_wallet_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_wallet_related_account FOREIGN KEY (related_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_wallet_account ON public.wallet_transactions USING btree (account_id);
+CREATE INDEX idx_wallet_type ON public.wallet_transactions USING btree (transaction_type);
+CREATE INDEX idx_wallet_status ON public.wallet_transactions USING btree (transaction_status);
+CREATE INDEX idx_wallet_time ON public.wallet_transactions USING btree (transaction_at);
+CREATE INDEX idx_wallet_related_account ON public.wallet_transactions USING btree (related_account_id);
+COMMENT ON TABLE public.wallet_transactions IS '钱包交易记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.wallet_transactions.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.wallet_transactions.transaction_type IS '交易类型：1-收入 2-支出 3-转账 4-红包';
+COMMENT ON COLUMN public.wallet_transactions.related_account_id IS '相关账号ID';
+COMMENT ON COLUMN public.wallet_transactions.related_wxid IS '相关微信WXID';
+COMMENT ON COLUMN public.wallet_transactions.amount IS '交易金额';
+COMMENT ON COLUMN public.wallet_transactions.balance_before IS '交易前余额';
+COMMENT ON COLUMN public.wallet_transactions.balance_after IS '交易后余额';
+COMMENT ON COLUMN public.wallet_transactions.description IS '交易描述';
+COMMENT ON COLUMN public.wallet_transactions.transaction_status IS '交易状态：1-待确认 2-已确认 3-失败 4-已撤销';
+COMMENT ON COLUMN public.wallet_transactions.transaction_at IS '交易时间';
+COMMENT ON COLUMN public.wallet_transactions.created_at IS '创建时间';
+COMMENT ON COLUMN public.wallet_transactions.updated_at IS '更新时间';
+
+
+-- public.red_packets definition
+
+-- DROP TABLE red_packets;
+
+CREATE TABLE red_packets (
+	packet_id bigserial NOT NULL,
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	target_wxid varchar(100) NULL, -- 目标WXID（单人或群）
+	target_type int2 NOT NULL, -- 目标类型：1-个人 2-群聊
+	total_amount numeric(15, 2) NOT NULL, -- 总金额
+	packet_count int4 NOT NULL, -- 红包个数
+	distributed_count int4 DEFAULT 0 NULL, -- 已领取个数
+	distributed_amount numeric(15, 2) DEFAULT 0 NULL, -- 已领取金额
+	greeting_message varchar(500) NULL, -- 贺词
+	packet_type int2 DEFAULT 1 NULL, -- 红包类型：1-普通红包 2-拼手气红包 3-定额红包
+	packet_status int2 DEFAULT 1 NULL, -- 红包状态：1-待发送 2-已发送 3-已领完 4-已过期 5-已撤销
+	expires_at timestamp NULL, -- 过期时间
+	sent_at timestamp NULL, -- 发送时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT red_packets_pkey PRIMARY KEY (packet_id),
+	CONSTRAINT fk_red_packet_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_red_packets_account ON public.red_packets USING btree (account_id);
+CREATE INDEX idx_red_packets_target ON public.red_packets USING btree (target_wxid);
+CREATE INDEX idx_red_packets_status ON public.red_packets USING btree (packet_status);
+CREATE INDEX idx_red_packets_time ON public.red_packets USING btree (sent_at);
+CREATE INDEX idx_red_packets_expires ON public.red_packets USING btree (expires_at);
+COMMENT ON TABLE public.red_packets IS '红包发送记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.red_packets.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.red_packets.target_wxid IS '目标WXID（单人或群）';
+COMMENT ON COLUMN public.red_packets.target_type IS '目标类型：1-个人 2-群聊';
+COMMENT ON COLUMN public.red_packets.total_amount IS '总金额';
+COMMENT ON COLUMN public.red_packets.packet_count IS '红包个数';
+COMMENT ON COLUMN public.red_packets.distributed_count IS '已领取个数';
+COMMENT ON COLUMN public.red_packets.distributed_amount IS '已领取金额';
+COMMENT ON COLUMN public.red_packets.greeting_message IS '贺词';
+COMMENT ON COLUMN public.red_packets.packet_type IS '红包类型：1-普通红包 2-拼手气红包 3-定额红包';
+COMMENT ON COLUMN public.red_packets.packet_status IS '红包状态：1-待发送 2-已发送 3-已领完 4-已过期 5-已撤销';
+COMMENT ON COLUMN public.red_packets.expires_at IS '过期时间';
+COMMENT ON COLUMN public.red_packets.sent_at IS '发送时间';
+COMMENT ON COLUMN public.red_packets.created_at IS '创建时间';
+COMMENT ON COLUMN public.red_packets.updated_at IS '更新时间';
+
+
+-- public.red_packet_records definition
+
+-- DROP TABLE red_packet_records;
+
+CREATE TABLE red_packet_records (
+	record_id bigserial NOT NULL,
+	packet_id int8 NOT NULL, -- 红包ID
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	received_by_wxid varchar(100) NOT NULL, -- 领取者WXID
+	received_by_account_id int8 NULL, -- 领取者账号ID（如果是本系统用户）
+	amount numeric(15, 2) NOT NULL, -- 领取金额
+	received_at timestamp NULL, -- 领取时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT red_packet_records_pkey PRIMARY KEY (record_id),
+	CONSTRAINT fk_record_packet FOREIGN KEY (packet_id) REFERENCES red_packets(packet_id),
+	CONSTRAINT fk_record_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_record_received_account FOREIGN KEY (received_by_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_red_packet_records_packet ON public.red_packet_records USING btree (packet_id);
+CREATE INDEX idx_red_packet_records_account ON public.red_packet_records USING btree (account_id);
+CREATE INDEX idx_red_packet_records_received ON public.red_packet_records USING btree (received_by_account_id);
+CREATE INDEX idx_red_packet_records_time ON public.red_packet_records USING btree (received_at);
+COMMENT ON TABLE public.red_packet_records IS '红包领取记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.red_packet_records.packet_id IS '红包ID';
+COMMENT ON COLUMN public.red_packet_records.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.red_packet_records.received_by_wxid IS '领取者WXID';
+COMMENT ON COLUMN public.red_packet_records.received_by_account_id IS '领取者账号ID（如果是本系统用户）';
+COMMENT ON COLUMN public.red_packet_records.amount IS '领取金额';
+COMMENT ON COLUMN public.red_packet_records.received_at IS '领取时间';
+COMMENT ON COLUMN public.red_packet_records.created_at IS '创建时间';
+
+
+-- 七、公众号与小程序模块所需表
+
+-- DROP SEQUENCE official_accounts_account_id_seq;
+
+CREATE SEQUENCE official_accounts_account_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE miniprogram_accounts_account_id_seq;
+
+CREATE SEQUENCE miniprogram_accounts_account_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE official_account_search_logs_log_id_seq;
+
+CREATE SEQUENCE official_account_search_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE miniprogram_search_logs_log_id_seq;
+
+CREATE SEQUENCE miniprogram_search_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE official_account_messages_message_id_seq;
+
+CREATE SEQUENCE official_account_messages_message_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE miniprogram_messages_message_id_seq;
+
+CREATE SEQUENCE miniprogram_messages_message_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE official_account_subscriptions_subscription_id_seq;
+
+CREATE SEQUENCE official_account_subscriptions_subscription_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE miniprogram_access_logs_log_id_seq;
+
+CREATE SEQUENCE miniprogram_access_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE official_account_follow_logs_log_id_seq;
+
+CREATE SEQUENCE official_account_follow_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- DROP SEQUENCE miniprogram_follow_logs_log_id_seq;
+
+CREATE SEQUENCE miniprogram_follow_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+
+-- public.official_accounts definition
 
 -- DROP TABLE official_accounts;
 
@@ -1652,8 +2074,6 @@ COMMENT ON COLUMN public.official_accounts.deleted_at IS '删除时间';
 
 -- public.miniprogram_accounts definition
 
--- Drop table
-
 -- DROP TABLE miniprogram_accounts;
 
 CREATE TABLE miniprogram_accounts (
@@ -1706,8 +2126,6 @@ COMMENT ON COLUMN public.miniprogram_accounts.deleted_at IS '删除时间';
 
 -- public.official_account_search_logs definition
 
--- Drop table
-
 -- DROP TABLE official_account_search_logs;
 
 CREATE TABLE official_account_search_logs (
@@ -1742,8 +2160,6 @@ COMMENT ON COLUMN public.official_account_search_logs.created_at IS '创建时�
 
 -- public.miniprogram_search_logs definition
 
--- Drop table
-
 -- DROP TABLE miniprogram_search_logs;
 
 CREATE TABLE miniprogram_search_logs (
@@ -1774,8 +2190,6 @@ COMMENT ON COLUMN public.miniprogram_search_logs.created_at IS '创建时间';
 
 
 -- public.official_account_messages definition
-
--- Drop table
 
 -- DROP TABLE official_account_messages;
 
@@ -1827,8 +2241,6 @@ COMMENT ON COLUMN public.official_account_messages.updated_at IS '更新时间';
 
 -- public.miniprogram_messages definition
 
--- Drop table
-
 -- DROP TABLE miniprogram_messages;
 
 CREATE TABLE miniprogram_messages (
@@ -1879,8 +2291,6 @@ COMMENT ON COLUMN public.miniprogram_messages.updated_at IS '更新时间';
 
 -- public.official_account_subscriptions definition
 
--- Drop table
-
 -- DROP TABLE official_account_subscriptions;
 
 CREATE TABLE official_account_subscriptions (
@@ -1922,8 +2332,6 @@ COMMENT ON COLUMN public.official_account_subscriptions.updated_at IS '更新时
 
 -- public.miniprogram_access_logs definition
 
--- Drop table
-
 -- DROP TABLE miniprogram_access_logs;
 
 CREATE TABLE miniprogram_access_logs (
@@ -1964,8 +2372,6 @@ COMMENT ON COLUMN public.miniprogram_access_logs.created_at IS '创建时间';
 
 -- public.official_account_follow_logs definition
 
--- Drop table
-
 -- DROP TABLE official_account_follow_logs;
 
 CREATE TABLE official_account_follow_logs (
@@ -1998,8 +2404,6 @@ COMMENT ON COLUMN public.official_account_follow_logs.created_at IS '创建时�
 
 -- public.miniprogram_follow_logs definition
 
--- Drop table
-
 -- DROP TABLE miniprogram_follow_logs;
 
 CREATE TABLE miniprogram_follow_logs (
@@ -2028,7 +2432,6 @@ COMMENT ON COLUMN public.miniprogram_follow_logs.event_type IS '事件类型：1
 COMMENT ON COLUMN public.miniprogram_follow_logs.event_reason IS '事件原因';
 COMMENT ON COLUMN public.miniprogram_follow_logs.event_at IS '事件时间';
 COMMENT ON COLUMN public.miniprogram_follow_logs.created_at IS '创建时间';
-
 
 
 -- DROP FUNCTION public.update_updated_at_column();
