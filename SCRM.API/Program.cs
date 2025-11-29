@@ -138,7 +138,58 @@ public class Program
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
+            {
+                Title = "SCRM.API - 微信客服系统",
+                Version = "v1",
+                Description = "微信客服系统 API 文档",
+                Contact = new Microsoft.OpenApi.Models.OpenApiContact
+                {
+                    Name = "SCRM Team",
+                    Url = new Uri("https://github.com/yourusername/SCRM.SOLUTION")
+                },
+                License = new Microsoft.OpenApi.Models.OpenApiLicense
+                {
+                    Name = "MIT License"
+                }
+            });
+
+            // Add JWT Bearer token support in Swagger
+            c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                Description = "请输入 Bearer token",
+                Name = "Authorization",
+                Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+                BearerFormat = "JWT",
+                Scheme = "Bearer"
+            });
+
+            c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+            {
+                {
+                    new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+                    {
+                        Reference = new Microsoft.OpenApi.Models.OpenApiReference
+                        {
+                            Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
+                            Id = "Bearer"
+                        }
+                    },
+                    new string[] { }
+                }
+            });
+
+            // Enable annotations from Swashbuckle.AspNetCore.Annotations
+            c.EnableAnnotations();
+
+            // Include XML comments for better documentation
+            var xmlFile = Path.Combine(AppContext.BaseDirectory, "SCRM.API.xml");
+            if (File.Exists(xmlFile))
+                c.IncludeXmlComments(xmlFile);
+        });
 
         var app = builder.Build();
 
