@@ -14,7 +14,7 @@ using Serilog;
 using System.Globalization;
 using SCRM.Shared.Core;
 
-public class Program
+public partial class Program
 {
     public static void Main(string[] args)
     {
@@ -182,8 +182,8 @@ public class Program
                 }
             });
 
-            // Enable annotations from Swashbuckle.AspNetCore.Annotations
-            c.EnableAnnotations();
+            // Note: EnableAnnotations requires Swashbuckle.AspNetCore.Annotations package
+            // c.EnableAnnotations();
 
             // Include XML comments for better documentation
             var xmlFile = Path.Combine(AppContext.BaseDirectory, "SCRM.API.xml");

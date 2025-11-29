@@ -10,16 +10,16 @@ namespace SCRM.Core.Controllers
     [ApiController]
     public class ApiResponse<T>
     {
-        [SwaggerSchema("是否成功")]
+        /// <summary>是否成功</summary>
         public bool Success { get; set; }
 
-        [SwaggerSchema("响应消息")]
+        /// <summary>响应消息</summary>
         public string Message { get; set; } = string.Empty;
 
-        [SwaggerSchema("响应数据")]
+        /// <summary>响应数据</summary>
         public T? Data { get; set; }
 
-        [SwaggerSchema("时间戳")]
+        /// <summary>时间戳</summary>
         public long Timestamp { get; set; } = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         public static ApiResponse<T> SuccessResponse(T? data = default, string message = "操作成功")
@@ -47,23 +47,23 @@ namespace SCRM.Core.Controllers
     /// </summary>
     public class PagedResponse<T>
     {
-        [SwaggerSchema("当前页码")]
+        /// <summary>当前页码</summary>
         [Required]
         public int PageNumber { get; set; }
 
-        [SwaggerSchema("每页记录数")]
+        /// <summary>每页记录数</summary>
         [Required]
         public int PageSize { get; set; }
 
-        [SwaggerSchema("总记录数")]
+        /// <summary>总记录数</summary>
         [Required]
         public int Total { get; set; }
 
-        [SwaggerSchema("总页数")]
+        /// <summary>总页数</summary>
         [Required]
         public int TotalPages => (Total + PageSize - 1) / PageSize;
 
-        [SwaggerSchema("数据列表")]
+        /// <summary>数据列表</summary>
         public List<T> Items { get; set; } = new();
 
         public static PagedResponse<T> Create(int pageNumber, int pageSize, int total, List<T> items)
