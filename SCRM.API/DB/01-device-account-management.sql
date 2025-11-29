@@ -25,9 +25,9 @@ CREATE TABLE IF NOT EXISTS devices (
 );
 
 -- 创建索引
-CREATE INDEX idx_devices_uuid ON devices(device_uuid);
-CREATE INDEX idx_devices_type ON devices(device_type);
-CREATE INDEX idx_devices_active ON devices(is_active, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_devices_uuid ON devices(device_uuid);
+CREATE INDEX IF NOT EXISTS idx_devices_type ON devices(device_type);
+CREATE INDEX IF NOT EXISTS idx_devices_active ON devices(is_active, is_deleted);
 
 -- 添加表注释
 COMMENT ON TABLE devices IS '设备信息表';
@@ -70,9 +70,9 @@ CREATE TABLE IF NOT EXISTS wechat_accounts (
 );
 
 -- 创建索引
-CREATE INDEX idx_wechat_accounts_wxid ON wechat_accounts(wxid);
-CREATE INDEX idx_wechat_accounts_mobile ON wechat_accounts(mobile_phone);
-CREATE INDEX idx_wechat_accounts_status ON wechat_accounts(account_status, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_wechat_accounts_wxid ON wechat_accounts(wxid);
+CREATE INDEX IF NOT EXISTS idx_wechat_accounts_mobile ON wechat_accounts(mobile_phone);
+CREATE INDEX IF NOT EXISTS idx_wechat_accounts_status ON wechat_accounts(account_status, is_deleted);
 
 -- 添加表注释
 COMMENT ON TABLE wechat_accounts IS '微信账号信息表';
@@ -119,11 +119,11 @@ CREATE TABLE IF NOT EXISTS device_authorizations (
 );
 
 -- 创建索引
-CREATE INDEX idx_device_auth_device ON device_authorizations(device_id);
-CREATE INDEX idx_device_auth_account ON device_authorizations(account_id);
-CREATE INDEX idx_device_auth_token ON device_authorizations(access_token);
-CREATE INDEX idx_device_auth_status ON device_authorizations(auth_status, is_deleted);
-CREATE INDEX idx_device_auth_active ON device_authorizations(last_active_at);
+CREATE INDEX IF NOT EXISTS idx_device_auth_device ON device_authorizations(device_id);
+CREATE INDEX IF NOT EXISTS idx_device_auth_account ON device_authorizations(account_id);
+CREATE INDEX IF NOT EXISTS idx_device_auth_token ON device_authorizations(access_token);
+CREATE INDEX IF NOT EXISTS idx_device_auth_status ON device_authorizations(auth_status, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_device_auth_active ON device_authorizations(last_active_at);
 
 -- 添加表注释
 COMMENT ON TABLE device_authorizations IS '设备授权表';
@@ -166,10 +166,10 @@ CREATE TABLE IF NOT EXISTS account_status_logs (
 );
 
 -- 创建索引
-CREATE INDEX idx_status_logs_account ON account_status_logs(account_id);
-CREATE INDEX idx_status_logs_device ON account_status_logs(device_id);
-CREATE INDEX idx_status_logs_type ON account_status_logs(status_type);
-CREATE INDEX idx_status_logs_time ON account_status_logs(occurred_at);
+CREATE INDEX IF NOT EXISTS idx_status_logs_account ON account_status_logs(account_id);
+CREATE INDEX IF NOT EXISTS idx_status_logs_device ON account_status_logs(device_id);
+CREATE INDEX IF NOT EXISTS idx_status_logs_type ON account_status_logs(status_type);
+CREATE INDEX IF NOT EXISTS idx_status_logs_time ON account_status_logs(occurred_at);
 
 -- 添加表注释
 COMMENT ON TABLE account_status_logs IS '账号状态日志表';
@@ -201,8 +201,8 @@ CREATE TABLE IF NOT EXISTS device_version_logs (
 );
 
 -- 创建索引
-CREATE INDEX idx_version_logs_device ON device_version_logs(device_id);
-CREATE INDEX idx_version_logs_time ON device_version_logs(reported_at);
+CREATE INDEX IF NOT EXISTS idx_version_logs_device ON device_version_logs(device_id);
+CREATE INDEX IF NOT EXISTS idx_version_logs_time ON device_version_logs(reported_at);
 
 -- 添加表注释
 COMMENT ON TABLE device_version_logs IS '设备版本记录表';
@@ -235,8 +235,8 @@ CREATE TABLE IF NOT EXISTS server_redirects (
 );
 
 -- 创建索引
-CREATE INDEX idx_redirects_device ON server_redirects(device_id);
-CREATE INDEX idx_redirects_time ON server_redirects(redirected_at);
+CREATE INDEX IF NOT EXISTS idx_redirects_device ON server_redirects(device_id);
+CREATE INDEX IF NOT EXISTS idx_redirects_time ON server_redirects(redirected_at);
 
 -- 添加表注释
 COMMENT ON TABLE server_redirects IS '服务器重定向记录表';
@@ -268,9 +268,9 @@ CREATE TABLE IF NOT EXISTS device_heartbeats (
 );
 
 -- 创建索引
-CREATE INDEX idx_heartbeats_device ON device_heartbeats(device_id);
-CREATE INDEX idx_heartbeats_time ON device_heartbeats(heartbeat_at);
-CREATE INDEX idx_heartbeats_device_time ON device_heartbeats(device_id, heartbeat_at DESC);
+CREATE INDEX IF NOT EXISTS idx_heartbeats_device ON device_heartbeats(device_id);
+CREATE INDEX IF NOT EXISTS idx_heartbeats_time ON device_heartbeats(heartbeat_at);
+CREATE INDEX IF NOT EXISTS idx_heartbeats_device_time ON device_heartbeats(device_id, heartbeat_at DESC);
 
 -- 添加表注释
 COMMENT ON TABLE device_heartbeats IS '设备心跳记录表';
@@ -280,33 +280,6 @@ COMMENT ON COLUMN device_heartbeats.client_ip IS '客户端IP';
 COMMENT ON COLUMN device_heartbeats.heartbeat_at IS '心跳时间';
 COMMENT ON COLUMN device_heartbeats.created_at IS '创建时间';
 
--- =====================================================
--- 创建更新时间触发器函数
--- =====================================================
-
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
--- 为需要自动更新updated_at的表创建触发器
-CREATE TRIGGER trigger_devices_updated_at
-    BEFORE UPDATE ON devices
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER trigger_wechat_accounts_updated_at
-    BEFORE UPDATE ON wechat_accounts
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER trigger_device_authorizations_updated_at
-    BEFORE UPDATE ON device_authorizations
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
 -- 初始化数据（可选）

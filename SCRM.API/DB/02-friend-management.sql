@@ -34,13 +34,13 @@ CREATE TABLE IF NOT EXISTS contacts (
 );
 
 -- 创建索引
-CREATE INDEX idx_contacts_account ON contacts(account_id);
-CREATE INDEX idx_contacts_friend_account ON contacts(friend_account_id);
-CREATE INDEX idx_contacts_wxid ON contacts(friend_wxid);
-CREATE INDEX idx_contacts_type ON contacts(contact_type, is_deleted);
-CREATE INDEX idx_contacts_star ON contacts(is_star);
-CREATE INDEX idx_contacts_blocked ON contacts(is_blocked);
-CREATE INDEX idx_contacts_added_at ON contacts(added_at);
+CREATE INDEX IF NOT EXISTS idx_contacts_account ON contacts(account_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_friend_account ON contacts(friend_account_id);
+CREATE INDEX IF NOT EXISTS idx_contacts_wxid ON contacts(friend_wxid);
+CREATE INDEX IF NOT EXISTS idx_contacts_type ON contacts(contact_type, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_contacts_star ON contacts(is_star);
+CREATE INDEX IF NOT EXISTS idx_contacts_blocked ON contacts(is_blocked);
+CREATE INDEX IF NOT EXISTS idx_contacts_added_at ON contacts(added_at);
 
 -- 添加表注释
 COMMENT ON TABLE contacts IS '联系人表（好友关系表）';
@@ -87,9 +87,9 @@ CREATE TABLE IF NOT EXISTS contact_tags (
 );
 
 -- 创建索引
-CREATE INDEX idx_tags_account ON contact_tags(account_id);
-CREATE INDEX idx_tags_name ON contact_tags(tag_name);
-CREATE INDEX idx_tags_deleted ON contact_tags(is_deleted);
+CREATE INDEX IF NOT EXISTS idx_tags_account ON contact_tags(account_id);
+CREATE INDEX IF NOT EXISTS idx_tags_name ON contact_tags(tag_name);
+CREATE INDEX IF NOT EXISTS idx_tags_deleted ON contact_tags(is_deleted);
 
 -- 添加表注释
 COMMENT ON TABLE contact_tags IS '联系人标签表';
@@ -122,9 +122,9 @@ CREATE TABLE IF NOT EXISTS contact_tag_relations (
 );
 
 -- 创建索引
-CREATE INDEX idx_tag_rel_contact ON contact_tag_relations(contact_id);
-CREATE INDEX idx_tag_rel_tag ON contact_tag_relations(tag_id);
-CREATE INDEX idx_tag_rel_time ON contact_tag_relations(tagged_at);
+CREATE INDEX IF NOT EXISTS idx_tag_rel_contact ON contact_tag_relations(contact_id);
+CREATE INDEX IF NOT EXISTS idx_tag_rel_tag ON contact_tag_relations(tag_id);
+CREATE INDEX IF NOT EXISTS idx_tag_rel_time ON contact_tag_relations(tagged_at);
 
 -- 添加表注释
 COMMENT ON TABLE contact_tag_relations IS '联系人标签关系表';
@@ -158,12 +158,12 @@ CREATE TABLE IF NOT EXISTS friend_requests (
 );
 
 -- 创建索引
-CREATE INDEX idx_friend_req_account ON friend_requests(account_id);
-CREATE INDEX idx_friend_req_target_wxid ON friend_requests(target_wxid);
-CREATE INDEX idx_friend_req_target_account ON friend_requests(target_account_id);
-CREATE INDEX idx_friend_req_status ON friend_requests(request_status);
-CREATE INDEX idx_friend_req_time ON friend_requests(requested_at);
-CREATE INDEX idx_friend_req_processed ON friend_requests(processed_at);
+CREATE INDEX IF NOT EXISTS idx_friend_req_account ON friend_requests(account_id);
+CREATE INDEX IF NOT EXISTS idx_friend_req_target_wxid ON friend_requests(target_wxid);
+CREATE INDEX IF NOT EXISTS idx_friend_req_target_account ON friend_requests(target_account_id);
+CREATE INDEX IF NOT EXISTS idx_friend_req_status ON friend_requests(request_status);
+CREATE INDEX IF NOT EXISTS idx_friend_req_time ON friend_requests(requested_at);
+CREATE INDEX IF NOT EXISTS idx_friend_req_processed ON friend_requests(processed_at);
 
 -- 添加表注释
 COMMENT ON TABLE friend_requests IS '加好友请求表';
@@ -203,10 +203,10 @@ CREATE TABLE IF NOT EXISTS contact_change_logs (
 );
 
 -- 创建索引
-CREATE INDEX idx_contact_log_contact ON contact_change_logs(contact_id);
-CREATE INDEX idx_contact_log_account ON contact_change_logs(account_id);
-CREATE INDEX idx_contact_log_type ON contact_change_logs(change_type);
-CREATE INDEX idx_contact_log_time ON contact_change_logs(changed_at);
+CREATE INDEX IF NOT EXISTS idx_contact_log_contact ON contact_change_logs(contact_id);
+CREATE INDEX IF NOT EXISTS idx_contact_log_account ON contact_change_logs(account_id);
+CREATE INDEX IF NOT EXISTS idx_contact_log_type ON contact_change_logs(change_type);
+CREATE INDEX IF NOT EXISTS idx_contact_log_time ON contact_change_logs(changed_at);
 
 -- 添加表注释
 COMMENT ON TABLE contact_change_logs IS '联系人变更日志表';
@@ -244,9 +244,9 @@ CREATE TABLE IF NOT EXISTS contact_groups (
 );
 
 -- 创建索引
-CREATE INDEX idx_groups_account ON contact_groups(account_id);
-CREATE INDEX idx_groups_parent ON contact_groups(parent_group_id);
-CREATE INDEX idx_groups_deleted ON contact_groups(is_deleted);
+CREATE INDEX IF NOT EXISTS idx_groups_account ON contact_groups(account_id);
+CREATE INDEX IF NOT EXISTS idx_groups_parent ON contact_groups(parent_group_id);
+CREATE INDEX IF NOT EXISTS idx_groups_deleted ON contact_groups(is_deleted);
 
 -- 添加表注释
 COMMENT ON TABLE contact_groups IS '联系人分组表';
@@ -278,9 +278,9 @@ CREATE TABLE IF NOT EXISTS contact_group_relations (
 );
 
 -- 创建索引
-CREATE INDEX idx_group_rel_contact ON contact_group_relations(contact_id);
-CREATE INDEX idx_group_rel_group ON contact_group_relations(group_id);
-CREATE INDEX idx_group_rel_time ON contact_group_relations(grouped_at);
+CREATE INDEX IF NOT EXISTS idx_group_rel_contact ON contact_group_relations(contact_id);
+CREATE INDEX IF NOT EXISTS idx_group_rel_group ON contact_group_relations(group_id);
+CREATE INDEX IF NOT EXISTS idx_group_rel_time ON contact_group_relations(grouped_at);
 
 -- 添加表注释
 COMMENT ON TABLE contact_group_relations IS '联系人分组关系表';
@@ -310,10 +310,10 @@ CREATE TABLE IF NOT EXISTS friend_detection_logs (
 );
 
 -- 创建索引
-CREATE INDEX idx_detection_account ON friend_detection_logs(account_id);
-CREATE INDEX idx_detection_contact ON friend_detection_logs(contact_id);
-CREATE INDEX idx_detection_result ON friend_detection_logs(detection_result);
-CREATE INDEX idx_detection_time ON friend_detection_logs(detected_at);
+CREATE INDEX IF NOT EXISTS idx_detection_account ON friend_detection_logs(account_id);
+CREATE INDEX IF NOT EXISTS idx_detection_contact ON friend_detection_logs(contact_id);
+CREATE INDEX IF NOT EXISTS idx_detection_result ON friend_detection_logs(detection_result);
+CREATE INDEX IF NOT EXISTS idx_detection_time ON friend_detection_logs(detected_at);
 
 -- 添加表注释
 COMMENT ON TABLE friend_detection_logs IS '好友检测记录表';
@@ -327,30 +327,6 @@ COMMENT ON COLUMN friend_detection_logs.error_message IS '错误信息';
 COMMENT ON COLUMN friend_detection_logs.detected_at IS '检测时间';
 COMMENT ON COLUMN friend_detection_logs.created_at IS '创建时间';
 
--- =====================================================
--- 创建更新时间触发器（复用已有函数）
--- =====================================================
-
--- 为需要自动更新updated_at的表创建触发器
-CREATE TRIGGER trigger_contacts_updated_at
-    BEFORE UPDATE ON contacts
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER trigger_contact_tags_updated_at
-    BEFORE UPDATE ON contact_tags
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER trigger_friend_requests_updated_at
-    BEFORE UPDATE ON friend_requests
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER trigger_contact_groups_updated_at
-    BEFORE UPDATE ON contact_groups
-    FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
 
 -- =====================================================
 -- 初始化数据（可选）
