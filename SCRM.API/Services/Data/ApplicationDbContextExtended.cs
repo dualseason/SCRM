@@ -124,6 +124,27 @@ namespace SCRM.Services.Data
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
+            // 配置 RolePermission - 确保主键配置正确
+            modelBuilder.Entity<SCRM.API.Models.Entities.RolePermission>(entity =>
+            {
+                entity.ToTable("role_permissions");
+                entity.HasKey(e => e.RolePermId);
+                entity.HasIndex(e => new { e.RoleId, e.PermissionId }).IsUnique();
+                entity.Property(e => e.GrantedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // 配置外键关系
+                entity.HasOne(e => e.Role)
+                      .WithMany(r => r.RolePermissions)
+                      .HasForeignKey(e => e.RoleId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Permission)
+                      .WithMany(p => p.RolePermissions)
+                      .HasForeignKey(e => e.PermissionId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
             // 注意：需要为其他所有Entity添加类似的配置
             // 可以使用反射自动化这个过程
         }
