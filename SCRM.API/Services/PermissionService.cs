@@ -83,12 +83,12 @@ namespace SCRM.Services
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
 
                 var permissions = await _context.UserRoles
-                    .Where(ur => ur.UserId == userId && ur.User.IsActive)
+                    .Where(ur => ur.AccountId == userId && !ur.Account.IsDeleted)
                     .Include(ur => ur.Role)
-                    .Where(ur => ur.Role.IsActive)
+                    .Where(ur => !ur.Role.IsDeleted)
                     .SelectMany(ur => ur.Role.RolePermissions)
                     .Include(rp => rp.Permission)
-                    .Where(rp => rp.Permission.IsActive)
+                    .Where(rp => !rp.Permission.IsDeleted)
                     .Select(rp => rp.Permission.Code)
                     .Distinct()
                     .ToListAsync();
@@ -110,9 +110,9 @@ namespace SCRM.Services
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
 
                 var roles = await _context.UserRoles
-                    .Where(ur => ur.UserId == userId && ur.User.IsActive)
+                    .Where(ur => ur.AccountId == userId && !ur.Account.IsDeleted)
                     .Include(ur => ur.Role)
-                    .Where(ur => ur.Role.IsActive)
+                    .Where(ur => !ur.Role.IsDeleted)
                     .Select(ur => ur.Role.Name)
                     .ToListAsync();
 
@@ -130,7 +130,7 @@ namespace SCRM.Services
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
 
                 var permissions = await _context.Permissions
-                    .Where(p => p.IsActive)
+                    .Where(p => !p.IsDeleted)
                     .OrderBy(p => p.Module)
                     .ThenBy(p => p.SortOrder)
                     .ToListAsync();
@@ -149,7 +149,7 @@ namespace SCRM.Services
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
 
                 var roles = await _context.Roles
-                    .Where(r => r.IsActive)
+                    .Where(r => !r.IsDeleted)
                     .Include(r => r.RolePermissions)
                     .ThenInclude(rp => rp.Permission)
                     .OrderBy(r => r.Name)
@@ -172,14 +172,14 @@ namespace SCRM.Services
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
 
                 var user = await _context.WechatAccounts
-                    .Where(u => u.AccountId == userId && u.IsActive)
+                    .Where(u => u.AccountId == userId && !u.IsDeleted)
                     .Select(u => new UserDto
                     {
-                        Id = (int)u.AccountId,
+                        Id = u.AccountId,
                         UserName = u.Wxid,
-                        Email = (string)null,
+                        Email = null,
                         FirstName = u.Nickname,
-                        LastName = (string)null
+                        LastName = null
                     })
                     .FirstOrDefaultAsync();
 

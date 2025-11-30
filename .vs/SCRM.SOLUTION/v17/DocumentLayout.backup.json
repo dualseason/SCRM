@@ -1,7 +1,16 @@
 {
   "Version": 1,
   "WorkspaceRootPath": "D:\\Code\\SCRM.SOLUTION\\",
-  "Documents": [],
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|d:\\code\\scrm.solution\\scrm.api\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|d:\\code\\scrm.solution\\scrm.api\\services\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
   "DocumentGroupContainers": [
     {
       "Orientation": 0,
@@ -9,11 +18,37 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": -1,
+          "SelectedChildIndex": 2,
           "Children": [
             {
               "$type": "Bookmark",
               "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "ApplicationDbContext.cs",
+              "DocumentMoniker": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "ToolTip": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAuwAsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-30T07:04:05.434Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "ToolTip": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "RelativeToolTip": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "ViewState": "AgIAACQAAAAAAAAAAAAkwEIAAAAIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-30T05:37:30.442Z",
+              "EditorCaption": ""
             }
           ]
         }

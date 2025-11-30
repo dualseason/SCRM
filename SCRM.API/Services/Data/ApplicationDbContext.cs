@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
-using SCRM.Models.Identity;
 
 namespace SCRM.Services.Data
 {
@@ -11,12 +10,12 @@ namespace SCRM.Services.Data
         }
 
         // ==================== 身份验证和授权实体集合 ====================
-        public DbSet<SCRM.Models.Identity.User> Users { get; set; }
+        public DbSet<User> Users { get; set; }
         public DbSet<WechatAccount> WechatAccounts { get; set; }
-        public DbSet<SCRM.API.Models.Entities.Role> Roles { get; set; }
-        public DbSet<SCRM.API.Models.Entities.Permission> Permissions { get; set; }
-        public DbSet<SCRM.API.Models.Entities.UserRole> UserRoles { get; set; }
-        public DbSet<SCRM.API.Models.Entities.RolePermission> RolePermissions { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
 
         // ==================== 一、设备与账号管理 ====================
         public DbSet<Device> Devices { get; set; }
@@ -95,32 +94,43 @@ namespace SCRM.Services.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // 配置 User 实体
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.ToTable("users");
+                entity.HasKey(e => e.UserId);
+                entity.HasIndex(e => e.UserName).IsUnique();
+                entity.HasIndex(e => e.Email).IsUnique();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
             // 配置 Role 实体
-            modelBuilder.Entity<SCRM.API.Models.Entities.Role>(entity =>
+            modelBuilder.Entity<Role>(entity =>
             {
                 entity.ToTable("roles");
                 entity.HasKey(e => e.RoleId);
-                entity.HasIndex(e => e.RoleName).IsUnique();
+                entity.HasIndex(e => e.RoleName);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             // 配置 Permission 实体
-            modelBuilder.Entity<SCRM.API.Models.Entities.Permission>(entity =>
+            modelBuilder.Entity<Permission>(entity =>
             {
                 entity.ToTable("permissions");
                 entity.HasKey(e => e.PermissionId);
-                entity.HasIndex(e => e.PermissionCode).IsUnique();
+                entity.HasIndex(e => e.PermissionCode);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             // 配置 UserRole 关系
-            modelBuilder.Entity<SCRM.API.Models.Entities.UserRole>(entity =>
+            modelBuilder.Entity<UserRole>(entity =>
             {
                 entity.ToTable("user_roles");
                 entity.HasKey(e => e.UserRoleId);
-                entity.HasIndex(e => new { e.AccountId, e.RoleId }).IsUnique();
+                entity.HasIndex(e => new { e.AccountId, e.RoleId });
                 entity.Property(e => e.AssignedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -142,11 +152,11 @@ namespace SCRM.Services.Data
             });
 
             // 配置 RolePermission 关系
-            modelBuilder.Entity<SCRM.API.Models.Entities.RolePermission>(entity =>
+            modelBuilder.Entity<RolePermission>(entity =>
             {
                 entity.ToTable("role_permissions");
                 entity.HasKey(e => e.RolePermId);
-                entity.HasIndex(e => new { e.RoleId, e.PermissionId }).IsUnique();
+                entity.HasIndex(e => new { e.RoleId, e.PermissionId });
                 entity.Property(e => e.GrantedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
@@ -180,6 +190,16 @@ namespace SCRM.Services.Data
                 entity.ToTable("devices");
                 entity.HasKey(e => e.DeviceId);
                 entity.HasIndex(e => e.IsDeleted);
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            // 配置 AppVersion
+            modelBuilder.Entity<AppVersion>(entity =>
+            {
+                entity.ToTable("app_versions");
+                entity.HasKey(e => e.VersionId);
+                entity.HasIndex(e => new { e.Platform, e.VersionNumber }).IsUnique();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });

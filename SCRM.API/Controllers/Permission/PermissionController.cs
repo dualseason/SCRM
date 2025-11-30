@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SCRM.Models.Constants;
 using SCRM.Services.Data;
-using SCRM.Models.Identity;
+using SCRM.API.Models.Entities;
 using SCRM.Services;
 using System.Collections.Generic;
 using System.Linq;

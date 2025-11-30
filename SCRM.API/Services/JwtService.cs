@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using SCRM.Models.Configurations;
 using SCRM.Services.Data;
-using SCRM.Models.Identity;
+using SCRM.API.Models.Entities;
 using SCRM.Services;
 using System;
 using System.Collections.Generic;
@@ -184,26 +184,26 @@ namespace SCRM.Services
             };
         }
 
-        private async Task<List<string>> GetUserRolesAsync(int userId)
+        private async Task<List<string>> GetUserRolesAsync(long userId)
         {
             return await _context.UserRoles
-                .Where(ur => ur.UserId == userId)
+                .Where(ur => ur.AccountId == userId)
                 .Include(ur => ur.Role)
-                .Where(ur => ur.Role.IsActive)
+                .Where(ur => !ur.Role.IsDeleted)
                 .Select(ur => ur.Role.Name)
                 .ToListAsync();
         }
 
-        private async Task<List<string>> GetUserPermissionsAsync(int userId)
+        private async Task<List<string>> GetUserPermissionsAsync(long userId)
         {
             return await _context.UserRoles
-                .Where(ur => ur.UserId == userId)
+                .Where(ur => ur.AccountId == userId)
                 .Include(ur => ur.Role)
                 .ThenInclude(r => r.RolePermissions)
                 .ThenInclude(rp => rp.Permission)
-                .Where(ur => ur.Role.IsActive)
+                .Where(ur => !ur.Role.IsDeleted)
                 .SelectMany(ur => ur.Role.RolePermissions)
-                .Where(rp => rp.Permission.IsActive)
+                .Where(rp => !rp.Permission.IsDeleted)
                 .Select(rp => rp.Permission.Code)
                 .Distinct()
                 .ToListAsync();

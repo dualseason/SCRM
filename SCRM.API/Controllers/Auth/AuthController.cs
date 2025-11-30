@@ -76,7 +76,7 @@ namespace SCRM.Controllers.Auth
                     return BadRequest(new { Message = "用户ID和刷新令牌不能为空" });
                 }
 
-                if (!int.TryParse(request.UserId, out var userId))
+                if (!long.TryParse(request.UserId, out var userId))
                 {
                     return BadRequest(new { Message = "无效的用户ID" });
                 }

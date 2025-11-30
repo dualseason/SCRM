@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SCRM.API.Models.Entities;
@@ -11,6 +12,7 @@ public class UserRole
     /// <summary>
     /// 用户角色ID
     /// </summary>
+    [Key]
     public long UserRoleId { get; set; }
 
     /// <summary>

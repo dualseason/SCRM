@@ -1,13 +1,18 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
 /// 应用版本表
 /// </summary>
+[Table("app_versions")]
 public class AppVersion
 {
     /// <summary>
     /// 版本ID
     /// </summary>
+    [Key]
     public long VersionId { get; set; }
 
     /// <summary>

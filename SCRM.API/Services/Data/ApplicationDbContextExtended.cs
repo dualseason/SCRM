@@ -1,6 +1,5 @@
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
-using SCRM.Models.Identity;
 
 namespace SCRM.Services.Data
 {
@@ -15,11 +14,11 @@ namespace SCRM.Services.Data
         }
 
         // ==================== 既有实体集合 ====================
-        public DbSet<SCRM.Models.Identity.User> IdentityUsers { get; set; }
-        public DbSet<SCRM.API.Models.Entities.Role> Roles { get; set; }
-        public DbSet<SCRM.API.Models.Entities.Permission> Permissions { get; set; }
-        public DbSet<SCRM.API.Models.Entities.UserRole> UserRoles { get; set; }
-        public DbSet<SCRM.API.Models.Entities.RolePermission> RolePermissions { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<Permission> Permissions { get; set; }
+        public DbSet<UserRole> UserRoles { get; set; }
+        public DbSet<RolePermission> RolePermissions { get; set; }
 
         // ==================== 一、设备与账号管理 ====================
         public DbSet<Device> Devices { get; set; }
@@ -125,7 +124,7 @@ namespace SCRM.Services.Data
             });
 
             // 配置 RolePermission - 确保主键配置正确
-            modelBuilder.Entity<SCRM.API.Models.Entities.RolePermission>(entity =>
+            modelBuilder.Entity<RolePermission>(entity =>
             {
                 entity.ToTable("role_permissions");
                 entity.HasKey(e => e.RolePermId);
