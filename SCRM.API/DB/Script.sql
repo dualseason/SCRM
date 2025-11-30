@@ -13,9 +13,45 @@ CREATE SEQUENCE account_status_logs_log_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE account_status_logs_log_id_seq1;
+
+CREATE SEQUENCE account_status_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE app_versions_version_id_seq;
+
+CREATE SEQUENCE app_versions_version_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE app_versions_version_id_seq1;
+
+CREATE SEQUENCE app_versions_version_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE contact_change_logs_log_id_seq;
 
 CREATE SEQUENCE contact_change_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE contact_change_logs_log_id_seq1;
+
+CREATE SEQUENCE contact_change_logs_log_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -31,9 +67,27 @@ CREATE SEQUENCE contact_group_relations_relation_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE contact_group_relations_relation_id_seq1;
+
+CREATE SEQUENCE contact_group_relations_relation_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE contact_groups_group_id_seq;
 
 CREATE SEQUENCE contact_groups_group_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE contact_groups_group_id_seq1;
+
+CREATE SEQUENCE contact_groups_group_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -49,9 +103,27 @@ CREATE SEQUENCE contact_tag_relations_relation_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE contact_tag_relations_relation_id_seq1;
+
+CREATE SEQUENCE contact_tag_relations_relation_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE contact_tags_tag_id_seq;
 
 CREATE SEQUENCE contact_tags_tag_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE contact_tags_tag_id_seq1;
+
+CREATE SEQUENCE contact_tags_tag_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -67,9 +139,63 @@ CREATE SEQUENCE contacts_contact_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE contacts_contact_id_seq1;
+
+CREATE SEQUENCE contacts_contact_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE conversations_conversation_id_seq;
+
+CREATE SEQUENCE conversations_conversation_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE conversations_conversation_id_seq1;
+
+CREATE SEQUENCE conversations_conversation_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE device_authorizations_auth_id_seq;
 
 CREATE SEQUENCE device_authorizations_auth_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE device_authorizations_auth_id_seq1;
+
+CREATE SEQUENCE device_authorizations_auth_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE device_commands_command_id_seq;
+
+CREATE SEQUENCE device_commands_command_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE device_commands_command_id_seq1;
+
+CREATE SEQUENCE device_commands_command_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -85,9 +211,63 @@ CREATE SEQUENCE device_heartbeats_heartbeat_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE device_heartbeats_heartbeat_id_seq1;
+
+CREATE SEQUENCE device_heartbeats_heartbeat_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE device_locations_location_id_seq;
+
+CREATE SEQUENCE device_locations_location_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE device_locations_location_id_seq1;
+
+CREATE SEQUENCE device_locations_location_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE device_status_logs_log_id_seq;
+
+CREATE SEQUENCE device_status_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE device_status_logs_log_id_seq1;
+
+CREATE SEQUENCE device_status_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE device_version_logs_log_id_seq;
 
 CREATE SEQUENCE device_version_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE device_version_logs_log_id_seq1;
+
+CREATE SEQUENCE device_version_logs_log_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -103,9 +283,27 @@ CREATE SEQUENCE devices_device_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE devices_device_id_seq1;
+
+CREATE SEQUENCE devices_device_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE friend_detection_logs_log_id_seq;
 
 CREATE SEQUENCE friend_detection_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE friend_detection_logs_log_id_seq1;
+
+CREATE SEQUENCE friend_detection_logs_log_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -121,9 +319,27 @@ CREATE SEQUENCE friend_requests_request_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE friend_requests_request_id_seq1;
+
+CREATE SEQUENCE friend_requests_request_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE group_announcements_announcement_id_seq;
 
 CREATE SEQUENCE group_announcements_announcement_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE group_announcements_announcement_id_seq1;
+
+CREATE SEQUENCE group_announcements_announcement_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -139,9 +355,27 @@ CREATE SEQUENCE group_change_logs_log_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE group_change_logs_log_id_seq1;
+
+CREATE SEQUENCE group_change_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE group_invitations_invitation_id_seq;
 
 CREATE SEQUENCE group_invitations_invitation_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE group_invitations_invitation_id_seq1;
+
+CREATE SEQUENCE group_invitations_invitation_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -157,9 +391,27 @@ CREATE SEQUENCE group_members_member_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE group_members_member_id_seq1;
+
+CREATE SEQUENCE group_members_member_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE group_message_sync_logs_log_id_seq;
 
 CREATE SEQUENCE group_message_sync_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE group_message_sync_logs_log_id_seq1;
+
+CREATE SEQUENCE group_message_sync_logs_log_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -175,9 +427,27 @@ CREATE SEQUENCE group_qrcodes_qrcode_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE group_qrcodes_qrcode_id_seq1;
+
+CREATE SEQUENCE group_qrcodes_qrcode_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE groups_group_id_seq;
 
 CREATE SEQUENCE groups_group_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE groups_group_id_seq1;
+
+CREATE SEQUENCE groups_group_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -193,9 +463,27 @@ CREATE SEQUENCE mass_message_details_detail_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE mass_message_details_detail_id_seq1;
+
+CREATE SEQUENCE mass_message_details_detail_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE mass_messages_mass_id_seq;
 
 CREATE SEQUENCE mass_messages_mass_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE mass_messages_mass_id_seq1;
+
+CREATE SEQUENCE mass_messages_mass_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -211,9 +499,27 @@ CREATE SEQUENCE message_extensions_extension_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE message_extensions_extension_id_seq1;
+
+CREATE SEQUENCE message_extensions_extension_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE message_forward_details_detail_id_seq;
 
 CREATE SEQUENCE message_forward_details_detail_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE message_forward_details_detail_id_seq1;
+
+CREATE SEQUENCE message_forward_details_detail_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -229,9 +535,27 @@ CREATE SEQUENCE message_forwards_forward_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE message_forwards_forward_id_seq1;
+
+CREATE SEQUENCE message_forwards_forward_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE message_media_media_id_seq;
 
 CREATE SEQUENCE message_media_media_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE message_media_media_id_seq1;
+
+CREATE SEQUENCE message_media_media_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -247,9 +571,27 @@ CREATE SEQUENCE message_revocations_revocation_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE message_revocations_revocation_id_seq1;
+
+CREATE SEQUENCE message_revocations_revocation_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE message_sync_logs_log_id_seq;
 
 CREATE SEQUENCE message_sync_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE message_sync_logs_log_id_seq1;
+
+CREATE SEQUENCE message_sync_logs_log_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -265,9 +607,387 @@ CREATE SEQUENCE messages_message_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE messages_message_id_seq1;
+
+CREATE SEQUENCE messages_message_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_access_logs_log_id_seq;
+
+CREATE SEQUENCE miniprogram_access_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_access_logs_log_id_seq1;
+
+CREATE SEQUENCE miniprogram_access_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_accounts_account_id_seq;
+
+CREATE SEQUENCE miniprogram_accounts_account_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_accounts_account_id_seq1;
+
+CREATE SEQUENCE miniprogram_accounts_account_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_follow_logs_log_id_seq;
+
+CREATE SEQUENCE miniprogram_follow_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_follow_logs_log_id_seq1;
+
+CREATE SEQUENCE miniprogram_follow_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_messages_message_id_seq;
+
+CREATE SEQUENCE miniprogram_messages_message_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_messages_message_id_seq1;
+
+CREATE SEQUENCE miniprogram_messages_message_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_search_logs_log_id_seq;
+
+CREATE SEQUENCE miniprogram_search_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE miniprogram_search_logs_log_id_seq1;
+
+CREATE SEQUENCE miniprogram_search_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE moments_comments_comment_id_seq;
+
+CREATE SEQUENCE moments_comments_comment_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE moments_comments_comment_id_seq1;
+
+CREATE SEQUENCE moments_comments_comment_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE moments_likes_like_id_seq;
+
+CREATE SEQUENCE moments_likes_like_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE moments_likes_like_id_seq1;
+
+CREATE SEQUENCE moments_likes_like_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE moments_posts_post_id_seq;
+
+CREATE SEQUENCE moments_posts_post_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE moments_posts_post_id_seq1;
+
+CREATE SEQUENCE moments_posts_post_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_account_follow_logs_log_id_seq;
+
+CREATE SEQUENCE official_account_follow_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_account_follow_logs_log_id_seq1;
+
+CREATE SEQUENCE official_account_follow_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_account_messages_message_id_seq;
+
+CREATE SEQUENCE official_account_messages_message_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_account_messages_message_id_seq1;
+
+CREATE SEQUENCE official_account_messages_message_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_account_search_logs_log_id_seq;
+
+CREATE SEQUENCE official_account_search_logs_log_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_account_search_logs_log_id_seq1;
+
+CREATE SEQUENCE official_account_search_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_account_subscriptions_subscription_id_seq;
+
+CREATE SEQUENCE official_account_subscriptions_subscription_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_account_subscriptions_subscription_id_seq1;
+
+CREATE SEQUENCE official_account_subscriptions_subscription_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_accounts_account_id_seq;
+
+CREATE SEQUENCE official_accounts_account_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE official_accounts_account_id_seq1;
+
+CREATE SEQUENCE official_accounts_account_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE permissions_permission_id_seq;
+
+CREATE SEQUENCE permissions_permission_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE permissions_permission_id_seq1;
+
+CREATE SEQUENCE permissions_permission_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE red_packet_records_record_id_seq;
+
+CREATE SEQUENCE red_packet_records_record_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE red_packet_records_record_id_seq1;
+
+CREATE SEQUENCE red_packet_records_record_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE red_packets_packet_id_seq;
+
+CREATE SEQUENCE red_packets_packet_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE red_packets_packet_id_seq1;
+
+CREATE SEQUENCE red_packets_packet_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE role_permissions_role_perm_id_seq;
+
+CREATE SEQUENCE role_permissions_role_perm_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE role_permissions_role_perm_id_seq1;
+
+CREATE SEQUENCE role_permissions_role_perm_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE roles_role_id_seq;
+
+CREATE SEQUENCE roles_role_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE roles_role_id_seq1;
+
+CREATE SEQUENCE roles_role_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE server_redirects_redirect_id_seq;
 
 CREATE SEQUENCE server_redirects_redirect_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE server_redirects_redirect_id_seq1;
+
+CREATE SEQUENCE server_redirects_redirect_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE system_notifications_notification_id_seq;
+
+CREATE SEQUENCE system_notifications_notification_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE system_notifications_notification_id_seq1;
+
+CREATE SEQUENCE system_notifications_notification_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE user_roles_user_role_id_seq;
+
+CREATE SEQUENCE user_roles_user_role_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE user_roles_user_role_id_seq1;
+
+CREATE SEQUENCE user_roles_user_role_id_seq1
 	INCREMENT BY 1
 	MINVALUE 1
 	MAXVALUE 9223372036854775807
@@ -283,6 +1003,33 @@ CREATE SEQUENCE voice_to_text_logs_log_id_seq
 	START 1
 	CACHE 1
 	NO CYCLE;
+-- DROP SEQUENCE voice_to_text_logs_log_id_seq1;
+
+CREATE SEQUENCE voice_to_text_logs_log_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE wallet_transactions_transaction_id_seq;
+
+CREATE SEQUENCE wallet_transactions_transaction_id_seq
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
+-- DROP SEQUENCE wallet_transactions_transaction_id_seq1;
+
+CREATE SEQUENCE wallet_transactions_transaction_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;
 -- DROP SEQUENCE wechat_accounts_account_id_seq;
 
 CREATE SEQUENCE wechat_accounts_account_id_seq
@@ -291,7 +1038,72 @@ CREATE SEQUENCE wechat_accounts_account_id_seq
 	MAXVALUE 9223372036854775807
 	START 1
 	CACHE 1
-	NO CYCLE;-- public.devices definition
+	NO CYCLE;
+-- DROP SEQUENCE wechat_accounts_account_id_seq1;
+
+CREATE SEQUENCE wechat_accounts_account_id_seq1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 9223372036854775807
+	START 1
+	CACHE 1
+	NO CYCLE;-- public.app_versions definition
+
+-- Drop table
+
+-- DROP TABLE app_versions;
+
+CREATE TABLE app_versions (
+	version_id bigserial NOT NULL,
+	version_number varchar(50) NOT NULL, -- 版本号（如1.0.0）
+	version_name varchar(255) NULL, -- 版本名称
+	version_type int2 DEFAULT 1 NULL, -- 版本类型：1-稳定版 2-测试版 3-beta版 4-灰度版
+	platform varchar(50) NOT NULL, -- 平台：Android/iOS/Windows/MacOS/Web
+	download_url varchar(1000) NOT NULL, -- 下载地址
+	release_notes text NULL, -- 更新说明
+	file_size int8 NULL, -- 文件大小（字节）
+	file_hash varchar(128) NULL, -- 文件哈希值
+	min_sdk_version varchar(20) NULL, -- 最低SDK版本
+	min_os_version varchar(50) NULL, -- 最低操作系统版本
+	forced_update bool DEFAULT false NULL, -- 是否强制更新
+	is_released bool DEFAULT false NULL, -- 是否已发布
+	is_deprecated bool DEFAULT false NULL, -- 是否已废弃
+	download_count int8 DEFAULT 0 NULL, -- 下载次数
+	released_at timestamp NULL, -- 发布时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT app_versions_pkey PRIMARY KEY (version_id),
+	CONSTRAINT uk_app_version UNIQUE (platform, version_number)
+);
+CREATE INDEX idx_app_versions_forced ON public.app_versions USING btree (forced_update);
+CREATE INDEX idx_app_versions_platform ON public.app_versions USING btree (platform);
+CREATE INDEX idx_app_versions_released ON public.app_versions USING btree (is_released);
+CREATE INDEX idx_app_versions_time ON public.app_versions USING btree (released_at);
+CREATE INDEX idx_app_versions_type ON public.app_versions USING btree (version_type);
+COMMENT ON TABLE public.app_versions IS '应用版本表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.app_versions.version_number IS '版本号（如1.0.0）';
+COMMENT ON COLUMN public.app_versions.version_name IS '版本名称';
+COMMENT ON COLUMN public.app_versions.version_type IS '版本类型：1-稳定版 2-测试版 3-beta版 4-灰度版';
+COMMENT ON COLUMN public.app_versions.platform IS '平台：Android/iOS/Windows/MacOS/Web';
+COMMENT ON COLUMN public.app_versions.download_url IS '下载地址';
+COMMENT ON COLUMN public.app_versions.release_notes IS '更新说明';
+COMMENT ON COLUMN public.app_versions.file_size IS '文件大小（字节）';
+COMMENT ON COLUMN public.app_versions.file_hash IS '文件哈希值';
+COMMENT ON COLUMN public.app_versions.min_sdk_version IS '最低SDK版本';
+COMMENT ON COLUMN public.app_versions.min_os_version IS '最低操作系统版本';
+COMMENT ON COLUMN public.app_versions.forced_update IS '是否强制更新';
+COMMENT ON COLUMN public.app_versions.is_released IS '是否已发布';
+COMMENT ON COLUMN public.app_versions.is_deprecated IS '是否已废弃';
+COMMENT ON COLUMN public.app_versions.download_count IS '下载次数';
+COMMENT ON COLUMN public.app_versions.released_at IS '发布时间';
+COMMENT ON COLUMN public.app_versions.created_at IS '创建时间';
+COMMENT ON COLUMN public.app_versions.updated_at IS '更新时间';
+
+
+-- public.devices definition
 
 -- Drop table
 
@@ -392,6 +1204,77 @@ COMMENT ON COLUMN public."groups".is_deleted IS '是否已删除';
 COMMENT ON COLUMN public."groups".created_at IS '创建时间';
 COMMENT ON COLUMN public."groups".updated_at IS '更新时间';
 COMMENT ON COLUMN public."groups".deleted_at IS '删除时间';
+
+
+-- public.permissions definition
+
+-- Drop table
+
+-- DROP TABLE permissions;
+
+CREATE TABLE permissions (
+	permission_id bigserial NOT NULL,
+	permission_name varchar(100) NOT NULL, -- 权限名称
+	permission_code varchar(100) NOT NULL, -- 权限编码
+	permission_type int2 NOT NULL, -- 权限类型：1-功能权限 2-数据权限 3-敏感权限
+	description varchar(500) NULL, -- 权限描述
+	is_sensitive bool DEFAULT false NULL, -- 是否敏感权限
+	is_system bool DEFAULT false NULL, -- 是否系统权限
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT permissions_pkey PRIMARY KEY (permission_id),
+	CONSTRAINT uk_permission_code UNIQUE (permission_code)
+);
+CREATE INDEX idx_permissions_sensitive ON public.permissions USING btree (is_sensitive);
+CREATE INDEX idx_permissions_system ON public.permissions USING btree (is_system);
+CREATE INDEX idx_permissions_type ON public.permissions USING btree (permission_type);
+COMMENT ON TABLE public.permissions IS '权限表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.permissions.permission_name IS '权限名称';
+COMMENT ON COLUMN public.permissions.permission_code IS '权限编码';
+COMMENT ON COLUMN public.permissions.permission_type IS '权限类型：1-功能权限 2-数据权限 3-敏感权限';
+COMMENT ON COLUMN public.permissions.description IS '权限描述';
+COMMENT ON COLUMN public.permissions.is_sensitive IS '是否敏感权限';
+COMMENT ON COLUMN public.permissions.is_system IS '是否系统权限';
+COMMENT ON COLUMN public.permissions.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.permissions.created_at IS '创建时间';
+COMMENT ON COLUMN public.permissions.updated_at IS '更新时间';
+
+
+-- public.roles definition
+
+-- Drop table
+
+-- DROP TABLE roles;
+
+CREATE TABLE roles (
+	role_id bigserial NOT NULL,
+	role_name varchar(50) NOT NULL, -- 角色名称
+	role_level int2 NOT NULL, -- 角色等级：1-平台级 2-BOSS级 3-组长级 4-单账户级 5-临时金主级 6-临时认证级
+	description varchar(500) NULL, -- 角色描述
+	is_system bool DEFAULT false NULL, -- 是否系统角色
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT roles_pkey PRIMARY KEY (role_id),
+	CONSTRAINT uk_role_name UNIQUE (role_name)
+);
+CREATE INDEX idx_roles_level ON public.roles USING btree (role_level);
+CREATE INDEX idx_roles_system ON public.roles USING btree (is_system);
+COMMENT ON TABLE public.roles IS '角色表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.roles.role_name IS '角色名称';
+COMMENT ON COLUMN public.roles.role_level IS '角色等级：1-平台级 2-BOSS级 3-组长级 4-单账户级 5-临时金主级 6-临时认证级';
+COMMENT ON COLUMN public.roles.description IS '角色描述';
+COMMENT ON COLUMN public.roles.is_system IS '是否系统角色';
+COMMENT ON COLUMN public.roles.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.roles.created_at IS '创建时间';
+COMMENT ON COLUMN public.roles.updated_at IS '更新时间';
 
 
 -- public.wechat_accounts definition
@@ -593,6 +1476,65 @@ COMMENT ON COLUMN public.contacts.created_at IS '创建时间';
 COMMENT ON COLUMN public.contacts.updated_at IS '更新时间';
 
 
+-- public.conversations definition
+
+-- Drop table
+
+-- DROP TABLE conversations;
+
+CREATE TABLE conversations (
+	conversation_id bigserial NOT NULL,
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	chat_partner_wxid varchar(100) NOT NULL, -- 聊天对方WXID
+	chat_partner_id int8 NULL, -- 聊天对方账号ID（如果是本系统用户）
+	chat_type int2 DEFAULT 1 NOT NULL, -- 聊天类型：1-单聊 2-群聊
+	conversation_name varchar(255) NULL, -- 会话名称/群名称
+	last_message_id int8 NULL, -- 最后一条消息ID
+	last_message_content text NULL, -- 最后消息内容预览
+	last_message_at timestamp NULL, -- 最后消息时间
+	unread_count int4 DEFAULT 0 NULL, -- 未读消息数
+	is_pinned bool DEFAULT false NULL, -- 是否置顶
+	is_muted bool DEFAULT false NULL, -- 是否静音
+	is_archived bool DEFAULT false NULL, -- 是否归档
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	pinned_at timestamp NULL, -- 置顶时间
+	archived_at timestamp NULL, -- 归档时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT conversations_pkey PRIMARY KEY (conversation_id),
+	CONSTRAINT uk_conversation_unique UNIQUE (account_id, chat_partner_wxid, chat_type),
+	CONSTRAINT fk_conversation_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_conversation_partner FOREIGN KEY (chat_partner_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_conversations_account ON public.conversations USING btree (account_id);
+CREATE INDEX idx_conversations_last_msg ON public.conversations USING btree (last_message_at);
+CREATE INDEX idx_conversations_muted ON public.conversations USING btree (is_muted);
+CREATE INDEX idx_conversations_partner ON public.conversations USING btree (chat_partner_id);
+CREATE INDEX idx_conversations_pinned ON public.conversations USING btree (is_pinned);
+CREATE INDEX idx_conversations_unread ON public.conversations USING btree (unread_count);
+COMMENT ON TABLE public.conversations IS '会话表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.conversations.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.conversations.chat_partner_wxid IS '聊天对方WXID';
+COMMENT ON COLUMN public.conversations.chat_partner_id IS '聊天对方账号ID（如果是本系统用户）';
+COMMENT ON COLUMN public.conversations.chat_type IS '聊天类型：1-单聊 2-群聊';
+COMMENT ON COLUMN public.conversations.conversation_name IS '会话名称/群名称';
+COMMENT ON COLUMN public.conversations.last_message_id IS '最后一条消息ID';
+COMMENT ON COLUMN public.conversations.last_message_content IS '最后消息内容预览';
+COMMENT ON COLUMN public.conversations.last_message_at IS '最后消息时间';
+COMMENT ON COLUMN public.conversations.unread_count IS '未读消息数';
+COMMENT ON COLUMN public.conversations.is_pinned IS '是否置顶';
+COMMENT ON COLUMN public.conversations.is_muted IS '是否静音';
+COMMENT ON COLUMN public.conversations.is_archived IS '是否归档';
+COMMENT ON COLUMN public.conversations.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.conversations.pinned_at IS '置顶时间';
+COMMENT ON COLUMN public.conversations.archived_at IS '归档时间';
+COMMENT ON COLUMN public.conversations.created_at IS '创建时间';
+COMMENT ON COLUMN public.conversations.updated_at IS '更新时间';
+
+
 -- public.device_authorizations definition
 
 -- Drop table
@@ -647,6 +1589,53 @@ COMMENT ON COLUMN public.device_authorizations.created_at IS '创建时间';
 COMMENT ON COLUMN public.device_authorizations.updated_at IS '更新时间';
 
 
+-- public.device_commands definition
+
+-- Drop table
+
+-- DROP TABLE device_commands;
+
+CREATE TABLE device_commands (
+	command_id bigserial NOT NULL,
+	device_id int8 NOT NULL, -- 设备ID
+	account_id int8 NOT NULL, -- 微信账号ID
+	command_type int2 NOT NULL, -- 命令类型：1-重启手机 2-清理缓存 3-获取截图 4-拍照 5-录音 6-屏幕控制 7-更新应用 8-其他
+	command_content text NULL, -- 命令内容/参数
+	command_status int2 DEFAULT 1 NULL, -- 命令状态：1-待执行 2-执行中 3-已完成 4-执行失败 5-已超时
+	result_content text NULL, -- 执行结果
+	error_message varchar(500) NULL, -- 错误信息
+	sent_at timestamp NULL, -- 发送时间
+	executed_at timestamp NULL, -- 执行时间
+	completed_at timestamp NULL, -- 完成时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT device_commands_pkey PRIMARY KEY (command_id),
+	CONSTRAINT fk_command_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_command_device FOREIGN KEY (device_id) REFERENCES devices(device_id)
+);
+CREATE INDEX idx_device_commands_account ON public.device_commands USING btree (account_id);
+CREATE INDEX idx_device_commands_device ON public.device_commands USING btree (device_id);
+CREATE INDEX idx_device_commands_status ON public.device_commands USING btree (command_status);
+CREATE INDEX idx_device_commands_time ON public.device_commands USING btree (sent_at);
+CREATE INDEX idx_device_commands_type ON public.device_commands USING btree (command_type);
+COMMENT ON TABLE public.device_commands IS '设备命令表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.device_commands.device_id IS '设备ID';
+COMMENT ON COLUMN public.device_commands.account_id IS '微信账号ID';
+COMMENT ON COLUMN public.device_commands.command_type IS '命令类型：1-重启手机 2-清理缓存 3-获取截图 4-拍照 5-录音 6-屏幕控制 7-更新应用 8-其他';
+COMMENT ON COLUMN public.device_commands.command_content IS '命令内容/参数';
+COMMENT ON COLUMN public.device_commands.command_status IS '命令状态：1-待执行 2-执行中 3-已完成 4-执行失败 5-已超时';
+COMMENT ON COLUMN public.device_commands.result_content IS '执行结果';
+COMMENT ON COLUMN public.device_commands.error_message IS '错误信息';
+COMMENT ON COLUMN public.device_commands.sent_at IS '发送时间';
+COMMENT ON COLUMN public.device_commands.executed_at IS '执行时间';
+COMMENT ON COLUMN public.device_commands.completed_at IS '完成时间';
+COMMENT ON COLUMN public.device_commands.created_at IS '创建时间';
+COMMENT ON COLUMN public.device_commands.updated_at IS '更新时间';
+
+
 -- public.device_heartbeats definition
 
 -- Drop table
@@ -676,6 +1665,106 @@ COMMENT ON COLUMN public.device_heartbeats.auth_id IS '授权记录ID';
 COMMENT ON COLUMN public.device_heartbeats.client_ip IS '客户端IP';
 COMMENT ON COLUMN public.device_heartbeats.heartbeat_at IS '心跳时间';
 COMMENT ON COLUMN public.device_heartbeats.created_at IS '创建时间';
+
+
+-- public.device_locations definition
+
+-- Drop table
+
+-- DROP TABLE device_locations;
+
+CREATE TABLE device_locations (
+	location_id bigserial NOT NULL,
+	device_id int8 NOT NULL, -- 设备ID
+	account_id int8 NOT NULL, -- 微信账号ID
+	latitude numeric(10, 7) NOT NULL, -- 纬度
+	longitude numeric(10, 7) NOT NULL, -- 经度
+	location_accuracy numeric(10, 2) NULL, -- 精度（米）
+	location_address varchar(500) NULL, -- 地址文本
+	location_province varchar(100) NULL, -- 省份
+	location_city varchar(100) NULL, -- 城市
+	location_district varchar(100) NULL, -- 区县
+	location_type int2 DEFAULT 1 NULL, -- 位置类型：1-GPS 2-基站 3-WiFi 4-混合
+	located_at timestamp NULL, -- 定位时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT device_locations_pkey PRIMARY KEY (location_id),
+	CONSTRAINT fk_location_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_location_device FOREIGN KEY (device_id) REFERENCES devices(device_id)
+);
+CREATE INDEX idx_device_locations_account ON public.device_locations USING btree (account_id);
+CREATE INDEX idx_device_locations_coords ON public.device_locations USING btree (latitude, longitude);
+CREATE INDEX idx_device_locations_device ON public.device_locations USING btree (device_id);
+CREATE INDEX idx_device_locations_time ON public.device_locations USING btree (located_at);
+COMMENT ON TABLE public.device_locations IS '设备位置表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.device_locations.device_id IS '设备ID';
+COMMENT ON COLUMN public.device_locations.account_id IS '微信账号ID';
+COMMENT ON COLUMN public.device_locations.latitude IS '纬度';
+COMMENT ON COLUMN public.device_locations.longitude IS '经度';
+COMMENT ON COLUMN public.device_locations.location_accuracy IS '精度（米）';
+COMMENT ON COLUMN public.device_locations.location_address IS '地址文本';
+COMMENT ON COLUMN public.device_locations.location_province IS '省份';
+COMMENT ON COLUMN public.device_locations.location_city IS '城市';
+COMMENT ON COLUMN public.device_locations.location_district IS '区县';
+COMMENT ON COLUMN public.device_locations.location_type IS '位置类型：1-GPS 2-基站 3-WiFi 4-混合';
+COMMENT ON COLUMN public.device_locations.located_at IS '定位时间';
+COMMENT ON COLUMN public.device_locations.created_at IS '创建时间';
+
+
+-- public.device_status_logs definition
+
+-- Drop table
+
+-- DROP TABLE device_status_logs;
+
+CREATE TABLE device_status_logs (
+	log_id bigserial NOT NULL,
+	device_id int8 NOT NULL, -- 设备ID
+	account_id int8 NOT NULL, -- 微信账号ID
+	battery_level int4 NULL, -- 电池电量（0-100）
+	battery_status int2 DEFAULT 1 NULL, -- 电池状态：1-正常 2-低电量 3-充电中 4-不可用
+	storage_total int8 NULL, -- 总存储空间（字节）
+	storage_used int8 NULL, -- 已使用空间（字节）
+	storage_available int8 NULL, -- 可用空间（字节）
+	cpu_usage numeric(5, 2) NULL, -- CPU使用率
+	memory_total int8 NULL, -- 总内存（字节）
+	memory_used int8 NULL, -- 已使用内存（字节）
+	memory_available int8 NULL, -- 可用内存（字节）
+	temperature numeric(5, 2) NULL, -- 设备温度
+	network_type varchar(50) NULL, -- 网络类型（WiFi/4G/5G等）
+	signal_strength int2 NULL, -- 信号强度
+	reported_at timestamp NULL, -- 上报时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT device_status_logs_pkey PRIMARY KEY (log_id),
+	CONSTRAINT fk_status_log_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_status_log_device FOREIGN KEY (device_id) REFERENCES devices(device_id)
+);
+CREATE INDEX idx_device_status_account ON public.device_status_logs USING btree (account_id);
+CREATE INDEX idx_device_status_battery ON public.device_status_logs USING btree (battery_level);
+CREATE INDEX idx_device_status_device ON public.device_status_logs USING btree (device_id);
+CREATE INDEX idx_device_status_time ON public.device_status_logs USING btree (reported_at);
+COMMENT ON TABLE public.device_status_logs IS '设备状态日志表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.device_status_logs.device_id IS '设备ID';
+COMMENT ON COLUMN public.device_status_logs.account_id IS '微信账号ID';
+COMMENT ON COLUMN public.device_status_logs.battery_level IS '电池电量（0-100）';
+COMMENT ON COLUMN public.device_status_logs.battery_status IS '电池状态：1-正常 2-低电量 3-充电中 4-不可用';
+COMMENT ON COLUMN public.device_status_logs.storage_total IS '总存储空间（字节）';
+COMMENT ON COLUMN public.device_status_logs.storage_used IS '已使用空间（字节）';
+COMMENT ON COLUMN public.device_status_logs.storage_available IS '可用空间（字节）';
+COMMENT ON COLUMN public.device_status_logs.cpu_usage IS 'CPU使用率';
+COMMENT ON COLUMN public.device_status_logs.memory_total IS '总内存（字节）';
+COMMENT ON COLUMN public.device_status_logs.memory_used IS '已使用内存（字节）';
+COMMENT ON COLUMN public.device_status_logs.memory_available IS '可用内存（字节）';
+COMMENT ON COLUMN public.device_status_logs.temperature IS '设备温度';
+COMMENT ON COLUMN public.device_status_logs.network_type IS '网络类型（WiFi/4G/5G等）';
+COMMENT ON COLUMN public.device_status_logs.signal_strength IS '信号强度';
+COMMENT ON COLUMN public.device_status_logs.reported_at IS '上报时间';
+COMMENT ON COLUMN public.device_status_logs.created_at IS '创建时间';
 
 
 -- public.device_version_logs definition
@@ -1193,6 +2282,362 @@ CREATE INDEX idx_messages_type ON public.messages USING btree (message_type);
 COMMENT ON TABLE public.messages IS '聊天消息表';
 
 
+-- public.miniprogram_accounts definition
+
+-- Drop table
+
+-- DROP TABLE miniprogram_accounts;
+
+CREATE TABLE miniprogram_accounts (
+	account_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 关联的微信账号ID
+	miniprogram_name varchar(255) NOT NULL, -- 小程序名称
+	miniprogram_wxid varchar(100) NOT NULL, -- 小程序微信ID
+	miniprogram_appid varchar(100) NULL, -- 小程序AppID
+	miniprogram_avatar varchar(500) NULL, -- 小程序头像
+	miniprogram_description text NULL, -- 小程序描述
+	miniprogram_category varchar(100) NULL, -- 小程序分类
+	miniprogram_version varchar(50) NULL, -- 小程序版本
+	follow_status int2 DEFAULT 1 NULL, -- 关注状态：1-已关注 2-未关注 3-已取消关注
+	follow_at timestamp NULL, -- 关注时间
+	unfollow_at timestamp NULL, -- 取消关注时间
+	last_use_at timestamp NULL, -- 最后使用时间
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	deleted_at timestamp NULL, -- 删除时间
+	CONSTRAINT miniprogram_accounts_pkey PRIMARY KEY (account_id),
+	CONSTRAINT uk_miniprogram_wxid UNIQUE (wechat_account_id, miniprogram_wxid),
+	CONSTRAINT fk_miniprogram_account FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_miniprogram_accounts_appid ON public.miniprogram_accounts USING btree (miniprogram_appid);
+CREATE INDEX idx_miniprogram_accounts_follow ON public.miniprogram_accounts USING btree (follow_status, is_deleted);
+CREATE INDEX idx_miniprogram_accounts_time ON public.miniprogram_accounts USING btree (follow_at, unfollow_at);
+CREATE INDEX idx_miniprogram_accounts_wechat ON public.miniprogram_accounts USING btree (wechat_account_id);
+COMMENT ON TABLE public.miniprogram_accounts IS '小程序账号表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.miniprogram_accounts.wechat_account_id IS '关联的微信账号ID';
+COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_name IS '小程序名称';
+COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_wxid IS '小程序微信ID';
+COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_appid IS '小程序AppID';
+COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_avatar IS '小程序头像';
+COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_description IS '小程序描述';
+COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_category IS '小程序分类';
+COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_version IS '小程序版本';
+COMMENT ON COLUMN public.miniprogram_accounts.follow_status IS '关注状态：1-已关注 2-未关注 3-已取消关注';
+COMMENT ON COLUMN public.miniprogram_accounts.follow_at IS '关注时间';
+COMMENT ON COLUMN public.miniprogram_accounts.unfollow_at IS '取消关注时间';
+COMMENT ON COLUMN public.miniprogram_accounts.last_use_at IS '最后使用时间';
+COMMENT ON COLUMN public.miniprogram_accounts.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.miniprogram_accounts.created_at IS '创建时间';
+COMMENT ON COLUMN public.miniprogram_accounts.updated_at IS '更新时间';
+COMMENT ON COLUMN public.miniprogram_accounts.deleted_at IS '删除时间';
+
+
+-- public.miniprogram_follow_logs definition
+
+-- Drop table
+
+-- DROP TABLE miniprogram_follow_logs;
+
+CREATE TABLE miniprogram_follow_logs (
+	log_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
+	miniprogram_id int8 NOT NULL, -- 小程序ID
+	event_type int2 NOT NULL, -- 事件类型：1-关注/添加 2-取消关注/删除
+	event_reason varchar(200) NULL, -- 事件原因
+	event_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 事件时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT miniprogram_follow_logs_pkey PRIMARY KEY (log_id),
+	CONSTRAINT fk_miniprogram_follow_mini FOREIGN KEY (miniprogram_id) REFERENCES miniprogram_accounts(account_id),
+	CONSTRAINT fk_miniprogram_follow_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_miniprogram_follow_event ON public.miniprogram_follow_logs USING btree (event_type);
+CREATE INDEX idx_miniprogram_follow_mini ON public.miniprogram_follow_logs USING btree (miniprogram_id);
+CREATE INDEX idx_miniprogram_follow_time ON public.miniprogram_follow_logs USING btree (event_at);
+CREATE INDEX idx_miniprogram_follow_wechat ON public.miniprogram_follow_logs USING btree (wechat_account_id);
+COMMENT ON TABLE public.miniprogram_follow_logs IS '小程序关注事件日志表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.miniprogram_follow_logs.wechat_account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.miniprogram_follow_logs.miniprogram_id IS '小程序ID';
+COMMENT ON COLUMN public.miniprogram_follow_logs.event_type IS '事件类型：1-关注/添加 2-取消关注/删除';
+COMMENT ON COLUMN public.miniprogram_follow_logs.event_reason IS '事件原因';
+COMMENT ON COLUMN public.miniprogram_follow_logs.event_at IS '事件时间';
+COMMENT ON COLUMN public.miniprogram_follow_logs.created_at IS '创建时间';
+
+
+-- public.miniprogram_messages definition
+
+-- Drop table
+
+-- DROP TABLE miniprogram_messages;
+
+CREATE TABLE miniprogram_messages (
+	message_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
+	miniprogram_id int8 NOT NULL, -- 小程序ID
+	message_type int2 NOT NULL, -- 消息类型：1-文本 2-图片 3-语音 4-视频 5-链接 6-通知
+	message_title varchar(500) NULL, -- 消息标题
+	message_content text NULL, -- 消息内容
+	message_url varchar(500) NULL, -- 消息链接
+	message_thumbnail varchar(500) NULL, -- 消息缩略图
+	direction int2 DEFAULT 1 NULL, -- 消息方向：1-接收 2-发送
+	read_status int2 DEFAULT 0 NULL, -- 阅读状态：0-未读 1-已读
+	read_at timestamp NULL, -- 阅读时间
+	message_time timestamp NULL, -- 消息时间
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT miniprogram_messages_pkey PRIMARY KEY (message_id),
+	CONSTRAINT fk_mini_msg_account FOREIGN KEY (miniprogram_id) REFERENCES miniprogram_accounts(account_id),
+	CONSTRAINT fk_mini_msg_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_mini_msg_account ON public.miniprogram_messages USING btree (miniprogram_id);
+CREATE INDEX idx_mini_msg_direction ON public.miniprogram_messages USING btree (direction, is_deleted);
+CREATE INDEX idx_mini_msg_read ON public.miniprogram_messages USING btree (read_status);
+CREATE INDEX idx_mini_msg_time ON public.miniprogram_messages USING btree (message_time);
+CREATE INDEX idx_mini_msg_type ON public.miniprogram_messages USING btree (message_type);
+CREATE INDEX idx_mini_msg_wechat ON public.miniprogram_messages USING btree (wechat_account_id);
+COMMENT ON TABLE public.miniprogram_messages IS '小程序消息记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.miniprogram_messages.wechat_account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.miniprogram_messages.miniprogram_id IS '小程序ID';
+COMMENT ON COLUMN public.miniprogram_messages.message_type IS '消息类型：1-文本 2-图片 3-语音 4-视频 5-链接 6-通知';
+COMMENT ON COLUMN public.miniprogram_messages.message_title IS '消息标题';
+COMMENT ON COLUMN public.miniprogram_messages.message_content IS '消息内容';
+COMMENT ON COLUMN public.miniprogram_messages.message_url IS '消息链接';
+COMMENT ON COLUMN public.miniprogram_messages.message_thumbnail IS '消息缩略图';
+COMMENT ON COLUMN public.miniprogram_messages.direction IS '消息方向：1-接收 2-发送';
+COMMENT ON COLUMN public.miniprogram_messages.read_status IS '阅读状态：0-未读 1-已读';
+COMMENT ON COLUMN public.miniprogram_messages.read_at IS '阅读时间';
+COMMENT ON COLUMN public.miniprogram_messages.message_time IS '消息时间';
+COMMENT ON COLUMN public.miniprogram_messages.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.miniprogram_messages.created_at IS '创建时间';
+COMMENT ON COLUMN public.miniprogram_messages.updated_at IS '更新时间';
+
+
+-- public.miniprogram_search_logs definition
+
+-- Drop table
+
+-- DROP TABLE miniprogram_search_logs;
+
+CREATE TABLE miniprogram_search_logs (
+	log_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
+	search_keyword varchar(255) NOT NULL, -- 搜索关键词
+	search_results int4 DEFAULT 0 NULL, -- 搜索结果数
+	selected_miniprogram_id int8 NULL, -- 选择的小程序ID
+	searched_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 搜索时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT miniprogram_search_logs_pkey PRIMARY KEY (log_id),
+	CONSTRAINT fk_miniprogram_search_mini FOREIGN KEY (selected_miniprogram_id) REFERENCES miniprogram_accounts(account_id),
+	CONSTRAINT fk_miniprogram_search_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_miniprogram_search_keyword ON public.miniprogram_search_logs USING btree (search_keyword);
+CREATE INDEX idx_miniprogram_search_time ON public.miniprogram_search_logs USING btree (searched_at);
+CREATE INDEX idx_miniprogram_search_wechat ON public.miniprogram_search_logs USING btree (wechat_account_id);
+COMMENT ON TABLE public.miniprogram_search_logs IS '小程序搜索记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.miniprogram_search_logs.wechat_account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.miniprogram_search_logs.search_keyword IS '搜索关键词';
+COMMENT ON COLUMN public.miniprogram_search_logs.search_results IS '搜索结果数';
+COMMENT ON COLUMN public.miniprogram_search_logs.selected_miniprogram_id IS '选择的小程序ID';
+COMMENT ON COLUMN public.miniprogram_search_logs.searched_at IS '搜索时间';
+COMMENT ON COLUMN public.miniprogram_search_logs.created_at IS '创建时间';
+
+
+-- public.moments_posts definition
+
+-- Drop table
+
+-- DROP TABLE moments_posts;
+
+CREATE TABLE moments_posts (
+	post_id bigserial NOT NULL,
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	"content" text NULL, -- 朋友圈文案
+	content_type int2 DEFAULT 1 NULL, -- 内容类型：1-文字 2-图片 3-视频 4-链接 5-混合
+	"location" varchar(200) NULL, -- 位置信息
+	like_count int4 DEFAULT 0 NULL, -- 点赞数
+	comment_count int4 DEFAULT 0 NULL, -- 评论数
+	visibility int2 DEFAULT 1 NULL, -- 可见范围：1-所有人 2-仅朋友 3-部分可见 4-隐身
+	is_top bool DEFAULT false NULL, -- 是否置顶
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	published_at timestamp NULL, -- 发布时间
+	deleted_at timestamp NULL, -- 删除时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT moments_posts_pkey PRIMARY KEY (post_id),
+	CONSTRAINT fk_post_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_moments_posts_account ON public.moments_posts USING btree (account_id);
+CREATE INDEX idx_moments_posts_deleted ON public.moments_posts USING btree (is_deleted);
+CREATE INDEX idx_moments_posts_published ON public.moments_posts USING btree (published_at);
+CREATE INDEX idx_moments_posts_visibility ON public.moments_posts USING btree (visibility);
+COMMENT ON TABLE public.moments_posts IS '朋友圈文章表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.moments_posts.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.moments_posts."content" IS '朋友圈文案';
+COMMENT ON COLUMN public.moments_posts.content_type IS '内容类型：1-文字 2-图片 3-视频 4-链接 5-混合';
+COMMENT ON COLUMN public.moments_posts."location" IS '位置信息';
+COMMENT ON COLUMN public.moments_posts.like_count IS '点赞数';
+COMMENT ON COLUMN public.moments_posts.comment_count IS '评论数';
+COMMENT ON COLUMN public.moments_posts.visibility IS '可见范围：1-所有人 2-仅朋友 3-部分可见 4-隐身';
+COMMENT ON COLUMN public.moments_posts.is_top IS '是否置顶';
+COMMENT ON COLUMN public.moments_posts.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.moments_posts.published_at IS '发布时间';
+COMMENT ON COLUMN public.moments_posts.deleted_at IS '删除时间';
+COMMENT ON COLUMN public.moments_posts.created_at IS '创建时间';
+COMMENT ON COLUMN public.moments_posts.updated_at IS '更新时间';
+
+
+-- public.official_accounts definition
+
+-- Drop table
+
+-- DROP TABLE official_accounts;
+
+CREATE TABLE official_accounts (
+	account_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 关联的微信账号ID
+	official_account_name varchar(255) NOT NULL, -- 公众号名称
+	official_wxid varchar(100) NOT NULL, -- 公众号微信ID
+	official_account_type int2 DEFAULT 1 NULL, -- 公众号类型：1-订阅号 2-服务号 3-企业号
+	official_qrcode varchar(500) NULL, -- 公众号二维码
+	official_avatar varchar(500) NULL, -- 公众号头像
+	official_description text NULL, -- 公众号描述
+	official_url varchar(500) NULL, -- 公众号链接
+	follow_status int2 DEFAULT 1 NULL, -- 关注状态：1-已关注 2-未关注 3-已取消关注
+	follow_at timestamp NULL, -- 关注时间
+	unfollow_at timestamp NULL, -- 取消关注时间
+	last_msg_at timestamp NULL, -- 最后消息时间
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	deleted_at timestamp NULL, -- 删除时间
+	CONSTRAINT official_accounts_pkey PRIMARY KEY (account_id),
+	CONSTRAINT uk_official_wxid UNIQUE (wechat_account_id, official_wxid),
+	CONSTRAINT fk_official_account FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_official_accounts_follow ON public.official_accounts USING btree (follow_status, is_deleted);
+CREATE INDEX idx_official_accounts_time ON public.official_accounts USING btree (follow_at, unfollow_at);
+CREATE INDEX idx_official_accounts_type ON public.official_accounts USING btree (official_account_type);
+CREATE INDEX idx_official_accounts_wechat ON public.official_accounts USING btree (wechat_account_id);
+COMMENT ON TABLE public.official_accounts IS '公众号账号表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.official_accounts.wechat_account_id IS '关联的微信账号ID';
+COMMENT ON COLUMN public.official_accounts.official_account_name IS '公众号名称';
+COMMENT ON COLUMN public.official_accounts.official_wxid IS '公众号微信ID';
+COMMENT ON COLUMN public.official_accounts.official_account_type IS '公众号类型：1-订阅号 2-服务号 3-企业号';
+COMMENT ON COLUMN public.official_accounts.official_qrcode IS '公众号二维码';
+COMMENT ON COLUMN public.official_accounts.official_avatar IS '公众号头像';
+COMMENT ON COLUMN public.official_accounts.official_description IS '公众号描述';
+COMMENT ON COLUMN public.official_accounts.official_url IS '公众号链接';
+COMMENT ON COLUMN public.official_accounts.follow_status IS '关注状态：1-已关注 2-未关注 3-已取消关注';
+COMMENT ON COLUMN public.official_accounts.follow_at IS '关注时间';
+COMMENT ON COLUMN public.official_accounts.unfollow_at IS '取消关注时间';
+COMMENT ON COLUMN public.official_accounts.last_msg_at IS '最后消息时间';
+COMMENT ON COLUMN public.official_accounts.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.official_accounts.created_at IS '创建时间';
+COMMENT ON COLUMN public.official_accounts.updated_at IS '更新时间';
+COMMENT ON COLUMN public.official_accounts.deleted_at IS '删除时间';
+
+
+-- public.red_packets definition
+
+-- Drop table
+
+-- DROP TABLE red_packets;
+
+CREATE TABLE red_packets (
+	packet_id bigserial NOT NULL,
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	target_wxid varchar(100) NULL, -- 目标WXID（单人或群）
+	target_type int2 NOT NULL, -- 目标类型：1-个人 2-群聊
+	total_amount numeric(15, 2) NOT NULL, -- 总金额
+	packet_count int4 NOT NULL, -- 红包个数
+	distributed_count int4 DEFAULT 0 NULL, -- 已领取个数
+	distributed_amount numeric(15, 2) DEFAULT 0 NULL, -- 已领取金额
+	greeting_message varchar(500) NULL, -- 贺词
+	packet_type int2 DEFAULT 1 NULL, -- 红包类型：1-普通红包 2-拼手气红包 3-定额红包
+	packet_status int2 DEFAULT 1 NULL, -- 红包状态：1-待发送 2-已发送 3-已领完 4-已过期 5-已撤销
+	expires_at timestamp NULL, -- 过期时间
+	sent_at timestamp NULL, -- 发送时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT red_packets_pkey PRIMARY KEY (packet_id),
+	CONSTRAINT fk_red_packet_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_red_packets_account ON public.red_packets USING btree (account_id);
+CREATE INDEX idx_red_packets_expires ON public.red_packets USING btree (expires_at);
+CREATE INDEX idx_red_packets_status ON public.red_packets USING btree (packet_status);
+CREATE INDEX idx_red_packets_target ON public.red_packets USING btree (target_wxid);
+CREATE INDEX idx_red_packets_time ON public.red_packets USING btree (sent_at);
+COMMENT ON TABLE public.red_packets IS '红包发送记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.red_packets.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.red_packets.target_wxid IS '目标WXID（单人或群）';
+COMMENT ON COLUMN public.red_packets.target_type IS '目标类型：1-个人 2-群聊';
+COMMENT ON COLUMN public.red_packets.total_amount IS '总金额';
+COMMENT ON COLUMN public.red_packets.packet_count IS '红包个数';
+COMMENT ON COLUMN public.red_packets.distributed_count IS '已领取个数';
+COMMENT ON COLUMN public.red_packets.distributed_amount IS '已领取金额';
+COMMENT ON COLUMN public.red_packets.greeting_message IS '贺词';
+COMMENT ON COLUMN public.red_packets.packet_type IS '红包类型：1-普通红包 2-拼手气红包 3-定额红包';
+COMMENT ON COLUMN public.red_packets.packet_status IS '红包状态：1-待发送 2-已发送 3-已领完 4-已过期 5-已撤销';
+COMMENT ON COLUMN public.red_packets.expires_at IS '过期时间';
+COMMENT ON COLUMN public.red_packets.sent_at IS '发送时间';
+COMMENT ON COLUMN public.red_packets.created_at IS '创建时间';
+COMMENT ON COLUMN public.red_packets.updated_at IS '更新时间';
+
+
+-- public.role_permissions definition
+
+-- Drop table
+
+-- DROP TABLE role_permissions;
+
+CREATE TABLE role_permissions (
+	role_perm_id bigserial NOT NULL,
+	role_id int8 NOT NULL, -- 角色ID
+	permission_id int8 NOT NULL, -- 权限ID
+	is_granted bool DEFAULT true NULL, -- 是否授予
+	granted_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 授予时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT role_permissions_pkey PRIMARY KEY (role_perm_id),
+	CONSTRAINT uk_role_permission UNIQUE (role_id, permission_id),
+	CONSTRAINT fk_role_perm_permission FOREIGN KEY (permission_id) REFERENCES permissions(permission_id),
+	CONSTRAINT fk_role_perm_role FOREIGN KEY (role_id) REFERENCES roles(role_id)
+);
+CREATE INDEX idx_role_permissions_granted ON public.role_permissions USING btree (is_granted);
+CREATE INDEX idx_role_permissions_permission ON public.role_permissions USING btree (permission_id);
+CREATE INDEX idx_role_permissions_role ON public.role_permissions USING btree (role_id);
+COMMENT ON TABLE public.role_permissions IS '角色权限关系表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.role_permissions.role_id IS '角色ID';
+COMMENT ON COLUMN public.role_permissions.permission_id IS '权限ID';
+COMMENT ON COLUMN public.role_permissions.is_granted IS '是否授予';
+COMMENT ON COLUMN public.role_permissions.granted_at IS '授予时间';
+COMMENT ON COLUMN public.role_permissions.created_at IS '创建时间';
+
+
 -- public.server_redirects definition
 
 -- Drop table
@@ -1231,6 +2676,141 @@ COMMENT ON COLUMN public.server_redirects.redirect_reason IS '重定向原因';
 COMMENT ON COLUMN public.server_redirects.redirect_type IS '重定向类型：1-负载均衡 2-服务器维护 3-异常切换';
 COMMENT ON COLUMN public.server_redirects.redirected_at IS '重定向时间';
 COMMENT ON COLUMN public.server_redirects.created_at IS '创建时间';
+
+
+-- public.system_notifications definition
+
+-- Drop table
+
+-- DROP TABLE system_notifications;
+
+CREATE TABLE system_notifications (
+	notification_id bigserial NOT NULL,
+	device_id int8 NOT NULL, -- 设备ID
+	account_id int8 NOT NULL, -- 微信账号ID
+	notification_type int2 NOT NULL, -- 通知类型：1-版本更新 2-设备删除 3-客户端更新 4-系统公告 5-定时任务 6-其他
+	notification_title varchar(255) NOT NULL, -- 通知标题
+	notification_content text NULL, -- 通知内容
+	notification_data jsonb NULL, -- 通知额外数据（JSON）
+	is_read bool DEFAULT false NULL, -- 是否已读
+	priority int2 DEFAULT 1 NULL, -- 优先级：1-低 2-中 3-高
+	read_at timestamp NULL, -- 阅读时间
+	expires_at timestamp NULL, -- 过期时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT system_notifications_pkey PRIMARY KEY (notification_id),
+	CONSTRAINT fk_notif_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_notif_device FOREIGN KEY (device_id) REFERENCES devices(device_id)
+);
+CREATE INDEX idx_notifications_account ON public.system_notifications USING btree (account_id);
+CREATE INDEX idx_notifications_created ON public.system_notifications USING btree (created_at);
+CREATE INDEX idx_notifications_device ON public.system_notifications USING btree (device_id);
+CREATE INDEX idx_notifications_priority ON public.system_notifications USING btree (priority);
+CREATE INDEX idx_notifications_read ON public.system_notifications USING btree (is_read);
+CREATE INDEX idx_notifications_type ON public.system_notifications USING btree (notification_type);
+COMMENT ON TABLE public.system_notifications IS '系统通知表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.system_notifications.device_id IS '设备ID';
+COMMENT ON COLUMN public.system_notifications.account_id IS '微信账号ID';
+COMMENT ON COLUMN public.system_notifications.notification_type IS '通知类型：1-版本更新 2-设备删除 3-客户端更新 4-系统公告 5-定时任务 6-其他';
+COMMENT ON COLUMN public.system_notifications.notification_title IS '通知标题';
+COMMENT ON COLUMN public.system_notifications.notification_content IS '通知内容';
+COMMENT ON COLUMN public.system_notifications.notification_data IS '通知额外数据（JSON）';
+COMMENT ON COLUMN public.system_notifications.is_read IS '是否已读';
+COMMENT ON COLUMN public.system_notifications.priority IS '优先级：1-低 2-中 3-高';
+COMMENT ON COLUMN public.system_notifications.read_at IS '阅读时间';
+COMMENT ON COLUMN public.system_notifications.expires_at IS '过期时间';
+COMMENT ON COLUMN public.system_notifications.created_at IS '创建时间';
+COMMENT ON COLUMN public.system_notifications.updated_at IS '更新时间';
+
+
+-- public.user_roles definition
+
+-- Drop table
+
+-- DROP TABLE user_roles;
+
+CREATE TABLE user_roles (
+	user_role_id bigserial NOT NULL,
+	account_id int8 NOT NULL, -- 用户账号ID
+	role_id int8 NOT NULL, -- 角色ID
+	assigned_by int8 NULL, -- 分配者账号ID
+	assigned_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 分配时间
+	expires_at timestamp NULL, -- 过期时间
+	is_active bool DEFAULT true NULL, -- 是否有效
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT uk_user_role UNIQUE (account_id, role_id),
+	CONSTRAINT user_roles_pkey PRIMARY KEY (user_role_id),
+	CONSTRAINT fk_user_role_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_user_role_assigned_by FOREIGN KEY (assigned_by) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_user_role_role FOREIGN KEY (role_id) REFERENCES roles(role_id)
+);
+CREATE INDEX idx_user_roles_account ON public.user_roles USING btree (account_id);
+CREATE INDEX idx_user_roles_active ON public.user_roles USING btree (is_active);
+CREATE INDEX idx_user_roles_expires ON public.user_roles USING btree (expires_at);
+CREATE INDEX idx_user_roles_role ON public.user_roles USING btree (role_id);
+COMMENT ON TABLE public.user_roles IS '用户角色表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.user_roles.account_id IS '用户账号ID';
+COMMENT ON COLUMN public.user_roles.role_id IS '角色ID';
+COMMENT ON COLUMN public.user_roles.assigned_by IS '分配者账号ID';
+COMMENT ON COLUMN public.user_roles.assigned_at IS '分配时间';
+COMMENT ON COLUMN public.user_roles.expires_at IS '过期时间';
+COMMENT ON COLUMN public.user_roles.is_active IS '是否有效';
+COMMENT ON COLUMN public.user_roles.created_at IS '创建时间';
+COMMENT ON COLUMN public.user_roles.updated_at IS '更新时间';
+
+
+-- public.wallet_transactions definition
+
+-- Drop table
+
+-- DROP TABLE wallet_transactions;
+
+CREATE TABLE wallet_transactions (
+	transaction_id bigserial NOT NULL,
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	transaction_type int2 NOT NULL, -- 交易类型：1-收入 2-支出 3-转账 4-红包
+	related_account_id int8 NULL, -- 相关账号ID
+	related_wxid varchar(100) NULL, -- 相关微信WXID
+	amount numeric(15, 2) NOT NULL, -- 交易金额
+	balance_before numeric(15, 2) NULL, -- 交易前余额
+	balance_after numeric(15, 2) NULL, -- 交易后余额
+	description varchar(500) NULL, -- 交易描述
+	transaction_status int2 DEFAULT 1 NULL, -- 交易状态：1-待确认 2-已确认 3-失败 4-已撤销
+	transaction_at timestamp NULL, -- 交易时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT wallet_transactions_pkey PRIMARY KEY (transaction_id),
+	CONSTRAINT fk_wallet_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_wallet_related_account FOREIGN KEY (related_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_wallet_account ON public.wallet_transactions USING btree (account_id);
+CREATE INDEX idx_wallet_related_account ON public.wallet_transactions USING btree (related_account_id);
+CREATE INDEX idx_wallet_status ON public.wallet_transactions USING btree (transaction_status);
+CREATE INDEX idx_wallet_time ON public.wallet_transactions USING btree (transaction_at);
+CREATE INDEX idx_wallet_type ON public.wallet_transactions USING btree (transaction_type);
+COMMENT ON TABLE public.wallet_transactions IS '钱包交易记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.wallet_transactions.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.wallet_transactions.transaction_type IS '交易类型：1-收入 2-支出 3-转账 4-红包';
+COMMENT ON COLUMN public.wallet_transactions.related_account_id IS '相关账号ID';
+COMMENT ON COLUMN public.wallet_transactions.related_wxid IS '相关微信WXID';
+COMMENT ON COLUMN public.wallet_transactions.amount IS '交易金额';
+COMMENT ON COLUMN public.wallet_transactions.balance_before IS '交易前余额';
+COMMENT ON COLUMN public.wallet_transactions.balance_after IS '交易后余额';
+COMMENT ON COLUMN public.wallet_transactions.description IS '交易描述';
+COMMENT ON COLUMN public.wallet_transactions.transaction_status IS '交易状态：1-待确认 2-已确认 3-失败 4-已撤销';
+COMMENT ON COLUMN public.wallet_transactions.transaction_at IS '交易时间';
+COMMENT ON COLUMN public.wallet_transactions.created_at IS '创建时间';
+COMMENT ON COLUMN public.wallet_transactions.updated_at IS '更新时间';
 
 
 -- public.account_status_logs definition
@@ -1543,6 +3123,339 @@ CREATE INDEX idx_revocation_time ON public.message_revocations USING btree (revo
 COMMENT ON TABLE public.message_revocations IS '消息撤回记录表';
 
 
+-- public.miniprogram_access_logs definition
+
+-- Drop table
+
+-- DROP TABLE miniprogram_access_logs;
+
+CREATE TABLE miniprogram_access_logs (
+	log_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
+	miniprogram_id int8 NOT NULL, -- 小程序ID
+	access_type int2 DEFAULT 1 NULL, -- 访问类型：1-打开 2-分享 3-搜索 4-推荐 5-从消息打开
+	access_path varchar(500) NULL, -- 访问路径/页面
+	access_parameter text NULL, -- 访问参数
+	duration int4 NULL, -- 访问时长（秒）
+	device_id int8 NULL, -- 设备ID
+	accessed_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 访问时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT miniprogram_access_logs_pkey PRIMARY KEY (log_id),
+	CONSTRAINT fk_mini_access_device FOREIGN KEY (device_id) REFERENCES devices(device_id),
+	CONSTRAINT fk_mini_access_mini FOREIGN KEY (miniprogram_id) REFERENCES miniprogram_accounts(account_id),
+	CONSTRAINT fk_mini_access_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_mini_access_device ON public.miniprogram_access_logs USING btree (device_id);
+CREATE INDEX idx_mini_access_mini ON public.miniprogram_access_logs USING btree (miniprogram_id);
+CREATE INDEX idx_mini_access_time ON public.miniprogram_access_logs USING btree (accessed_at);
+CREATE INDEX idx_mini_access_type ON public.miniprogram_access_logs USING btree (access_type);
+CREATE INDEX idx_mini_access_wechat ON public.miniprogram_access_logs USING btree (wechat_account_id);
+COMMENT ON TABLE public.miniprogram_access_logs IS '小程序访问记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.miniprogram_access_logs.wechat_account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.miniprogram_access_logs.miniprogram_id IS '小程序ID';
+COMMENT ON COLUMN public.miniprogram_access_logs.access_type IS '访问类型：1-打开 2-分享 3-搜索 4-推荐 5-从消息打开';
+COMMENT ON COLUMN public.miniprogram_access_logs.access_path IS '访问路径/页面';
+COMMENT ON COLUMN public.miniprogram_access_logs.access_parameter IS '访问参数';
+COMMENT ON COLUMN public.miniprogram_access_logs.duration IS '访问时长（秒）';
+COMMENT ON COLUMN public.miniprogram_access_logs.device_id IS '设备ID';
+COMMENT ON COLUMN public.miniprogram_access_logs.accessed_at IS '访问时间';
+COMMENT ON COLUMN public.miniprogram_access_logs.created_at IS '创建时间';
+
+
+-- public.moments_comments definition
+
+-- Drop table
+
+-- DROP TABLE moments_comments;
+
+CREATE TABLE moments_comments (
+	comment_id bigserial NOT NULL,
+	post_id int8 NOT NULL, -- 朋友圈ID
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	comment_by_wxid varchar(100) NOT NULL, -- 评论者WXID
+	comment_by_account_id int8 NULL, -- 评论者账号ID（如果是本系统用户）
+	reply_to_comment_id int8 NULL, -- 回复的评论ID
+	reply_to_wxid varchar(100) NULL, -- 回复的对象WXID
+	comment_content text NOT NULL, -- 评论内容
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	commented_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 评论时间
+	deleted_at timestamp NULL, -- 删除时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT moments_comments_pkey PRIMARY KEY (comment_id),
+	CONSTRAINT fk_comment_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_comment_by_account FOREIGN KEY (comment_by_account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES moments_posts(post_id),
+	CONSTRAINT fk_comment_reply FOREIGN KEY (reply_to_comment_id) REFERENCES moments_comments(comment_id)
+);
+CREATE INDEX idx_moments_comments_account ON public.moments_comments USING btree (account_id);
+CREATE INDEX idx_moments_comments_by ON public.moments_comments USING btree (comment_by_account_id);
+CREATE INDEX idx_moments_comments_deleted ON public.moments_comments USING btree (is_deleted);
+CREATE INDEX idx_moments_comments_post ON public.moments_comments USING btree (post_id);
+CREATE INDEX idx_moments_comments_time ON public.moments_comments USING btree (commented_at);
+COMMENT ON TABLE public.moments_comments IS '朋友圈评论表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.moments_comments.post_id IS '朋友圈ID';
+COMMENT ON COLUMN public.moments_comments.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.moments_comments.comment_by_wxid IS '评论者WXID';
+COMMENT ON COLUMN public.moments_comments.comment_by_account_id IS '评论者账号ID（如果是本系统用户）';
+COMMENT ON COLUMN public.moments_comments.reply_to_comment_id IS '回复的评论ID';
+COMMENT ON COLUMN public.moments_comments.reply_to_wxid IS '回复的对象WXID';
+COMMENT ON COLUMN public.moments_comments.comment_content IS '评论内容';
+COMMENT ON COLUMN public.moments_comments.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.moments_comments.commented_at IS '评论时间';
+COMMENT ON COLUMN public.moments_comments.deleted_at IS '删除时间';
+COMMENT ON COLUMN public.moments_comments.created_at IS '创建时间';
+COMMENT ON COLUMN public.moments_comments.updated_at IS '更新时间';
+
+
+-- public.moments_likes definition
+
+-- Drop table
+
+-- DROP TABLE moments_likes;
+
+CREATE TABLE moments_likes (
+	like_id bigserial NOT NULL,
+	post_id int8 NOT NULL, -- 朋友圈ID
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	liked_by_wxid varchar(100) NOT NULL, -- 点赞者WXID
+	liked_by_account_id int8 NULL, -- 点赞者账号ID（如果是本系统用户）
+	like_type int2 DEFAULT 1 NULL, -- 点赞类型：1-赞 2-emoji点赞
+	emoji_id varchar(100) NULL, -- emoji表情ID
+	liked_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 点赞时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT moments_likes_pkey PRIMARY KEY (like_id),
+	CONSTRAINT uk_post_like UNIQUE (post_id, liked_by_wxid),
+	CONSTRAINT fk_like_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_like_by_account FOREIGN KEY (liked_by_account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_like_post FOREIGN KEY (post_id) REFERENCES moments_posts(post_id)
+);
+CREATE INDEX idx_moments_likes_account ON public.moments_likes USING btree (account_id);
+CREATE INDEX idx_moments_likes_liked_by ON public.moments_likes USING btree (liked_by_account_id);
+CREATE INDEX idx_moments_likes_post ON public.moments_likes USING btree (post_id);
+CREATE INDEX idx_moments_likes_time ON public.moments_likes USING btree (liked_at);
+COMMENT ON TABLE public.moments_likes IS '朋友圈点赞表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.moments_likes.post_id IS '朋友圈ID';
+COMMENT ON COLUMN public.moments_likes.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.moments_likes.liked_by_wxid IS '点赞者WXID';
+COMMENT ON COLUMN public.moments_likes.liked_by_account_id IS '点赞者账号ID（如果是本系统用户）';
+COMMENT ON COLUMN public.moments_likes.like_type IS '点赞类型：1-赞 2-emoji点赞';
+COMMENT ON COLUMN public.moments_likes.emoji_id IS 'emoji表情ID';
+COMMENT ON COLUMN public.moments_likes.liked_at IS '点赞时间';
+COMMENT ON COLUMN public.moments_likes.created_at IS '创建时间';
+
+
+-- public.official_account_follow_logs definition
+
+-- Drop table
+
+-- DROP TABLE official_account_follow_logs;
+
+CREATE TABLE official_account_follow_logs (
+	log_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
+	official_account_id int8 NOT NULL, -- 公众号ID
+	event_type int2 NOT NULL, -- 事件类型：1-关注 2-取消关注
+	event_reason varchar(200) NULL, -- 事件原因
+	event_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 事件时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT official_account_follow_logs_pkey PRIMARY KEY (log_id),
+	CONSTRAINT fk_official_follow_account FOREIGN KEY (official_account_id) REFERENCES official_accounts(account_id),
+	CONSTRAINT fk_official_follow_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_official_follow_account ON public.official_account_follow_logs USING btree (official_account_id);
+CREATE INDEX idx_official_follow_event ON public.official_account_follow_logs USING btree (event_type);
+CREATE INDEX idx_official_follow_time ON public.official_account_follow_logs USING btree (event_at);
+CREATE INDEX idx_official_follow_wechat ON public.official_account_follow_logs USING btree (wechat_account_id);
+COMMENT ON TABLE public.official_account_follow_logs IS '公众号关注事件日志表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.official_account_follow_logs.wechat_account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.official_account_follow_logs.official_account_id IS '公众号ID';
+COMMENT ON COLUMN public.official_account_follow_logs.event_type IS '事件类型：1-关注 2-取消关注';
+COMMENT ON COLUMN public.official_account_follow_logs.event_reason IS '事件原因';
+COMMENT ON COLUMN public.official_account_follow_logs.event_at IS '事件时间';
+COMMENT ON COLUMN public.official_account_follow_logs.created_at IS '创建时间';
+
+
+-- public.official_account_messages definition
+
+-- Drop table
+
+-- DROP TABLE official_account_messages;
+
+CREATE TABLE official_account_messages (
+	message_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
+	official_account_id int8 NOT NULL, -- 公众号ID
+	message_type int2 NOT NULL, -- 消息类型：1-文本 2-图片 3-语音 4-视频 5-链接 6-文章 7-推送通知
+	message_title varchar(500) NULL, -- 消息标题
+	message_content text NULL, -- 消息内容
+	message_url varchar(500) NULL, -- 消息链接
+	message_thumbnail varchar(500) NULL, -- 消息缩略图
+	direction int2 DEFAULT 1 NULL, -- 消息方向：1-接收 2-发送
+	read_status int2 DEFAULT 0 NULL, -- 阅读状态：0-未读 1-已读
+	read_at timestamp NULL, -- 阅读时间
+	message_time timestamp NULL, -- 消息时间
+	is_deleted bool DEFAULT false NULL, -- 是否删除
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT official_account_messages_pkey PRIMARY KEY (message_id),
+	CONSTRAINT fk_official_msg_account FOREIGN KEY (official_account_id) REFERENCES official_accounts(account_id),
+	CONSTRAINT fk_official_msg_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_official_msg_account ON public.official_account_messages USING btree (official_account_id);
+CREATE INDEX idx_official_msg_direction ON public.official_account_messages USING btree (direction, is_deleted);
+CREATE INDEX idx_official_msg_read ON public.official_account_messages USING btree (read_status);
+CREATE INDEX idx_official_msg_time ON public.official_account_messages USING btree (message_time);
+CREATE INDEX idx_official_msg_type ON public.official_account_messages USING btree (message_type);
+CREATE INDEX idx_official_msg_wechat ON public.official_account_messages USING btree (wechat_account_id);
+COMMENT ON TABLE public.official_account_messages IS '公众号消息记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.official_account_messages.wechat_account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.official_account_messages.official_account_id IS '公众号ID';
+COMMENT ON COLUMN public.official_account_messages.message_type IS '消息类型：1-文本 2-图片 3-语音 4-视频 5-链接 6-文章 7-推送通知';
+COMMENT ON COLUMN public.official_account_messages.message_title IS '消息标题';
+COMMENT ON COLUMN public.official_account_messages.message_content IS '消息内容';
+COMMENT ON COLUMN public.official_account_messages.message_url IS '消息链接';
+COMMENT ON COLUMN public.official_account_messages.message_thumbnail IS '消息缩略图';
+COMMENT ON COLUMN public.official_account_messages.direction IS '消息方向：1-接收 2-发送';
+COMMENT ON COLUMN public.official_account_messages.read_status IS '阅读状态：0-未读 1-已读';
+COMMENT ON COLUMN public.official_account_messages.read_at IS '阅读时间';
+COMMENT ON COLUMN public.official_account_messages.message_time IS '消息时间';
+COMMENT ON COLUMN public.official_account_messages.is_deleted IS '是否删除';
+COMMENT ON COLUMN public.official_account_messages.created_at IS '创建时间';
+COMMENT ON COLUMN public.official_account_messages.updated_at IS '更新时间';
+
+
+-- public.official_account_search_logs definition
+
+-- Drop table
+
+-- DROP TABLE official_account_search_logs;
+
+CREATE TABLE official_account_search_logs (
+	log_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
+	search_keyword varchar(255) NOT NULL, -- 搜索关键词
+	search_type int2 DEFAULT 1 NULL, -- 搜索类型：1-公众号 2-小程序 3-混合搜索
+	search_results int4 DEFAULT 0 NULL, -- 搜索结果数
+	selected_official_id int8 NULL, -- 选择的公众号ID
+	searched_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 搜索时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT official_account_search_logs_pkey PRIMARY KEY (log_id),
+	CONSTRAINT fk_search_log_official FOREIGN KEY (selected_official_id) REFERENCES official_accounts(account_id),
+	CONSTRAINT fk_search_log_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_search_logs_keyword ON public.official_account_search_logs USING btree (search_keyword);
+CREATE INDEX idx_search_logs_time ON public.official_account_search_logs USING btree (searched_at);
+CREATE INDEX idx_search_logs_type ON public.official_account_search_logs USING btree (search_type);
+CREATE INDEX idx_search_logs_wechat ON public.official_account_search_logs USING btree (wechat_account_id);
+COMMENT ON TABLE public.official_account_search_logs IS '公众号搜索记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.official_account_search_logs.wechat_account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.official_account_search_logs.search_keyword IS '搜索关键词';
+COMMENT ON COLUMN public.official_account_search_logs.search_type IS '搜索类型：1-公众号 2-小程序 3-混合搜索';
+COMMENT ON COLUMN public.official_account_search_logs.search_results IS '搜索结果数';
+COMMENT ON COLUMN public.official_account_search_logs.selected_official_id IS '选择的公众号ID';
+COMMENT ON COLUMN public.official_account_search_logs.searched_at IS '搜索时间';
+COMMENT ON COLUMN public.official_account_search_logs.created_at IS '创建时间';
+
+
+-- public.official_account_subscriptions definition
+
+-- Drop table
+
+-- DROP TABLE official_account_subscriptions;
+
+CREATE TABLE official_account_subscriptions (
+	subscription_id bigserial NOT NULL,
+	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
+	official_account_id int8 NOT NULL, -- 公众号ID
+	subscription_type int2 DEFAULT 1 NULL, -- 订阅类型：1-自动订阅 2-手动订阅 3-被推送订阅
+	notification_enabled bool DEFAULT true NULL, -- 是否启用通知
+	subscription_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 订阅时间
+	last_notification_at timestamp NULL, -- 最后通知时间
+	notification_count int4 DEFAULT 0 NULL, -- 通知数量
+	is_active bool DEFAULT true NULL, -- 是否有效
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
+	CONSTRAINT official_account_subscriptions_pkey PRIMARY KEY (subscription_id),
+	CONSTRAINT uk_official_sub UNIQUE (wechat_account_id, official_account_id),
+	CONSTRAINT fk_official_sub_account FOREIGN KEY (official_account_id) REFERENCES official_accounts(account_id),
+	CONSTRAINT fk_official_sub_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_official_sub_account ON public.official_account_subscriptions USING btree (official_account_id);
+CREATE INDEX idx_official_sub_active ON public.official_account_subscriptions USING btree (is_active);
+CREATE INDEX idx_official_sub_notification ON public.official_account_subscriptions USING btree (notification_enabled);
+CREATE INDEX idx_official_sub_wechat ON public.official_account_subscriptions USING btree (wechat_account_id);
+COMMENT ON TABLE public.official_account_subscriptions IS '公众号订阅记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.official_account_subscriptions.wechat_account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.official_account_subscriptions.official_account_id IS '公众号ID';
+COMMENT ON COLUMN public.official_account_subscriptions.subscription_type IS '订阅类型：1-自动订阅 2-手动订阅 3-被推送订阅';
+COMMENT ON COLUMN public.official_account_subscriptions.notification_enabled IS '是否启用通知';
+COMMENT ON COLUMN public.official_account_subscriptions.subscription_at IS '订阅时间';
+COMMENT ON COLUMN public.official_account_subscriptions.last_notification_at IS '最后通知时间';
+COMMENT ON COLUMN public.official_account_subscriptions.notification_count IS '通知数量';
+COMMENT ON COLUMN public.official_account_subscriptions.is_active IS '是否有效';
+COMMENT ON COLUMN public.official_account_subscriptions.created_at IS '创建时间';
+COMMENT ON COLUMN public.official_account_subscriptions.updated_at IS '更新时间';
+
+
+-- public.red_packet_records definition
+
+-- Drop table
+
+-- DROP TABLE red_packet_records;
+
+CREATE TABLE red_packet_records (
+	record_id bigserial NOT NULL,
+	packet_id int8 NOT NULL, -- 红包ID
+	account_id int8 NOT NULL, -- 所属微信账号ID
+	received_by_wxid varchar(100) NOT NULL, -- 领取者WXID
+	received_by_account_id int8 NULL, -- 领取者账号ID（如果是本系统用户）
+	amount numeric(15, 2) NOT NULL, -- 领取金额
+	received_at timestamp NULL, -- 领取时间
+	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
+	CONSTRAINT red_packet_records_pkey PRIMARY KEY (record_id),
+	CONSTRAINT fk_record_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
+	CONSTRAINT fk_record_packet FOREIGN KEY (packet_id) REFERENCES red_packets(packet_id),
+	CONSTRAINT fk_record_received_account FOREIGN KEY (received_by_account_id) REFERENCES wechat_accounts(account_id)
+);
+CREATE INDEX idx_red_packet_records_account ON public.red_packet_records USING btree (account_id);
+CREATE INDEX idx_red_packet_records_packet ON public.red_packet_records USING btree (packet_id);
+CREATE INDEX idx_red_packet_records_received ON public.red_packet_records USING btree (received_by_account_id);
+CREATE INDEX idx_red_packet_records_time ON public.red_packet_records USING btree (received_at);
+COMMENT ON TABLE public.red_packet_records IS '红包领取记录表';
+
+-- Column comments
+
+COMMENT ON COLUMN public.red_packet_records.packet_id IS '红包ID';
+COMMENT ON COLUMN public.red_packet_records.account_id IS '所属微信账号ID';
+COMMENT ON COLUMN public.red_packet_records.received_by_wxid IS '领取者WXID';
+COMMENT ON COLUMN public.red_packet_records.received_by_account_id IS '领取者账号ID（如果是本系统用户）';
+COMMENT ON COLUMN public.red_packet_records.amount IS '领取金额';
+COMMENT ON COLUMN public.red_packet_records.received_at IS '领取时间';
+COMMENT ON COLUMN public.red_packet_records.created_at IS '创建时间';
+
+
 -- public.voice_to_text_logs definition
 
 -- Drop table
@@ -1594,1385 +3507,6 @@ CREATE INDEX idx_forward_detail_forward ON public.message_forward_details USING 
 CREATE INDEX idx_forward_detail_message ON public.message_forward_details USING btree (source_message_id);
 COMMENT ON TABLE public.message_forward_details IS '消息转发详情表';
 
-
-
--- 五、朋友圈模块所需表
-
--- DROP SEQUENCE moments_posts_post_id_seq;
-
-CREATE SEQUENCE moments_posts_post_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE moments_comments_comment_id_seq;
-
-CREATE SEQUENCE moments_comments_comment_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE moments_likes_like_id_seq;
-
-CREATE SEQUENCE moments_likes_like_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- public.moments_posts definition
-
--- DROP TABLE moments_posts;
-
-CREATE TABLE moments_posts (
-	post_id bigserial NOT NULL,
-	account_id int8 NOT NULL, -- 所属微信账号ID
-	content text NULL, -- 朋友圈文案
-	content_type int2 DEFAULT 1 NULL, -- 内容类型：1-文字 2-图片 3-视频 4-链接 5-混合
-	location varchar(200) NULL, -- 位置信息
-	like_count int4 DEFAULT 0 NULL, -- 点赞数
-	comment_count int4 DEFAULT 0 NULL, -- 评论数
-	visibility int2 DEFAULT 1 NULL, -- 可见范围：1-所有人 2-仅朋友 3-部分可见 4-隐身
-	is_top bool DEFAULT false NULL, -- 是否置顶
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	published_at timestamp NULL, -- 发布时间
-	deleted_at timestamp NULL, -- 删除时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT moments_posts_pkey PRIMARY KEY (post_id),
-	CONSTRAINT fk_post_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_moments_posts_account ON public.moments_posts USING btree (account_id);
-CREATE INDEX idx_moments_posts_published ON public.moments_posts USING btree (published_at);
-CREATE INDEX idx_moments_posts_deleted ON public.moments_posts USING btree (is_deleted);
-CREATE INDEX idx_moments_posts_visibility ON public.moments_posts USING btree (visibility);
-COMMENT ON TABLE public.moments_posts IS '朋友圈文章表';
-
--- Column comments
-
-COMMENT ON COLUMN public.moments_posts.account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.moments_posts.content IS '朋友圈文案';
-COMMENT ON COLUMN public.moments_posts.content_type IS '内容类型：1-文字 2-图片 3-视频 4-链接 5-混合';
-COMMENT ON COLUMN public.moments_posts.location IS '位置信息';
-COMMENT ON COLUMN public.moments_posts.like_count IS '点赞数';
-COMMENT ON COLUMN public.moments_posts.comment_count IS '评论数';
-COMMENT ON COLUMN public.moments_posts.visibility IS '可见范围：1-所有人 2-仅朋友 3-部分可见 4-隐身';
-COMMENT ON COLUMN public.moments_posts.is_top IS '是否置顶';
-COMMENT ON COLUMN public.moments_posts.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.moments_posts.published_at IS '发布时间';
-COMMENT ON COLUMN public.moments_posts.deleted_at IS '删除时间';
-COMMENT ON COLUMN public.moments_posts.created_at IS '创建时间';
-COMMENT ON COLUMN public.moments_posts.updated_at IS '更新时间';
-
-
--- public.moments_likes definition
-
--- DROP TABLE moments_likes;
-
-CREATE TABLE moments_likes (
-	like_id bigserial NOT NULL,
-	post_id int8 NOT NULL, -- 朋友圈ID
-	account_id int8 NOT NULL, -- 所属微信账号ID
-	liked_by_wxid varchar(100) NOT NULL, -- 点赞者WXID
-	liked_by_account_id int8 NULL, -- 点赞者账号ID（如果是本系统用户）
-	like_type int2 DEFAULT 1 NULL, -- 点赞类型：1-赞 2-emoji点赞
-	emoji_id varchar(100) NULL, -- emoji表情ID
-	liked_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 点赞时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT moments_likes_pkey PRIMARY KEY (like_id),
-	CONSTRAINT uk_post_like UNIQUE (post_id, liked_by_wxid),
-	CONSTRAINT fk_like_post FOREIGN KEY (post_id) REFERENCES moments_posts(post_id),
-	CONSTRAINT fk_like_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_like_by_account FOREIGN KEY (liked_by_account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_moments_likes_post ON public.moments_likes USING btree (post_id);
-CREATE INDEX idx_moments_likes_account ON public.moments_likes USING btree (account_id);
-CREATE INDEX idx_moments_likes_liked_by ON public.moments_likes USING btree (liked_by_account_id);
-CREATE INDEX idx_moments_likes_time ON public.moments_likes USING btree (liked_at);
-COMMENT ON TABLE public.moments_likes IS '朋友圈点赞表';
-
--- Column comments
-
-COMMENT ON COLUMN public.moments_likes.post_id IS '朋友圈ID';
-COMMENT ON COLUMN public.moments_likes.account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.moments_likes.liked_by_wxid IS '点赞者WXID';
-COMMENT ON COLUMN public.moments_likes.liked_by_account_id IS '点赞者账号ID（如果是本系统用户）';
-COMMENT ON COLUMN public.moments_likes.like_type IS '点赞类型：1-赞 2-emoji点赞';
-COMMENT ON COLUMN public.moments_likes.emoji_id IS 'emoji表情ID';
-COMMENT ON COLUMN public.moments_likes.liked_at IS '点赞时间';
-COMMENT ON COLUMN public.moments_likes.created_at IS '创建时间';
-
-
--- public.moments_comments definition
-
--- DROP TABLE moments_comments;
-
-CREATE TABLE moments_comments (
-	comment_id bigserial NOT NULL,
-	post_id int8 NOT NULL, -- 朋友圈ID
-	account_id int8 NOT NULL, -- 所属微信账号ID
-	comment_by_wxid varchar(100) NOT NULL, -- 评论者WXID
-	comment_by_account_id int8 NULL, -- 评论者账号ID（如果是本系统用户）
-	reply_to_comment_id int8 NULL, -- 回复的评论ID
-	reply_to_wxid varchar(100) NULL, -- 回复的对象WXID
-	comment_content text NOT NULL, -- 评论内容
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	commented_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 评论时间
-	deleted_at timestamp NULL, -- 删除时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT moments_comments_pkey PRIMARY KEY (comment_id),
-	CONSTRAINT fk_comment_post FOREIGN KEY (post_id) REFERENCES moments_posts(post_id),
-	CONSTRAINT fk_comment_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_comment_by_account FOREIGN KEY (comment_by_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_comment_reply FOREIGN KEY (reply_to_comment_id) REFERENCES moments_comments(comment_id)
-);
-CREATE INDEX idx_moments_comments_post ON public.moments_comments USING btree (post_id);
-CREATE INDEX idx_moments_comments_account ON public.moments_comments USING btree (account_id);
-CREATE INDEX idx_moments_comments_by ON public.moments_comments USING btree (comment_by_account_id);
-CREATE INDEX idx_moments_comments_time ON public.moments_comments USING btree (commented_at);
-CREATE INDEX idx_moments_comments_deleted ON public.moments_comments USING btree (is_deleted);
-COMMENT ON TABLE public.moments_comments IS '朋友圈评论表';
-
--- Column comments
-
-COMMENT ON COLUMN public.moments_comments.post_id IS '朋友圈ID';
-COMMENT ON COLUMN public.moments_comments.account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.moments_comments.comment_by_wxid IS '评论者WXID';
-COMMENT ON COLUMN public.moments_comments.comment_by_account_id IS '评论者账号ID（如果是本系统用户）';
-COMMENT ON COLUMN public.moments_comments.reply_to_comment_id IS '回复的评论ID';
-COMMENT ON COLUMN public.moments_comments.reply_to_wxid IS '回复的对象WXID';
-COMMENT ON COLUMN public.moments_comments.comment_content IS '评论内容';
-COMMENT ON COLUMN public.moments_comments.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.moments_comments.commented_at IS '评论时间';
-COMMENT ON COLUMN public.moments_comments.deleted_at IS '删除时间';
-COMMENT ON COLUMN public.moments_comments.created_at IS '创建时间';
-COMMENT ON COLUMN public.moments_comments.updated_at IS '更新时间';
-
-
--- 六、钱包与红包模块所需表
-
--- DROP SEQUENCE wallet_transactions_transaction_id_seq;
-
-CREATE SEQUENCE wallet_transactions_transaction_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE red_packets_packet_id_seq;
-
-CREATE SEQUENCE red_packets_packet_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE red_packet_records_record_id_seq;
-
-CREATE SEQUENCE red_packet_records_record_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- public.wallet_transactions definition
-
--- DROP TABLE wallet_transactions;
-
-CREATE TABLE wallet_transactions (
-	transaction_id bigserial NOT NULL,
-	account_id int8 NOT NULL, -- 所属微信账号ID
-	transaction_type int2 NOT NULL, -- 交易类型：1-收入 2-支出 3-转账 4-红包
-	related_account_id int8 NULL, -- 相关账号ID
-	related_wxid varchar(100) NULL, -- 相关微信WXID
-	amount numeric(15, 2) NOT NULL, -- 交易金额
-	balance_before numeric(15, 2) NULL, -- 交易前余额
-	balance_after numeric(15, 2) NULL, -- 交易后余额
-	description varchar(500) NULL, -- 交易描述
-	transaction_status int2 DEFAULT 1 NULL, -- 交易状态：1-待确认 2-已确认 3-失败 4-已撤销
-	transaction_at timestamp NULL, -- 交易时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT wallet_transactions_pkey PRIMARY KEY (transaction_id),
-	CONSTRAINT fk_wallet_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_wallet_related_account FOREIGN KEY (related_account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_wallet_account ON public.wallet_transactions USING btree (account_id);
-CREATE INDEX idx_wallet_type ON public.wallet_transactions USING btree (transaction_type);
-CREATE INDEX idx_wallet_status ON public.wallet_transactions USING btree (transaction_status);
-CREATE INDEX idx_wallet_time ON public.wallet_transactions USING btree (transaction_at);
-CREATE INDEX idx_wallet_related_account ON public.wallet_transactions USING btree (related_account_id);
-COMMENT ON TABLE public.wallet_transactions IS '钱包交易记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.wallet_transactions.account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.wallet_transactions.transaction_type IS '交易类型：1-收入 2-支出 3-转账 4-红包';
-COMMENT ON COLUMN public.wallet_transactions.related_account_id IS '相关账号ID';
-COMMENT ON COLUMN public.wallet_transactions.related_wxid IS '相关微信WXID';
-COMMENT ON COLUMN public.wallet_transactions.amount IS '交易金额';
-COMMENT ON COLUMN public.wallet_transactions.balance_before IS '交易前余额';
-COMMENT ON COLUMN public.wallet_transactions.balance_after IS '交易后余额';
-COMMENT ON COLUMN public.wallet_transactions.description IS '交易描述';
-COMMENT ON COLUMN public.wallet_transactions.transaction_status IS '交易状态：1-待确认 2-已确认 3-失败 4-已撤销';
-COMMENT ON COLUMN public.wallet_transactions.transaction_at IS '交易时间';
-COMMENT ON COLUMN public.wallet_transactions.created_at IS '创建时间';
-COMMENT ON COLUMN public.wallet_transactions.updated_at IS '更新时间';
-
-
--- public.red_packets definition
-
--- DROP TABLE red_packets;
-
-CREATE TABLE red_packets (
-	packet_id bigserial NOT NULL,
-	account_id int8 NOT NULL, -- 所属微信账号ID
-	target_wxid varchar(100) NULL, -- 目标WXID（单人或群）
-	target_type int2 NOT NULL, -- 目标类型：1-个人 2-群聊
-	total_amount numeric(15, 2) NOT NULL, -- 总金额
-	packet_count int4 NOT NULL, -- 红包个数
-	distributed_count int4 DEFAULT 0 NULL, -- 已领取个数
-	distributed_amount numeric(15, 2) DEFAULT 0 NULL, -- 已领取金额
-	greeting_message varchar(500) NULL, -- 贺词
-	packet_type int2 DEFAULT 1 NULL, -- 红包类型：1-普通红包 2-拼手气红包 3-定额红包
-	packet_status int2 DEFAULT 1 NULL, -- 红包状态：1-待发送 2-已发送 3-已领完 4-已过期 5-已撤销
-	expires_at timestamp NULL, -- 过期时间
-	sent_at timestamp NULL, -- 发送时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT red_packets_pkey PRIMARY KEY (packet_id),
-	CONSTRAINT fk_red_packet_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_red_packets_account ON public.red_packets USING btree (account_id);
-CREATE INDEX idx_red_packets_target ON public.red_packets USING btree (target_wxid);
-CREATE INDEX idx_red_packets_status ON public.red_packets USING btree (packet_status);
-CREATE INDEX idx_red_packets_time ON public.red_packets USING btree (sent_at);
-CREATE INDEX idx_red_packets_expires ON public.red_packets USING btree (expires_at);
-COMMENT ON TABLE public.red_packets IS '红包发送记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.red_packets.account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.red_packets.target_wxid IS '目标WXID（单人或群）';
-COMMENT ON COLUMN public.red_packets.target_type IS '目标类型：1-个人 2-群聊';
-COMMENT ON COLUMN public.red_packets.total_amount IS '总金额';
-COMMENT ON COLUMN public.red_packets.packet_count IS '红包个数';
-COMMENT ON COLUMN public.red_packets.distributed_count IS '已领取个数';
-COMMENT ON COLUMN public.red_packets.distributed_amount IS '已领取金额';
-COMMENT ON COLUMN public.red_packets.greeting_message IS '贺词';
-COMMENT ON COLUMN public.red_packets.packet_type IS '红包类型：1-普通红包 2-拼手气红包 3-定额红包';
-COMMENT ON COLUMN public.red_packets.packet_status IS '红包状态：1-待发送 2-已发送 3-已领完 4-已过期 5-已撤销';
-COMMENT ON COLUMN public.red_packets.expires_at IS '过期时间';
-COMMENT ON COLUMN public.red_packets.sent_at IS '发送时间';
-COMMENT ON COLUMN public.red_packets.created_at IS '创建时间';
-COMMENT ON COLUMN public.red_packets.updated_at IS '更新时间';
-
-
--- public.red_packet_records definition
-
--- DROP TABLE red_packet_records;
-
-CREATE TABLE red_packet_records (
-	record_id bigserial NOT NULL,
-	packet_id int8 NOT NULL, -- 红包ID
-	account_id int8 NOT NULL, -- 所属微信账号ID
-	received_by_wxid varchar(100) NOT NULL, -- 领取者WXID
-	received_by_account_id int8 NULL, -- 领取者账号ID（如果是本系统用户）
-	amount numeric(15, 2) NOT NULL, -- 领取金额
-	received_at timestamp NULL, -- 领取时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT red_packet_records_pkey PRIMARY KEY (record_id),
-	CONSTRAINT fk_record_packet FOREIGN KEY (packet_id) REFERENCES red_packets(packet_id),
-	CONSTRAINT fk_record_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_record_received_account FOREIGN KEY (received_by_account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_red_packet_records_packet ON public.red_packet_records USING btree (packet_id);
-CREATE INDEX idx_red_packet_records_account ON public.red_packet_records USING btree (account_id);
-CREATE INDEX idx_red_packet_records_received ON public.red_packet_records USING btree (received_by_account_id);
-CREATE INDEX idx_red_packet_records_time ON public.red_packet_records USING btree (received_at);
-COMMENT ON TABLE public.red_packet_records IS '红包领取记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.red_packet_records.packet_id IS '红包ID';
-COMMENT ON COLUMN public.red_packet_records.account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.red_packet_records.received_by_wxid IS '领取者WXID';
-COMMENT ON COLUMN public.red_packet_records.received_by_account_id IS '领取者账号ID（如果是本系统用户）';
-COMMENT ON COLUMN public.red_packet_records.amount IS '领取金额';
-COMMENT ON COLUMN public.red_packet_records.received_at IS '领取时间';
-COMMENT ON COLUMN public.red_packet_records.created_at IS '创建时间';
-
-
--- 七、公众号与小程序模块所需表
-
--- DROP SEQUENCE official_accounts_account_id_seq;
-
-CREATE SEQUENCE official_accounts_account_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE miniprogram_accounts_account_id_seq;
-
-CREATE SEQUENCE miniprogram_accounts_account_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE official_account_search_logs_log_id_seq;
-
-CREATE SEQUENCE official_account_search_logs_log_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE miniprogram_search_logs_log_id_seq;
-
-CREATE SEQUENCE miniprogram_search_logs_log_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE official_account_messages_message_id_seq;
-
-CREATE SEQUENCE official_account_messages_message_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE miniprogram_messages_message_id_seq;
-
-CREATE SEQUENCE miniprogram_messages_message_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE official_account_subscriptions_subscription_id_seq;
-
-CREATE SEQUENCE official_account_subscriptions_subscription_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE miniprogram_access_logs_log_id_seq;
-
-CREATE SEQUENCE miniprogram_access_logs_log_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE official_account_follow_logs_log_id_seq;
-
-CREATE SEQUENCE official_account_follow_logs_log_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE miniprogram_follow_logs_log_id_seq;
-
-CREATE SEQUENCE miniprogram_follow_logs_log_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- public.official_accounts definition
-
--- DROP TABLE official_accounts;
-
-CREATE TABLE official_accounts (
-	account_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 关联的微信账号ID
-	official_account_name varchar(255) NOT NULL, -- 公众号名称
-	official_wxid varchar(100) NOT NULL, -- 公众号微信ID
-	official_account_type int2 DEFAULT 1 NULL, -- 公众号类型：1-订阅号 2-服务号 3-企业号
-	official_qrcode varchar(500) NULL, -- 公众号二维码
-	official_avatar varchar(500) NULL, -- 公众号头像
-	official_description text NULL, -- 公众号描述
-	official_url varchar(500) NULL, -- 公众号链接
-	follow_status int2 DEFAULT 1 NULL, -- 关注状态：1-已关注 2-未关注 3-已取消关注
-	follow_at timestamp NULL, -- 关注时间
-	unfollow_at timestamp NULL, -- 取消关注时间
-	last_msg_at timestamp NULL, -- 最后消息时间
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	deleted_at timestamp NULL, -- 删除时间
-	CONSTRAINT official_accounts_pkey PRIMARY KEY (account_id),
-	CONSTRAINT uk_official_wxid UNIQUE (wechat_account_id, official_wxid),
-	CONSTRAINT fk_official_account FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_official_accounts_wechat ON public.official_accounts USING btree (wechat_account_id);
-CREATE INDEX idx_official_accounts_type ON public.official_accounts USING btree (official_account_type);
-CREATE INDEX idx_official_accounts_follow ON public.official_accounts USING btree (follow_status, is_deleted);
-CREATE INDEX idx_official_accounts_time ON public.official_accounts USING btree (follow_at, unfollow_at);
-COMMENT ON TABLE public.official_accounts IS '公众号账号表';
-
--- Column comments
-
-COMMENT ON COLUMN public.official_accounts.wechat_account_id IS '关联的微信账号ID';
-COMMENT ON COLUMN public.official_accounts.official_account_name IS '公众号名称';
-COMMENT ON COLUMN public.official_accounts.official_wxid IS '公众号微信ID';
-COMMENT ON COLUMN public.official_accounts.official_account_type IS '公众号类型：1-订阅号 2-服务号 3-企业号';
-COMMENT ON COLUMN public.official_accounts.official_qrcode IS '公众号二维码';
-COMMENT ON COLUMN public.official_accounts.official_avatar IS '公众号头像';
-COMMENT ON COLUMN public.official_accounts.official_description IS '公众号描述';
-COMMENT ON COLUMN public.official_accounts.official_url IS '公众号链接';
-COMMENT ON COLUMN public.official_accounts.follow_status IS '关注状态：1-已关注 2-未关注 3-已取消关注';
-COMMENT ON COLUMN public.official_accounts.follow_at IS '关注时间';
-COMMENT ON COLUMN public.official_accounts.unfollow_at IS '取消关注时间';
-COMMENT ON COLUMN public.official_accounts.last_msg_at IS '最后消息时间';
-COMMENT ON COLUMN public.official_accounts.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.official_accounts.created_at IS '创建时间';
-COMMENT ON COLUMN public.official_accounts.updated_at IS '更新时间';
-COMMENT ON COLUMN public.official_accounts.deleted_at IS '删除时间';
-
-
--- public.miniprogram_accounts definition
-
--- DROP TABLE miniprogram_accounts;
-
-CREATE TABLE miniprogram_accounts (
-	account_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 关联的微信账号ID
-	miniprogram_name varchar(255) NOT NULL, -- 小程序名称
-	miniprogram_wxid varchar(100) NOT NULL, -- 小程序微信ID
-	miniprogram_appid varchar(100) NULL, -- 小程序AppID
-	miniprogram_avatar varchar(500) NULL, -- 小程序头像
-	miniprogram_description text NULL, -- 小程序描述
-	miniprogram_category varchar(100) NULL, -- 小程序分类
-	miniprogram_version varchar(50) NULL, -- 小程序版本
-	follow_status int2 DEFAULT 1 NULL, -- 关注状态：1-已关注 2-未关注 3-已取消关注
-	follow_at timestamp NULL, -- 关注时间
-	unfollow_at timestamp NULL, -- 取消关注时间
-	last_use_at timestamp NULL, -- 最后使用时间
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	deleted_at timestamp NULL, -- 删除时间
-	CONSTRAINT miniprogram_accounts_pkey PRIMARY KEY (account_id),
-	CONSTRAINT uk_miniprogram_wxid UNIQUE (wechat_account_id, miniprogram_wxid),
-	CONSTRAINT fk_miniprogram_account FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_miniprogram_accounts_wechat ON public.miniprogram_accounts USING btree (wechat_account_id);
-CREATE INDEX idx_miniprogram_accounts_appid ON public.miniprogram_accounts USING btree (miniprogram_appid);
-CREATE INDEX idx_miniprogram_accounts_follow ON public.miniprogram_accounts USING btree (follow_status, is_deleted);
-CREATE INDEX idx_miniprogram_accounts_time ON public.miniprogram_accounts USING btree (follow_at, unfollow_at);
-COMMENT ON TABLE public.miniprogram_accounts IS '小程序账号表';
-
--- Column comments
-
-COMMENT ON COLUMN public.miniprogram_accounts.wechat_account_id IS '关联的微信账号ID';
-COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_name IS '小程序名称';
-COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_wxid IS '小程序微信ID';
-COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_appid IS '小程序AppID';
-COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_avatar IS '小程序头像';
-COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_description IS '小程序描述';
-COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_category IS '小程序分类';
-COMMENT ON COLUMN public.miniprogram_accounts.miniprogram_version IS '小程序版本';
-COMMENT ON COLUMN public.miniprogram_accounts.follow_status IS '关注状态：1-已关注 2-未关注 3-已取消关注';
-COMMENT ON COLUMN public.miniprogram_accounts.follow_at IS '关注时间';
-COMMENT ON COLUMN public.miniprogram_accounts.unfollow_at IS '取消关注时间';
-COMMENT ON COLUMN public.miniprogram_accounts.last_use_at IS '最后使用时间';
-COMMENT ON COLUMN public.miniprogram_accounts.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.miniprogram_accounts.created_at IS '创建时间';
-COMMENT ON COLUMN public.miniprogram_accounts.updated_at IS '更新时间';
-COMMENT ON COLUMN public.miniprogram_accounts.deleted_at IS '删除时间';
-
-
--- public.official_account_search_logs definition
-
--- DROP TABLE official_account_search_logs;
-
-CREATE TABLE official_account_search_logs (
-	log_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
-	search_keyword varchar(255) NOT NULL, -- 搜索关键词
-	search_type int2 DEFAULT 1 NULL, -- 搜索类型：1-公众号 2-小程序 3-混合搜索
-	search_results int4 DEFAULT 0 NULL, -- 搜索结果数
-	selected_official_id int8 NULL, -- 选择的公众号ID
-	searched_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 搜索时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT official_account_search_logs_pkey PRIMARY KEY (log_id),
-	CONSTRAINT fk_search_log_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_search_log_official FOREIGN KEY (selected_official_id) REFERENCES official_accounts(account_id)
-);
-CREATE INDEX idx_search_logs_wechat ON public.official_account_search_logs USING btree (wechat_account_id);
-CREATE INDEX idx_search_logs_keyword ON public.official_account_search_logs USING btree (search_keyword);
-CREATE INDEX idx_search_logs_type ON public.official_account_search_logs USING btree (search_type);
-CREATE INDEX idx_search_logs_time ON public.official_account_search_logs USING btree (searched_at);
-COMMENT ON TABLE public.official_account_search_logs IS '公众号搜索记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.official_account_search_logs.wechat_account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.official_account_search_logs.search_keyword IS '搜索关键词';
-COMMENT ON COLUMN public.official_account_search_logs.search_type IS '搜索类型：1-公众号 2-小程序 3-混合搜索';
-COMMENT ON COLUMN public.official_account_search_logs.search_results IS '搜索结果数';
-COMMENT ON COLUMN public.official_account_search_logs.selected_official_id IS '选择的公众号ID';
-COMMENT ON COLUMN public.official_account_search_logs.searched_at IS '搜索时间';
-COMMENT ON COLUMN public.official_account_search_logs.created_at IS '创建时间';
-
-
--- public.miniprogram_search_logs definition
-
--- DROP TABLE miniprogram_search_logs;
-
-CREATE TABLE miniprogram_search_logs (
-	log_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
-	search_keyword varchar(255) NOT NULL, -- 搜索关键词
-	search_results int4 DEFAULT 0 NULL, -- 搜索结果数
-	selected_miniprogram_id int8 NULL, -- 选择的小程序ID
-	searched_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 搜索时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT miniprogram_search_logs_pkey PRIMARY KEY (log_id),
-	CONSTRAINT fk_miniprogram_search_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_miniprogram_search_mini FOREIGN KEY (selected_miniprogram_id) REFERENCES miniprogram_accounts(account_id)
-);
-CREATE INDEX idx_miniprogram_search_wechat ON public.miniprogram_search_logs USING btree (wechat_account_id);
-CREATE INDEX idx_miniprogram_search_keyword ON public.miniprogram_search_logs USING btree (search_keyword);
-CREATE INDEX idx_miniprogram_search_time ON public.miniprogram_search_logs USING btree (searched_at);
-COMMENT ON TABLE public.miniprogram_search_logs IS '小程序搜索记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.miniprogram_search_logs.wechat_account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.miniprogram_search_logs.search_keyword IS '搜索关键词';
-COMMENT ON COLUMN public.miniprogram_search_logs.search_results IS '搜索结果数';
-COMMENT ON COLUMN public.miniprogram_search_logs.selected_miniprogram_id IS '选择的小程序ID';
-COMMENT ON COLUMN public.miniprogram_search_logs.searched_at IS '搜索时间';
-COMMENT ON COLUMN public.miniprogram_search_logs.created_at IS '创建时间';
-
-
--- public.official_account_messages definition
-
--- DROP TABLE official_account_messages;
-
-CREATE TABLE official_account_messages (
-	message_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
-	official_account_id int8 NOT NULL, -- 公众号ID
-	message_type int2 NOT NULL, -- 消息类型：1-文本 2-图片 3-语音 4-视频 5-链接 6-文章 7-推送通知
-	message_title varchar(500) NULL, -- 消息标题
-	message_content text NULL, -- 消息内容
-	message_url varchar(500) NULL, -- 消息链接
-	message_thumbnail varchar(500) NULL, -- 消息缩略图
-	direction int2 DEFAULT 1 NULL, -- 消息方向：1-接收 2-发送
-	read_status int2 DEFAULT 0 NULL, -- 阅读状态：0-未读 1-已读
-	read_at timestamp NULL, -- 阅读时间
-	message_time timestamp NULL, -- 消息时间
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT official_account_messages_pkey PRIMARY KEY (message_id),
-	CONSTRAINT fk_official_msg_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_official_msg_account FOREIGN KEY (official_account_id) REFERENCES official_accounts(account_id)
-);
-CREATE INDEX idx_official_msg_wechat ON public.official_account_messages USING btree (wechat_account_id);
-CREATE INDEX idx_official_msg_account ON public.official_account_messages USING btree (official_account_id);
-CREATE INDEX idx_official_msg_type ON public.official_account_messages USING btree (message_type);
-CREATE INDEX idx_official_msg_read ON public.official_account_messages USING btree (read_status);
-CREATE INDEX idx_official_msg_time ON public.official_account_messages USING btree (message_time);
-CREATE INDEX idx_official_msg_direction ON public.official_account_messages USING btree (direction, is_deleted);
-COMMENT ON TABLE public.official_account_messages IS '公众号消息记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.official_account_messages.wechat_account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.official_account_messages.official_account_id IS '公众号ID';
-COMMENT ON COLUMN public.official_account_messages.message_type IS '消息类型：1-文本 2-图片 3-语音 4-视频 5-链接 6-文章 7-推送通知';
-COMMENT ON COLUMN public.official_account_messages.message_title IS '消息标题';
-COMMENT ON COLUMN public.official_account_messages.message_content IS '消息内容';
-COMMENT ON COLUMN public.official_account_messages.message_url IS '消息链接';
-COMMENT ON COLUMN public.official_account_messages.message_thumbnail IS '消息缩略图';
-COMMENT ON COLUMN public.official_account_messages.direction IS '消息方向：1-接收 2-发送';
-COMMENT ON COLUMN public.official_account_messages.read_status IS '阅读状态：0-未读 1-已读';
-COMMENT ON COLUMN public.official_account_messages.read_at IS '阅读时间';
-COMMENT ON COLUMN public.official_account_messages.message_time IS '消息时间';
-COMMENT ON COLUMN public.official_account_messages.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.official_account_messages.created_at IS '创建时间';
-COMMENT ON COLUMN public.official_account_messages.updated_at IS '更新时间';
-
-
--- public.miniprogram_messages definition
-
--- DROP TABLE miniprogram_messages;
-
-CREATE TABLE miniprogram_messages (
-	message_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
-	miniprogram_id int8 NOT NULL, -- 小程序ID
-	message_type int2 NOT NULL, -- 消息类型：1-文本 2-图片 3-语音 4-视频 5-链接 6-通知
-	message_title varchar(500) NULL, -- 消息标题
-	message_content text NULL, -- 消息内容
-	message_url varchar(500) NULL, -- 消息链接
-	message_thumbnail varchar(500) NULL, -- 消息缩略图
-	direction int2 DEFAULT 1 NULL, -- 消息方向：1-接收 2-发送
-	read_status int2 DEFAULT 0 NULL, -- 阅读状态：0-未读 1-已读
-	read_at timestamp NULL, -- 阅读时间
-	message_time timestamp NULL, -- 消息时间
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT miniprogram_messages_pkey PRIMARY KEY (message_id),
-	CONSTRAINT fk_mini_msg_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_mini_msg_account FOREIGN KEY (miniprogram_id) REFERENCES miniprogram_accounts(account_id)
-);
-CREATE INDEX idx_mini_msg_wechat ON public.miniprogram_messages USING btree (wechat_account_id);
-CREATE INDEX idx_mini_msg_account ON public.miniprogram_messages USING btree (miniprogram_id);
-CREATE INDEX idx_mini_msg_type ON public.miniprogram_messages USING btree (message_type);
-CREATE INDEX idx_mini_msg_read ON public.miniprogram_messages USING btree (read_status);
-CREATE INDEX idx_mini_msg_time ON public.miniprogram_messages USING btree (message_time);
-CREATE INDEX idx_mini_msg_direction ON public.miniprogram_messages USING btree (direction, is_deleted);
-COMMENT ON TABLE public.miniprogram_messages IS '小程序消息记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.miniprogram_messages.wechat_account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.miniprogram_messages.miniprogram_id IS '小程序ID';
-COMMENT ON COLUMN public.miniprogram_messages.message_type IS '消息类型：1-文本 2-图片 3-语音 4-视频 5-链接 6-通知';
-COMMENT ON COLUMN public.miniprogram_messages.message_title IS '消息标题';
-COMMENT ON COLUMN public.miniprogram_messages.message_content IS '消息内容';
-COMMENT ON COLUMN public.miniprogram_messages.message_url IS '消息链接';
-COMMENT ON COLUMN public.miniprogram_messages.message_thumbnail IS '消息缩略图';
-COMMENT ON COLUMN public.miniprogram_messages.direction IS '消息方向：1-接收 2-发送';
-COMMENT ON COLUMN public.miniprogram_messages.read_status IS '阅读状态：0-未读 1-已读';
-COMMENT ON COLUMN public.miniprogram_messages.read_at IS '阅读时间';
-COMMENT ON COLUMN public.miniprogram_messages.message_time IS '消息时间';
-COMMENT ON COLUMN public.miniprogram_messages.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.miniprogram_messages.created_at IS '创建时间';
-COMMENT ON COLUMN public.miniprogram_messages.updated_at IS '更新时间';
-
-
--- public.official_account_subscriptions definition
-
--- DROP TABLE official_account_subscriptions;
-
-CREATE TABLE official_account_subscriptions (
-	subscription_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
-	official_account_id int8 NOT NULL, -- 公众号ID
-	subscription_type int2 DEFAULT 1 NULL, -- 订阅类型：1-自动订阅 2-手动订阅 3-被推送订阅
-	notification_enabled bool DEFAULT true NULL, -- 是否启用通知
-	subscription_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 订阅时间
-	last_notification_at timestamp NULL, -- 最后通知时间
-	notification_count int4 DEFAULT 0 NULL, -- 通知数量
-	is_active bool DEFAULT true NULL, -- 是否有效
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT official_account_subscriptions_pkey PRIMARY KEY (subscription_id),
-	CONSTRAINT uk_official_sub UNIQUE (wechat_account_id, official_account_id),
-	CONSTRAINT fk_official_sub_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_official_sub_account FOREIGN KEY (official_account_id) REFERENCES official_accounts(account_id)
-);
-CREATE INDEX idx_official_sub_wechat ON public.official_account_subscriptions USING btree (wechat_account_id);
-CREATE INDEX idx_official_sub_account ON public.official_account_subscriptions USING btree (official_account_id);
-CREATE INDEX idx_official_sub_active ON public.official_account_subscriptions USING btree (is_active);
-CREATE INDEX idx_official_sub_notification ON public.official_account_subscriptions USING btree (notification_enabled);
-COMMENT ON TABLE public.official_account_subscriptions IS '公众号订阅记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.official_account_subscriptions.wechat_account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.official_account_subscriptions.official_account_id IS '公众号ID';
-COMMENT ON COLUMN public.official_account_subscriptions.subscription_type IS '订阅类型：1-自动订阅 2-手动订阅 3-被推送订阅';
-COMMENT ON COLUMN public.official_account_subscriptions.notification_enabled IS '是否启用通知';
-COMMENT ON COLUMN public.official_account_subscriptions.subscription_at IS '订阅时间';
-COMMENT ON COLUMN public.official_account_subscriptions.last_notification_at IS '最后通知时间';
-COMMENT ON COLUMN public.official_account_subscriptions.notification_count IS '通知数量';
-COMMENT ON COLUMN public.official_account_subscriptions.is_active IS '是否有效';
-COMMENT ON COLUMN public.official_account_subscriptions.created_at IS '创建时间';
-COMMENT ON COLUMN public.official_account_subscriptions.updated_at IS '更新时间';
-
-
--- public.miniprogram_access_logs definition
-
--- DROP TABLE miniprogram_access_logs;
-
-CREATE TABLE miniprogram_access_logs (
-	log_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
-	miniprogram_id int8 NOT NULL, -- 小程序ID
-	access_type int2 DEFAULT 1 NULL, -- 访问类型：1-打开 2-分享 3-搜索 4-推荐 5-从消息打开
-	access_path varchar(500) NULL, -- 访问路径/页面
-	access_parameter text NULL, -- 访问参数
-	duration int4 NULL, -- 访问时长（秒）
-	device_id int8 NULL, -- 设备ID
-	accessed_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 访问时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT miniprogram_access_logs_pkey PRIMARY KEY (log_id),
-	CONSTRAINT fk_mini_access_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_mini_access_mini FOREIGN KEY (miniprogram_id) REFERENCES miniprogram_accounts(account_id),
-	CONSTRAINT fk_mini_access_device FOREIGN KEY (device_id) REFERENCES devices(device_id)
-);
-CREATE INDEX idx_mini_access_wechat ON public.miniprogram_access_logs USING btree (wechat_account_id);
-CREATE INDEX idx_mini_access_mini ON public.miniprogram_access_logs USING btree (miniprogram_id);
-CREATE INDEX idx_mini_access_type ON public.miniprogram_access_logs USING btree (access_type);
-CREATE INDEX idx_mini_access_time ON public.miniprogram_access_logs USING btree (accessed_at);
-CREATE INDEX idx_mini_access_device ON public.miniprogram_access_logs USING btree (device_id);
-COMMENT ON TABLE public.miniprogram_access_logs IS '小程序访问记录表';
-
--- Column comments
-
-COMMENT ON COLUMN public.miniprogram_access_logs.wechat_account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.miniprogram_access_logs.miniprogram_id IS '小程序ID';
-COMMENT ON COLUMN public.miniprogram_access_logs.access_type IS '访问类型：1-打开 2-分享 3-搜索 4-推荐 5-从消息打开';
-COMMENT ON COLUMN public.miniprogram_access_logs.access_path IS '访问路径/页面';
-COMMENT ON COLUMN public.miniprogram_access_logs.access_parameter IS '访问参数';
-COMMENT ON COLUMN public.miniprogram_access_logs.duration IS '访问时长（秒）';
-COMMENT ON COLUMN public.miniprogram_access_logs.device_id IS '设备ID';
-COMMENT ON COLUMN public.miniprogram_access_logs.accessed_at IS '访问时间';
-COMMENT ON COLUMN public.miniprogram_access_logs.created_at IS '创建时间';
-
-
--- public.official_account_follow_logs definition
-
--- DROP TABLE official_account_follow_logs;
-
-CREATE TABLE official_account_follow_logs (
-	log_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
-	official_account_id int8 NOT NULL, -- 公众号ID
-	event_type int2 NOT NULL, -- 事件类型：1-关注 2-取消关注
-	event_reason varchar(200) NULL, -- 事件原因
-	event_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 事件时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT official_account_follow_logs_pkey PRIMARY KEY (log_id),
-	CONSTRAINT fk_official_follow_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_official_follow_account FOREIGN KEY (official_account_id) REFERENCES official_accounts(account_id)
-);
-CREATE INDEX idx_official_follow_wechat ON public.official_account_follow_logs USING btree (wechat_account_id);
-CREATE INDEX idx_official_follow_account ON public.official_account_follow_logs USING btree (official_account_id);
-CREATE INDEX idx_official_follow_event ON public.official_account_follow_logs USING btree (event_type);
-CREATE INDEX idx_official_follow_time ON public.official_account_follow_logs USING btree (event_at);
-COMMENT ON TABLE public.official_account_follow_logs IS '公众号关注事件日志表';
-
--- Column comments
-
-COMMENT ON COLUMN public.official_account_follow_logs.wechat_account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.official_account_follow_logs.official_account_id IS '公众号ID';
-COMMENT ON COLUMN public.official_account_follow_logs.event_type IS '事件类型：1-关注 2-取消关注';
-COMMENT ON COLUMN public.official_account_follow_logs.event_reason IS '事件原因';
-COMMENT ON COLUMN public.official_account_follow_logs.event_at IS '事件时间';
-COMMENT ON COLUMN public.official_account_follow_logs.created_at IS '创建时间';
-
-
--- public.miniprogram_follow_logs definition
-
--- DROP TABLE miniprogram_follow_logs;
-
-CREATE TABLE miniprogram_follow_logs (
-	log_id bigserial NOT NULL,
-	wechat_account_id int8 NOT NULL, -- 所属微信账号ID
-	miniprogram_id int8 NOT NULL, -- 小程序ID
-	event_type int2 NOT NULL, -- 事件类型：1-关注/添加 2-取消关注/删除
-	event_reason varchar(200) NULL, -- 事件原因
-	event_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 事件时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT miniprogram_follow_logs_pkey PRIMARY KEY (log_id),
-	CONSTRAINT fk_miniprogram_follow_wechat FOREIGN KEY (wechat_account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_miniprogram_follow_mini FOREIGN KEY (miniprogram_id) REFERENCES miniprogram_accounts(account_id)
-);
-CREATE INDEX idx_miniprogram_follow_wechat ON public.miniprogram_follow_logs USING btree (wechat_account_id);
-CREATE INDEX idx_miniprogram_follow_mini ON public.miniprogram_follow_logs USING btree (miniprogram_id);
-CREATE INDEX idx_miniprogram_follow_event ON public.miniprogram_follow_logs USING btree (event_type);
-CREATE INDEX idx_miniprogram_follow_time ON public.miniprogram_follow_logs USING btree (event_at);
-COMMENT ON TABLE public.miniprogram_follow_logs IS '小程序关注事件日志表';
-
--- Column comments
-
-COMMENT ON COLUMN public.miniprogram_follow_logs.wechat_account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.miniprogram_follow_logs.miniprogram_id IS '小程序ID';
-COMMENT ON COLUMN public.miniprogram_follow_logs.event_type IS '事件类型：1-关注/添加 2-取消关注/删除';
-COMMENT ON COLUMN public.miniprogram_follow_logs.event_reason IS '事件原因';
-COMMENT ON COLUMN public.miniprogram_follow_logs.event_at IS '事件时间';
-COMMENT ON COLUMN public.miniprogram_follow_logs.created_at IS '创建时间';
-
-
--- 八、会话管理模块所需表
-
--- DROP SEQUENCE conversations_conversation_id_seq;
-
-CREATE SEQUENCE conversations_conversation_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- public.conversations definition
-
--- DROP TABLE conversations;
-
-CREATE TABLE conversations (
-	conversation_id bigserial NOT NULL,
-	account_id int8 NOT NULL, -- 所属微信账号ID
-	chat_partner_wxid varchar(100) NOT NULL, -- 聊天对方WXID
-	chat_partner_id int8 NULL, -- 聊天对方账号ID（如果是本系统用户）
-	chat_type int2 DEFAULT 1 NOT NULL, -- 聊天类型：1-单聊 2-群聊
-	conversation_name varchar(255) NULL, -- 会话名称/群名称
-	last_message_id int8 NULL, -- 最后一条消息ID
-	last_message_content text NULL, -- 最后消息内容预览
-	last_message_at timestamp NULL, -- 最后消息时间
-	unread_count int4 DEFAULT 0 NULL, -- 未读消息数
-	is_pinned bool DEFAULT false NULL, -- 是否置顶
-	is_muted bool DEFAULT false NULL, -- 是否静音
-	is_archived bool DEFAULT false NULL, -- 是否归档
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	pinned_at timestamp NULL, -- 置顶时间
-	archived_at timestamp NULL, -- 归档时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT conversations_pkey PRIMARY KEY (conversation_id),
-	CONSTRAINT uk_conversation_unique UNIQUE (account_id, chat_partner_wxid, chat_type),
-	CONSTRAINT fk_conversation_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_conversation_partner FOREIGN KEY (chat_partner_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_conversations_account ON public.conversations USING btree (account_id);
-CREATE INDEX idx_conversations_partner ON public.conversations USING btree (chat_partner_id);
-CREATE INDEX idx_conversations_pinned ON public.conversations USING btree (is_pinned);
-CREATE INDEX idx_conversations_unread ON public.conversations USING btree (unread_count);
-CREATE INDEX idx_conversations_muted ON public.conversations USING btree (is_muted);
-CREATE INDEX idx_conversations_last_msg ON public.conversations USING btree (last_message_at);
-COMMENT ON TABLE public.conversations IS '会话表';
-
--- Column comments
-
-COMMENT ON COLUMN public.conversations.account_id IS '所属微信账号ID';
-COMMENT ON COLUMN public.conversations.chat_partner_wxid IS '聊天对方WXID';
-COMMENT ON COLUMN public.conversations.chat_partner_id IS '聊天对方账号ID（如果是本系统用户）';
-COMMENT ON COLUMN public.conversations.chat_type IS '聊天类型：1-单聊 2-群聊';
-COMMENT ON COLUMN public.conversations.conversation_name IS '会话名称/群名称';
-COMMENT ON COLUMN public.conversations.last_message_id IS '最后一条消息ID';
-COMMENT ON COLUMN public.conversations.last_message_content IS '最后消息内容预览';
-COMMENT ON COLUMN public.conversations.last_message_at IS '最后消息时间';
-COMMENT ON COLUMN public.conversations.unread_count IS '未读消息数';
-COMMENT ON COLUMN public.conversations.is_pinned IS '是否置顶';
-COMMENT ON COLUMN public.conversations.is_muted IS '是否静音';
-COMMENT ON COLUMN public.conversations.is_archived IS '是否归档';
-COMMENT ON COLUMN public.conversations.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.conversations.pinned_at IS '置顶时间';
-COMMENT ON COLUMN public.conversations.archived_at IS '归档时间';
-COMMENT ON COLUMN public.conversations.created_at IS '创建时间';
-COMMENT ON COLUMN public.conversations.updated_at IS '更新时间';
-
-
--- 九、设备与手机操作模块所需表
-
--- DROP SEQUENCE device_commands_command_id_seq;
-
-CREATE SEQUENCE device_commands_command_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE device_status_logs_log_id_seq;
-
-CREATE SEQUENCE device_status_logs_log_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE device_locations_location_id_seq;
-
-CREATE SEQUENCE device_locations_location_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- public.device_commands definition
-
--- DROP TABLE device_commands;
-
-CREATE TABLE device_commands (
-	command_id bigserial NOT NULL,
-	device_id int8 NOT NULL, -- 设备ID
-	account_id int8 NOT NULL, -- 微信账号ID
-	command_type int2 NOT NULL, -- 命令类型：1-重启手机 2-清理缓存 3-获取截图 4-拍照 5-录音 6-屏幕控制 7-更新应用 8-其他
-	command_content text NULL, -- 命令内容/参数
-	command_status int2 DEFAULT 1 NULL, -- 命令状态：1-待执行 2-执行中 3-已完成 4-执行失败 5-已超时
-	result_content text NULL, -- 执行结果
-	error_message varchar(500) NULL, -- 错误信息
-	sent_at timestamp NULL, -- 发送时间
-	executed_at timestamp NULL, -- 执行时间
-	completed_at timestamp NULL, -- 完成时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT device_commands_pkey PRIMARY KEY (command_id),
-	CONSTRAINT fk_command_device FOREIGN KEY (device_id) REFERENCES devices(device_id),
-	CONSTRAINT fk_command_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_device_commands_device ON public.device_commands USING btree (device_id);
-CREATE INDEX idx_device_commands_account ON public.device_commands USING btree (account_id);
-CREATE INDEX idx_device_commands_status ON public.device_commands USING btree (command_status);
-CREATE INDEX idx_device_commands_type ON public.device_commands USING btree (command_type);
-CREATE INDEX idx_device_commands_time ON public.device_commands USING btree (sent_at);
-COMMENT ON TABLE public.device_commands IS '设备命令表';
-
--- Column comments
-
-COMMENT ON COLUMN public.device_commands.device_id IS '设备ID';
-COMMENT ON COLUMN public.device_commands.account_id IS '微信账号ID';
-COMMENT ON COLUMN public.device_commands.command_type IS '命令类型：1-重启手机 2-清理缓存 3-获取截图 4-拍照 5-录音 6-屏幕控制 7-更新应用 8-其他';
-COMMENT ON COLUMN public.device_commands.command_content IS '命令内容/参数';
-COMMENT ON COLUMN public.device_commands.command_status IS '命令状态：1-待执行 2-执行中 3-已完成 4-执行失败 5-已超时';
-COMMENT ON COLUMN public.device_commands.result_content IS '执行结果';
-COMMENT ON COLUMN public.device_commands.error_message IS '错误信息';
-COMMENT ON COLUMN public.device_commands.sent_at IS '发送时间';
-COMMENT ON COLUMN public.device_commands.executed_at IS '执行时间';
-COMMENT ON COLUMN public.device_commands.completed_at IS '完成时间';
-COMMENT ON COLUMN public.device_commands.created_at IS '创建时间';
-COMMENT ON COLUMN public.device_commands.updated_at IS '更新时间';
-
-
--- public.device_status_logs definition
-
--- DROP TABLE device_status_logs;
-
-CREATE TABLE device_status_logs (
-	log_id bigserial NOT NULL,
-	device_id int8 NOT NULL, -- 设备ID
-	account_id int8 NOT NULL, -- 微信账号ID
-	battery_level int4 NULL, -- 电池电量（0-100）
-	battery_status int2 DEFAULT 1 NULL, -- 电池状态：1-正常 2-低电量 3-充电中 4-不可用
-	storage_total int8 NULL, -- 总存储空间（字节）
-	storage_used int8 NULL, -- 已使用空间（字节）
-	storage_available int8 NULL, -- 可用空间（字节）
-	cpu_usage numeric(5, 2) NULL, -- CPU使用率
-	memory_total int8 NULL, -- 总内存（字节）
-	memory_used int8 NULL, -- 已使用内存（字节）
-	memory_available int8 NULL, -- 可用内存（字节）
-	temperature numeric(5, 2) NULL, -- 设备温度
-	network_type varchar(50) NULL, -- 网络类型（WiFi/4G/5G等）
-	signal_strength int2 NULL, -- 信号强度
-	reported_at timestamp NULL, -- 上报时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT device_status_logs_pkey PRIMARY KEY (log_id),
-	CONSTRAINT fk_status_log_device FOREIGN KEY (device_id) REFERENCES devices(device_id),
-	CONSTRAINT fk_status_log_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_device_status_device ON public.device_status_logs USING btree (device_id);
-CREATE INDEX idx_device_status_account ON public.device_status_logs USING btree (account_id);
-CREATE INDEX idx_device_status_time ON public.device_status_logs USING btree (reported_at);
-CREATE INDEX idx_device_status_battery ON public.device_status_logs USING btree (battery_level);
-COMMENT ON TABLE public.device_status_logs IS '设备状态日志表';
-
--- Column comments
-
-COMMENT ON COLUMN public.device_status_logs.device_id IS '设备ID';
-COMMENT ON COLUMN public.device_status_logs.account_id IS '微信账号ID';
-COMMENT ON COLUMN public.device_status_logs.battery_level IS '电池电量（0-100）';
-COMMENT ON COLUMN public.device_status_logs.battery_status IS '电池状态：1-正常 2-低电量 3-充电中 4-不可用';
-COMMENT ON COLUMN public.device_status_logs.storage_total IS '总存储空间（字节）';
-COMMENT ON COLUMN public.device_status_logs.storage_used IS '已使用空间（字节）';
-COMMENT ON COLUMN public.device_status_logs.storage_available IS '可用空间（字节）';
-COMMENT ON COLUMN public.device_status_logs.cpu_usage IS 'CPU使用率';
-COMMENT ON COLUMN public.device_status_logs.memory_total IS '总内存（字节）';
-COMMENT ON COLUMN public.device_status_logs.memory_used IS '已使用内存（字节）';
-COMMENT ON COLUMN public.device_status_logs.memory_available IS '可用内存（字节）';
-COMMENT ON COLUMN public.device_status_logs.temperature IS '设备温度';
-COMMENT ON COLUMN public.device_status_logs.network_type IS '网络类型（WiFi/4G/5G等）';
-COMMENT ON COLUMN public.device_status_logs.signal_strength IS '信号强度';
-COMMENT ON COLUMN public.device_status_logs.reported_at IS '上报时间';
-COMMENT ON COLUMN public.device_status_logs.created_at IS '创建时间';
-
-
--- public.device_locations definition
-
--- DROP TABLE device_locations;
-
-CREATE TABLE device_locations (
-	location_id bigserial NOT NULL,
-	device_id int8 NOT NULL, -- 设备ID
-	account_id int8 NOT NULL, -- 微信账号ID
-	latitude numeric(10, 7) NOT NULL, -- 纬度
-	longitude numeric(10, 7) NOT NULL, -- 经度
-	location_accuracy numeric(10, 2) NULL, -- 精度（米）
-	location_address varchar(500) NULL, -- 地址文本
-	location_province varchar(100) NULL, -- 省份
-	location_city varchar(100) NULL, -- 城市
-	location_district varchar(100) NULL, -- 区县
-	location_type int2 DEFAULT 1 NULL, -- 位置类型：1-GPS 2-基站 3-WiFi 4-混合
-	located_at timestamp NULL, -- 定位时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT device_locations_pkey PRIMARY KEY (location_id),
-	CONSTRAINT fk_location_device FOREIGN KEY (device_id) REFERENCES devices(device_id),
-	CONSTRAINT fk_location_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_device_locations_device ON public.device_locations USING btree (device_id);
-CREATE INDEX idx_device_locations_account ON public.device_locations USING btree (account_id);
-CREATE INDEX idx_device_locations_time ON public.device_locations USING btree (located_at);
-CREATE INDEX idx_device_locations_coords ON public.device_locations USING btree (latitude, longitude);
-COMMENT ON TABLE public.device_locations IS '设备位置表';
-
--- Column comments
-
-COMMENT ON COLUMN public.device_locations.device_id IS '设备ID';
-COMMENT ON COLUMN public.device_locations.account_id IS '微信账号ID';
-COMMENT ON COLUMN public.device_locations.latitude IS '纬度';
-COMMENT ON COLUMN public.device_locations.longitude IS '经度';
-COMMENT ON COLUMN public.device_locations.location_accuracy IS '精度（米）';
-COMMENT ON COLUMN public.device_locations.location_address IS '地址文本';
-COMMENT ON COLUMN public.device_locations.location_province IS '省份';
-COMMENT ON COLUMN public.device_locations.location_city IS '城市';
-COMMENT ON COLUMN public.device_locations.location_district IS '区县';
-COMMENT ON COLUMN public.device_locations.location_type IS '位置类型：1-GPS 2-基站 3-WiFi 4-混合';
-COMMENT ON COLUMN public.device_locations.located_at IS '定位时间';
-COMMENT ON COLUMN public.device_locations.created_at IS '创建时间';
-
-
--- 十、其他功能模块所需表
-
--- DROP SEQUENCE system_notifications_notification_id_seq;
-
-CREATE SEQUENCE system_notifications_notification_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE app_versions_version_id_seq;
-
-CREATE SEQUENCE app_versions_version_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- public.system_notifications definition
-
--- DROP TABLE system_notifications;
-
-CREATE TABLE system_notifications (
-	notification_id bigserial NOT NULL,
-	device_id int8 NOT NULL, -- 设备ID
-	account_id int8 NOT NULL, -- 微信账号ID
-	notification_type int2 NOT NULL, -- 通知类型：1-版本更新 2-设备删除 3-客户端更新 4-系统公告 5-定时任务 6-其他
-	notification_title varchar(255) NOT NULL, -- 通知标题
-	notification_content text NULL, -- 通知内容
-	notification_data jsonb NULL, -- 通知额外数据（JSON）
-	is_read bool DEFAULT false NULL, -- 是否已读
-	priority int2 DEFAULT 1 NULL, -- 优先级：1-低 2-中 3-高
-	read_at timestamp NULL, -- 阅读时间
-	expires_at timestamp NULL, -- 过期时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT system_notifications_pkey PRIMARY KEY (notification_id),
-	CONSTRAINT fk_notif_device FOREIGN KEY (device_id) REFERENCES devices(device_id),
-	CONSTRAINT fk_notif_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_notifications_device ON public.system_notifications USING btree (device_id);
-CREATE INDEX idx_notifications_account ON public.system_notifications USING btree (account_id);
-CREATE INDEX idx_notifications_type ON public.system_notifications USING btree (notification_type);
-CREATE INDEX idx_notifications_read ON public.system_notifications USING btree (is_read);
-CREATE INDEX idx_notifications_priority ON public.system_notifications USING btree (priority);
-CREATE INDEX idx_notifications_created ON public.system_notifications USING btree (created_at);
-COMMENT ON TABLE public.system_notifications IS '系统通知表';
-
--- Column comments
-
-COMMENT ON COLUMN public.system_notifications.device_id IS '设备ID';
-COMMENT ON COLUMN public.system_notifications.account_id IS '微信账号ID';
-COMMENT ON COLUMN public.system_notifications.notification_type IS '通知类型：1-版本更新 2-设备删除 3-客户端更新 4-系统公告 5-定时任务 6-其他';
-COMMENT ON COLUMN public.system_notifications.notification_title IS '通知标题';
-COMMENT ON COLUMN public.system_notifications.notification_content IS '通知内容';
-COMMENT ON COLUMN public.system_notifications.notification_data IS '通知额外数据（JSON）';
-COMMENT ON COLUMN public.system_notifications.is_read IS '是否已读';
-COMMENT ON COLUMN public.system_notifications.priority IS '优先级：1-低 2-中 3-高';
-COMMENT ON COLUMN public.system_notifications.read_at IS '阅读时间';
-COMMENT ON COLUMN public.system_notifications.expires_at IS '过期时间';
-COMMENT ON COLUMN public.system_notifications.created_at IS '创建时间';
-COMMENT ON COLUMN public.system_notifications.updated_at IS '更新时间';
-
-
--- public.app_versions definition
-
--- DROP TABLE app_versions;
-
-CREATE TABLE app_versions (
-	version_id bigserial NOT NULL,
-	version_number varchar(50) NOT NULL, -- 版本号（如1.0.0）
-	version_name varchar(255) NULL, -- 版本名称
-	version_type int2 DEFAULT 1 NULL, -- 版本类型：1-稳定版 2-测试版 3-beta版 4-灰度版
-	platform varchar(50) NOT NULL, -- 平台：Android/iOS/Windows/MacOS/Web
-	download_url varchar(1000) NOT NULL, -- 下载地址
-	release_notes text NULL, -- 更新说明
-	file_size int8 NULL, -- 文件大小（字节）
-	file_hash varchar(128) NULL, -- 文件哈希值
-	min_sdk_version varchar(20) NULL, -- 最低SDK版本
-	min_os_version varchar(50) NULL, -- 最低操作系统版本
-	forced_update bool DEFAULT false NULL, -- 是否强制更新
-	is_released bool DEFAULT false NULL, -- 是否已发布
-	is_deprecated bool DEFAULT false NULL, -- 是否已废弃
-	download_count int8 DEFAULT 0 NULL, -- 下载次数
-	released_at timestamp NULL, -- 发布时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT app_versions_pkey PRIMARY KEY (version_id),
-	CONSTRAINT uk_app_version UNIQUE (platform, version_number)
-);
-CREATE INDEX idx_app_versions_platform ON public.app_versions USING btree (platform);
-CREATE INDEX idx_app_versions_released ON public.app_versions USING btree (is_released);
-CREATE INDEX idx_app_versions_type ON public.app_versions USING btree (version_type);
-CREATE INDEX idx_app_versions_forced ON public.app_versions USING btree (forced_update);
-CREATE INDEX idx_app_versions_time ON public.app_versions USING btree (released_at);
-COMMENT ON TABLE public.app_versions IS '应用版本表';
-
--- Column comments
-
-COMMENT ON COLUMN public.app_versions.version_number IS '版本号（如1.0.0）';
-COMMENT ON COLUMN public.app_versions.version_name IS '版本名称';
-COMMENT ON COLUMN public.app_versions.version_type IS '版本类型：1-稳定版 2-测试版 3-beta版 4-灰度版';
-COMMENT ON COLUMN public.app_versions.platform IS '平台：Android/iOS/Windows/MacOS/Web';
-COMMENT ON COLUMN public.app_versions.download_url IS '下载地址';
-COMMENT ON COLUMN public.app_versions.release_notes IS '更新说明';
-COMMENT ON COLUMN public.app_versions.file_size IS '文件大小（字节）';
-COMMENT ON COLUMN public.app_versions.file_hash IS '文件哈希值';
-COMMENT ON COLUMN public.app_versions.min_sdk_version IS '最低SDK版本';
-COMMENT ON COLUMN public.app_versions.min_os_version IS '最低操作系统版本';
-COMMENT ON COLUMN public.app_versions.forced_update IS '是否强制更新';
-COMMENT ON COLUMN public.app_versions.is_released IS '是否已发布';
-COMMENT ON COLUMN public.app_versions.is_deprecated IS '是否已废弃';
-COMMENT ON COLUMN public.app_versions.download_count IS '下载次数';
-COMMENT ON COLUMN public.app_versions.released_at IS '发布时间';
-COMMENT ON COLUMN public.app_versions.created_at IS '创建时间';
-COMMENT ON COLUMN public.app_versions.updated_at IS '更新时间';
-
-
--- 十一、权限管理模块所需表
-
--- DROP SEQUENCE roles_role_id_seq;
-
-CREATE SEQUENCE roles_role_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE permissions_permission_id_seq;
-
-CREATE SEQUENCE permissions_permission_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE user_roles_user_role_id_seq;
-
-CREATE SEQUENCE user_roles_user_role_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- DROP SEQUENCE role_permissions_role_perm_id_seq;
-
-CREATE SEQUENCE role_permissions_role_perm_id_seq
-	INCREMENT BY 1
-	MINVALUE 1
-	MAXVALUE 9223372036854775807
-	START 1
-	CACHE 1
-	NO CYCLE;
-
--- public.roles definition
-
--- DROP TABLE roles;
-
-CREATE TABLE roles (
-	role_id bigserial NOT NULL,
-	role_name varchar(50) NOT NULL, -- 角色名称
-	role_level int2 NOT NULL, -- 角色等级：1-平台级 2-BOSS级 3-组长级 4-单账户级 5-临时金主级 6-临时认证级
-	description varchar(500) NULL, -- 角色描述
-	is_system bool DEFAULT false NULL, -- 是否系统角色
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT roles_pkey PRIMARY KEY (role_id),
-	CONSTRAINT uk_role_name UNIQUE (role_name)
-);
-CREATE INDEX idx_roles_level ON public.roles USING btree (role_level);
-CREATE INDEX idx_roles_system ON public.roles USING btree (is_system);
-COMMENT ON TABLE public.roles IS '角色表';
-
--- Column comments
-
-COMMENT ON COLUMN public.roles.role_name IS '角色名称';
-COMMENT ON COLUMN public.roles.role_level IS '角色等级：1-平台级 2-BOSS级 3-组长级 4-单账户级 5-临时金主级 6-临时认证级';
-COMMENT ON COLUMN public.roles.description IS '角色描述';
-COMMENT ON COLUMN public.roles.is_system IS '是否系统角色';
-COMMENT ON COLUMN public.roles.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.roles.created_at IS '创建时间';
-COMMENT ON COLUMN public.roles.updated_at IS '更新时间';
-
-
--- public.permissions definition
-
--- DROP TABLE permissions;
-
-CREATE TABLE permissions (
-	permission_id bigserial NOT NULL,
-	permission_name varchar(100) NOT NULL, -- 权限名称
-	permission_code varchar(100) NOT NULL, -- 权限编码
-	permission_type int2 NOT NULL, -- 权限类型：1-功能权限 2-数据权限 3-敏感权限
-	description varchar(500) NULL, -- 权限描述
-	is_sensitive bool DEFAULT false NULL, -- 是否敏感权限
-	is_system bool DEFAULT false NULL, -- 是否系统权限
-	is_deleted bool DEFAULT false NULL, -- 是否删除
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT permissions_pkey PRIMARY KEY (permission_id),
-	CONSTRAINT uk_permission_code UNIQUE (permission_code)
-);
-CREATE INDEX idx_permissions_type ON public.permissions USING btree (permission_type);
-CREATE INDEX idx_permissions_sensitive ON public.permissions USING btree (is_sensitive);
-CREATE INDEX idx_permissions_system ON public.permissions USING btree (is_system);
-COMMENT ON TABLE public.permissions IS '权限表';
-
--- Column comments
-
-COMMENT ON COLUMN public.permissions.permission_name IS '权限名称';
-COMMENT ON COLUMN public.permissions.permission_code IS '权限编码';
-COMMENT ON COLUMN public.permissions.permission_type IS '权限类型：1-功能权限 2-数据权限 3-敏感权限';
-COMMENT ON COLUMN public.permissions.description IS '权限描述';
-COMMENT ON COLUMN public.permissions.is_sensitive IS '是否敏感权限';
-COMMENT ON COLUMN public.permissions.is_system IS '是否系统权限';
-COMMENT ON COLUMN public.permissions.is_deleted IS '是否删除';
-COMMENT ON COLUMN public.permissions.created_at IS '创建时间';
-COMMENT ON COLUMN public.permissions.updated_at IS '更新时间';
-
-
--- public.user_roles definition
-
--- DROP TABLE user_roles;
-
-CREATE TABLE user_roles (
-	user_role_id bigserial NOT NULL,
-	account_id int8 NOT NULL, -- 用户账号ID
-	role_id int8 NOT NULL, -- 角色ID
-	assigned_by int8 NULL, -- 分配者账号ID
-	assigned_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 分配时间
-	expires_at timestamp NULL, -- 过期时间
-	is_active bool DEFAULT true NULL, -- 是否有效
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	updated_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 更新时间
-	CONSTRAINT user_roles_pkey PRIMARY KEY (user_role_id),
-	CONSTRAINT uk_user_role UNIQUE (account_id, role_id),
-	CONSTRAINT fk_user_role_account FOREIGN KEY (account_id) REFERENCES wechat_accounts(account_id),
-	CONSTRAINT fk_user_role_role FOREIGN KEY (role_id) REFERENCES roles(role_id),
-	CONSTRAINT fk_user_role_assigned_by FOREIGN KEY (assigned_by) REFERENCES wechat_accounts(account_id)
-);
-CREATE INDEX idx_user_roles_account ON public.user_roles USING btree (account_id);
-CREATE INDEX idx_user_roles_role ON public.user_roles USING btree (role_id);
-CREATE INDEX idx_user_roles_active ON public.user_roles USING btree (is_active);
-CREATE INDEX idx_user_roles_expires ON public.user_roles USING btree (expires_at);
-COMMENT ON TABLE public.user_roles IS '用户角色表';
-
--- Column comments
-
-COMMENT ON COLUMN public.user_roles.account_id IS '用户账号ID';
-COMMENT ON COLUMN public.user_roles.role_id IS '角色ID';
-COMMENT ON COLUMN public.user_roles.assigned_by IS '分配者账号ID';
-COMMENT ON COLUMN public.user_roles.assigned_at IS '分配时间';
-COMMENT ON COLUMN public.user_roles.expires_at IS '过期时间';
-COMMENT ON COLUMN public.user_roles.is_active IS '是否有效';
-COMMENT ON COLUMN public.user_roles.created_at IS '创建时间';
-COMMENT ON COLUMN public.user_roles.updated_at IS '更新时间';
-
-
--- public.role_permissions definition
-
--- DROP TABLE role_permissions;
-
-CREATE TABLE role_permissions (
-	role_perm_id bigserial NOT NULL,
-	role_id int8 NOT NULL, -- 角色ID
-	permission_id int8 NOT NULL, -- 权限ID
-	is_granted bool DEFAULT true NULL, -- 是否授予
-	granted_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 授予时间
-	created_at timestamp DEFAULT CURRENT_TIMESTAMP NULL, -- 创建时间
-	CONSTRAINT role_permissions_pkey PRIMARY KEY (role_perm_id),
-	CONSTRAINT uk_role_permission UNIQUE (role_id, permission_id),
-	CONSTRAINT fk_role_perm_role FOREIGN KEY (role_id) REFERENCES roles(role_id),
-	CONSTRAINT fk_role_perm_permission FOREIGN KEY (permission_id) REFERENCES permissions(permission_id)
-);
-CREATE INDEX idx_role_permissions_role ON public.role_permissions USING btree (role_id);
-CREATE INDEX idx_role_permissions_permission ON public.role_permissions USING btree (permission_id);
-CREATE INDEX idx_role_permissions_granted ON public.role_permissions USING btree (is_granted);
-COMMENT ON TABLE public.role_permissions IS '角色权限关系表';
-
--- Column comments
-
-COMMENT ON COLUMN public.role_permissions.role_id IS '角色ID';
-COMMENT ON COLUMN public.role_permissions.permission_id IS '权限ID';
-COMMENT ON COLUMN public.role_permissions.is_granted IS '是否授予';
-COMMENT ON COLUMN public.role_permissions.granted_at IS '授予时间';
-COMMENT ON COLUMN public.role_permissions.created_at IS '创建时间';
 
 
 -- DROP FUNCTION public.update_updated_at_column();
