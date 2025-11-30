@@ -1,6 +1,6 @@
 using Serilog;
 using SCRM.Models.Configurations;
-using SCRM.Models.Entities;
+using SCRM.API.Models.Entities;
 
 namespace SCRM.Shared.Core
 {
@@ -15,7 +15,7 @@ namespace SCRM.Shared.Core
         public static Serilog.ILogger loggerToDB;
 
         // 全局用户模型（示例）
-        public static UserModel globleUser = new UserModel();
+        // 已删除：用户模型由 WechatAccount 实体表示
 
         // 配置对象，由 AppConfigurationManager 初始化后赋值
         public static Settings settings;

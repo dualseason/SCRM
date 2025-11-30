@@ -34,7 +34,7 @@ namespace SCRM.Controllers.Permission
                 var permissions = await _permissionService.GetAllPermissionsAsync();
                 return Ok(new { Success = true, Data = permissions });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { Success = false, Message = "获取权限列表失败" });
             }
@@ -53,7 +53,7 @@ namespace SCRM.Controllers.Permission
 
                 return Ok(new { Success = true, Data = grouped });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { Success = false, Message = "获取分组权限失败" });
             }
@@ -68,7 +68,7 @@ namespace SCRM.Controllers.Permission
                 var permissionInfo = await _permissionService.GetUserPermissionInfoAsync(userId);
                 return Ok(new { Success = true, Data = permissionInfo });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { Success = false, Message = "获取用户权限失败" });
             }
@@ -88,7 +88,7 @@ namespace SCRM.Controllers.Permission
                 var permissionInfo = await _permissionService.GetUserPermissionInfoAsync(userId);
                 return Ok(new { Success = true, Data = permissionInfo });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { Success = false, Message = "获取当前用户权限失败" });
             }
@@ -108,7 +108,7 @@ namespace SCRM.Controllers.Permission
                 var hasPermission = await _permissionService.HasPermissionAsync(userId, request.Permission);
                 return Ok(new { Success = true, Data = new { HasPermission = hasPermission } });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { Success = false, Message = "权限检查失败" });
             }
@@ -128,7 +128,7 @@ namespace SCRM.Controllers.Permission
                 var hasPermission = await _permissionService.HasPermissionAsync(userId, permission);
                 return Ok(new { Success = true, Data = new { HasPermission = hasPermission, Permission = permission } });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { Success = false, Message = "权限检查失败" });
             }
@@ -156,7 +156,7 @@ namespace SCRM.Controllers.Permission
                     }
                 });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { Success = false, Message = "批量权限检查失败" });
             }
@@ -175,7 +175,7 @@ namespace SCRM.Controllers.Permission
 
                 return Ok(new { Success = true, Message = "缓存已清空" });
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(500, new { Success = false, Message = "清空缓存失败" });
             }

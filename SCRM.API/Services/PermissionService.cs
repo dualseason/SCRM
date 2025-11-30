@@ -121,7 +121,7 @@ namespace SCRM.Services
             });
         }
 
-        public async Task<List<Permission>> GetAllPermissionsAsync()
+        public async Task<List<SCRM.API.Models.Entities.Permission>> GetAllPermissionsAsync()
         {
             var cacheKey = "all_permissions";
 
@@ -140,7 +140,7 @@ namespace SCRM.Services
             });
         }
 
-        public async Task<List<Role>> GetAllRolesAsync()
+        public async Task<List<SCRM.API.Models.Entities.Role>> GetAllRolesAsync()
         {
             var cacheKey = "all_roles";
 

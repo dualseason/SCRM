@@ -21,7 +21,7 @@ namespace SCRM.Core.Netty
         public NettyServer(IServiceProvider serviceProvider)
         {
             _serviceProvider = serviceProvider;
-            Port = 8081;
+            Port = 8647;
 
             _bossGroup = new MultithreadEventLoopGroup(1);
             _workerGroup = new MultithreadEventLoopGroup();

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 using SCRM.Services.Data;
-using SCRM.Models.Entities;
+using SCRM.API.Models.Entities;
 using SCRM.Services;
 using SCRM.Models.Configurations;
 using SCRM.Core.Netty;

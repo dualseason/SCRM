@@ -8,7 +8,6 @@ D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\CoverletSourceRootsMapping_SCRM
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\testhost.dll
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\SCRM.API.deps.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\SCRM.API.runtimeconfig.json
-D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\appsettings.Development.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\appsettings.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\SCRM.API.staticwebassets.endpoints.json
 D:\Code\SCRM.SOLUTION\SCRM.TEST\bin\Debug\net8.0\SCRM.API.exe

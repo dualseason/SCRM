@@ -1,5 +1,5 @@
 using Microsoft.EntityFrameworkCore;
-using SCRM.Models.Entities;
+using SCRM.API.Models.Entities;
 using SCRM.Models.Identity;
 
 namespace SCRM.Services.Data
@@ -15,13 +15,11 @@ namespace SCRM.Services.Data
         }
 
         // ==================== 既有实体集合 ====================
-        public DbSet<SCRM.Models.Entities.User> BusinessUsers { get; set; }
-        public DbSet<Order> BusinessOrders { get; set; }
         public DbSet<SCRM.Models.Identity.User> IdentityUsers { get; set; }
-        public DbSet<Role> Roles { get; set; }
-        public DbSet<Permission> Permissions { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
-        public DbSet<RolePermission> RolePermissions { get; set; }
+        public DbSet<SCRM.API.Models.Entities.Role> Roles { get; set; }
+        public DbSet<SCRM.API.Models.Entities.Permission> Permissions { get; set; }
+        public DbSet<SCRM.API.Models.Entities.UserRole> UserRoles { get; set; }
+        public DbSet<SCRM.API.Models.Entities.RolePermission> RolePermissions { get; set; }
 
         // ==================== 一、设备与账号管理 ====================
         public DbSet<Device> Devices { get; set; }
@@ -108,7 +106,7 @@ namespace SCRM.Services.Data
             modelBuilder.Entity<WechatAccount>(entity =>
             {
                 entity.ToTable("wechat_accounts");
-                entity.HasKey(e => e.Id);
+                entity.HasKey(e => e.AccountId);
                 entity.HasIndex(e => e.Wxid).IsUnique();
                 entity.HasIndex(e => e.AccountStatus);
                 entity.HasIndex(e => e.IsDeleted);
@@ -120,7 +118,7 @@ namespace SCRM.Services.Data
             modelBuilder.Entity<Device>(entity =>
             {
                 entity.ToTable("devices");
-                entity.HasKey(e => e.Id);
+                entity.HasKey(e => e.DeviceId);
                 entity.HasIndex(e => e.IsDeleted);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
