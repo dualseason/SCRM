@@ -11,7 +11,8 @@ namespace SCRM.Services.Data
         }
 
         // 身份验证和授权实体集合
-        public DbSet<SCRM.Models.Identity.User> IdentityUsers { get; set; }
+        public DbSet<SCRM.Models.Identity.User> Users { get; set; }
+        public DbSet<WechatAccount> WechatAccounts { get; set; }
         public DbSet<SCRM.API.Models.Entities.Role> Roles { get; set; }
         public DbSet<SCRM.API.Models.Entities.Permission> Permissions { get; set; }
         public DbSet<SCRM.API.Models.Entities.UserRole> UserRoles { get; set; }
@@ -20,18 +21,6 @@ namespace SCRM.Services.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
-
-            // 配置身份验证相关实体
-            // 配置 IdentityUser 实体
-            modelBuilder.Entity<Models.Identity.User>(entity =>
-            {
-                entity.ToTable("IdentityUsers");
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.UserName).IsUnique();
-                entity.HasIndex(e => e.Email).IsUnique();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            });
 
             // 配置 Role 实体
             modelBuilder.Entity<SCRM.API.Models.Entities.Role>(entity =>

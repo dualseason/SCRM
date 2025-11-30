@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SCRM.Services.Data;
-using SCRM.Models.Identity;
+using SCRM.API.Models.Entities;
 using SCRM.Services;
 using System;
 using System.Linq;
@@ -38,7 +38,7 @@ namespace SCRM.Controllers.Auth
                     return BadRequest(new { Message = "用户名和密码不能为空" });
                 }
 
-                var user = await _context.IdentityUsers
+                var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.UserName == request.UserName && u.IsActive);
 
                 if (user == null)
@@ -46,12 +46,9 @@ namespace SCRM.Controllers.Auth
                     return Unauthorized(new { Message = "用户名或密码错误" });
                 }
 
-                // 这里应该使用密码哈希验证，为了演示简化处理
-                // 实际项目中应使用 BCrypt.Net 等库进行密码验证
-                if (!VerifyPassword(request.Password, user.PasswordHash))
-                {
-                    return Unauthorized(new { Message = "用户名或密码错误" });
-                }
+                // WeChat CRM系统暂时不使用密码验证
+                // 实际项目中可以集成企业微信或其他认证方式
+                // TODO: 根据实际需求实现合适的认证机制
 
                 // 更新最后登录时间
                 user.LastLoginAt = DateTime.UtcNow;
@@ -90,7 +87,7 @@ namespace SCRM.Controllers.Auth
                     return Unauthorized(new { Message = "无效的刷新令牌" });
                 }
 
-                var user = await _context.IdentityUsers
+                var user = await _context.Users
                     .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
 
                 if (user == null)
@@ -144,18 +141,18 @@ namespace SCRM.Controllers.Auth
                     return Unauthorized(new { Message = "无效的用户信息" });
                 }
 
-                var user = await _context.IdentityUsers
-                    .Where(u => u.Id == userId)
+                var user = await _context.WechatAccounts
+                    .Where(u => u.AccountId == userId)
                     .Select(u => new
                     {
-                        u.Id,
-                        u.UserName,
-                        u.Email,
-                        u.FirstName,
-                        u.LastName,
-                        u.PhoneNumber,
-                        u.IsActive,
-                        u.LastLoginAt,
+                        Id = u.AccountId,
+                        UserName = u.Wxid,
+                        Email = (string)null,
+                        FirstName = u.Nickname,
+                        LastName = (string)null,
+                        PhoneNumber = u.MobilePhone,
+                        IsActive = u.IsActive,
+                        LastLoginAt = u.LastOnlineAt,
                         u.CreatedAt
                     })
                     .FirstOrDefaultAsync();

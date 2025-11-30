@@ -2,7 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using SCRM.Services.Data;
-using SCRM.Models.Identity;
+using SCRM.API.Models.Entities;
 using SCRM.Services;
 using System;
 using System.Collections.Generic;
@@ -171,15 +171,15 @@ namespace SCRM.Services
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
 
-                var user = await _context.IdentityUsers
-                    .Where(u => u.Id == userId && u.IsActive)
+                var user = await _context.WechatAccounts
+                    .Where(u => u.AccountId == userId && u.IsActive)
                     .Select(u => new UserDto
                     {
-                        Id = u.Id,
-                        UserName = u.UserName,
-                        Email = u.Email,
-                        FirstName = u.FirstName,
-                        LastName = u.LastName
+                        Id = (int)u.AccountId,
+                        UserName = u.Wxid,
+                        Email = (string)null,
+                        FirstName = u.Nickname,
+                        LastName = (string)null
                     })
                     .FirstOrDefaultAsync();
 
