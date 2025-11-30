@@ -36,6 +36,7 @@ namespace SCRM.Services.Data
             // 配置 Role 实体
             modelBuilder.Entity<SCRM.API.Models.Entities.Role>(entity =>
             {
+                entity.ToTable("roles");
                 entity.HasKey(e => e.RoleId);
                 entity.HasIndex(e => e.RoleName).IsUnique();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -45,6 +46,7 @@ namespace SCRM.Services.Data
             // 配置 Permission 实体
             modelBuilder.Entity<SCRM.API.Models.Entities.Permission>(entity =>
             {
+                entity.ToTable("permissions");
                 entity.HasKey(e => e.PermissionId);
                 entity.HasIndex(e => e.PermissionCode).IsUnique();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -54,6 +56,7 @@ namespace SCRM.Services.Data
             // 配置 UserRole 关系
             modelBuilder.Entity<SCRM.API.Models.Entities.UserRole>(entity =>
             {
+                entity.ToTable("user_roles");
                 entity.HasKey(e => e.UserRoleId);
                 entity.HasIndex(e => new { e.AccountId, e.RoleId }).IsUnique();
                 entity.Property(e => e.AssignedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
@@ -79,6 +82,7 @@ namespace SCRM.Services.Data
             // 配置 RolePermission 关系
             modelBuilder.Entity<SCRM.API.Models.Entities.RolePermission>(entity =>
             {
+                entity.ToTable("role_permissions");
                 entity.HasKey(e => e.RolePermId);
                 entity.HasIndex(e => new { e.RoleId, e.PermissionId }).IsUnique();
                 entity.Property(e => e.GrantedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");

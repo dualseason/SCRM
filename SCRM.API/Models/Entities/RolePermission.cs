@@ -1,8 +1,11 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
 /// 角色权限关系表
 /// </summary>
+[Table("role_permissions")]
 public class RolePermission
 {
     /// <summary>

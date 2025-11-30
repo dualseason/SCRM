@@ -1,8 +1,11 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
 /// 权限表
 /// </summary>
+[Table("permissions")]
 public class Permission
 {
     /// <summary>

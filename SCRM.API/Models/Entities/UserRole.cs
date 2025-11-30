@@ -1,8 +1,11 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
 /// 用户角色表
 /// </summary>
+[Table("user_roles")]
 public class UserRole
 {
     /// <summary>
