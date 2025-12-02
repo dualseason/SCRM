@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package Jubo.JuLiao.IM.Wx.Proto;
-
-message DeleteSNSNewsTaskMessage {
-  string WeChatId = 1;
-  int64 CircleId = 2;
-  int64 TaskId = 3;
-}

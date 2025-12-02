@@ -1,7 +1,0 @@
-syntax = "proto3";
-
-package Jubo.JuLiao.IM.Wx.Proto;
-
-message GetFriendDetectResultMessage {
-  string WeChatId = 1;
-}

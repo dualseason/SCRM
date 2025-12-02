@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package Jubo.JuLiao.IM.Wx.Proto;
-
-// 朋友圈删除通知消息
-message CircleDelNoticeMessage {
-  string WeChatId = 1;  // 微信ID
-  int64 CircleId = 2;   // 朋友圈ID
-}

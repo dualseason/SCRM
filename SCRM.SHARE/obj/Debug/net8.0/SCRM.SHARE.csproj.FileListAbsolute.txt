@@ -1,0 +1,12 @@
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\bin\Debug\net8.0\SCRM.SHARE.deps.json
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\bin\Debug\net8.0\SCRM.SHARE.dll
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\bin\Debug\net8.0\SCRM.SHARE.pdb
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\SCRM.SHARE.GeneratedMSBuildEditorConfig.editorconfig
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\SCRM.SHARE.AssemblyInfoInputs.cache
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\SCRM.SHARE.AssemblyInfo.cs
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\SCRM.SHARE.csproj.CoreCompileInputs.cache
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\SCRM.SHARE.sourcelink.json
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\SCRM.SHARE.dll
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\refint\SCRM.SHARE.dll
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\SCRM.SHARE.pdb
+D:\Code\SCRM.SOLUTION\SCRM.SHARE\obj\Debug\net8.0\ref\SCRM.SHARE.dll

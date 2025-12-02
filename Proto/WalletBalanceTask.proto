@@ -1,8 +1,0 @@
-syntax = "proto3";
-
-package Jubo.JuLiao.IM.Wx.Proto;
-
-message WalletBalanceTaskMessage {
-  string WeChatId = 1;
-  int32 Flag = 2;
-}

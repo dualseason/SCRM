@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("SCRM.SHARE")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0163e9303871c3332263c54b8fc4b11954ac0e1f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7af596e69af186302e69a687c4a8a01cea157ce4")]
 [assembly: System.Reflection.AssemblyProductAttribute("SCRM.SHARE")]
 [assembly: System.Reflection.AssemblyTitleAttribute("SCRM.SHARE")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
