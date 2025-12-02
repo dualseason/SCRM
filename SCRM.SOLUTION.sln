@@ -6,6 +6,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SCRM.API", "SCRM.API\SCRM.A
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SCRM.TEST", "SCRM.TEST\SCRM.TEST.csproj", "{87654321-4321-8765-CBA9-87654321CBA9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCRM.MAUI", "SCRM.MAUI\SCRM.MAUI.csproj", "{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -20,6 +22,11 @@ Global
 		{87654321-4321-8765-CBA9-87654321CBA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{87654321-4321-8765-CBA9-87654321CBA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87654321-4321-8765-CBA9-87654321CBA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
