@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message ScreenShotTaskMessage {
+  string WeChatId = 1;
+  int32 Type = 2;
+  string Param = 3;
+  int64 Param2 = 4;
+  int64 TaskId = 5;
+}

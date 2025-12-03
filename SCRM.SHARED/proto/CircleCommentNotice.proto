@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "CircleNewPublishNotice.proto";
+
+// 朋友圈评论通知消息
+message CircleCommentNoticeMessage {
+  string WeChatId = 1;            // 微信ID
+  int64 CircleId = 2;             // 朋友圈ID
+  bool IsDelete = 3;              // 是否删除
+  CircleCommentMessage Comment = 4; // 评论消息
+}

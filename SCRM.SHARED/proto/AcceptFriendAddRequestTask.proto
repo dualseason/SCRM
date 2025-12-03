@@ -1,0 +1,24 @@
+syntax = "proto3";
+
+package SCRM.SHARED.Proto;
+
+// 接受好友添加请求任务消息
+message AcceptFriendAddRequestTaskMessage {
+  // 好友添加操作枚举
+  enum EnumFriendAddOperation {
+    Ignore = 0;  // 忽略
+    Accept = 1;  // 接受
+    Reject = 2;  // 拒绝
+  }
+
+  string WeChatId = 1;  // 微信ID
+  string FriendId = 3;  // 好友ID
+  bool AddWithWW = 4;  // 添加微信好友
+  EnumFriendAddOperation Operation = 5;  // 操作类型
+  string Remark = 6;  // 备注
+  string FriendNick = 7;  // 好友昵称
+  string ReplyMsg = 8;  // 回复消息
+  int64 TaskId = 9;  // 任务ID
+  bool OnlyWW = 10;  // 仅微信
+  int32 Permission = 11;  // 权限
+}

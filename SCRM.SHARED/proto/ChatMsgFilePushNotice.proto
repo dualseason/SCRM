@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// 聊天消息文件推送通知消息
+message ChatMsgFilePushNoticeMessage {
+  string WeChatId = 1;  // 微信ID
+  int64 MsgSvrId = 2;   // 消息服务器ID
+  int32 MsgType = 3;    // 消息类型
+  string Url = 4;       // URL
+  int64 FileSize = 5;   // 文件大小
+  int32 SubType = 6;    // 子类型
+}

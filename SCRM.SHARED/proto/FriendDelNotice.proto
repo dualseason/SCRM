@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// FriendDelNotice definition
+// Restored from FriendDelNotice.java
+message FriendDelNoticeMessage {
+    string WeChatId = 1;
+    string FriendId = 3;
+    int32 Reason = 4;
+}

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message WalletBankCardMessage {
+  int32 CardType = 1;
+  string BankName = 2;
+  string CardTail = 3;
+  string Desc = 4;
+}
+
+message WalletBalanceTaskResultNoticeMessage {
+  string WeChatId = 1;
+  int32 Balance = 2;
+  string TrueName = 3;
+  repeated WalletBankCardMessage BankCard = 4;
+}

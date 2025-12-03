@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// ForwardMultiMessageTask definition
+// Restored from ForwardMultiMessageTask.java
+message ForwardMultiMessageTaskMessage {
+    string WeChatId = 1;
+    string Talker = 2;
+    string FriendIds = 3;
+    repeated int64 MsgIds = 4;
+    string ExtMsg = 5;
+    bool SendRecord = 6;
+    int64 TaskId = 7;
+}

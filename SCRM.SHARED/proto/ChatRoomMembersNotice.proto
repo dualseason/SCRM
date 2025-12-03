@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "TransportMessage.proto";
+
+// 陌生人消息
+message StrangerMessage {
+  string Wxid = 1;          // 微信ID
+  string Alias = 2;         // 别名
+  string Nickname = 3;      // 昵称
+  string Avatar = 4;        // 头像
+  int32 Type = 5;           // 类型
+  EnumGender Gender = 6;    // 性别
+  string Country = 7;       // 国家
+  string Province = 8;      // 省份
+  string City = 9;          // 城市
+  string Memo = 10;         // 备注
+  string Signature = 11;    // 签名
+}
+
+// 聊天室成员通知消息
+message ChatRoomMembersNoticeMessage {
+  string WeChatId = 1;                // 微信ID
+  repeated StrangerMessage Members = 3; // 成员列表
+}

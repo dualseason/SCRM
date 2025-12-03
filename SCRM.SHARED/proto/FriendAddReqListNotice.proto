@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "TransportMessage.proto";
+
+// 好友请求消息
+message FriendReqMessage {
+  string FriendId = 1;  // 好友ID
+  string FriendNo = 2;  // 好友编号
+  string FriendNick = 3;  // 好友昵称
+  string Avatar = 4;  // 头像
+  string Reason = 5;  // 请求理由
+  EnumGender Gender = 6;  // 性别
+  string Province = 7;  // 省份
+  string City = 8;  // 城市
+  int32 Source = 9;  // 来源
+  string SourceUser = 10;  // 来源用户
+  int64 ReqTime = 11;  // 请求时间
+  int32 State = 12;  // 状态
+  int64 FirstReq = 13;  // 首次请求时间
+}
+
+// 好友请求列表通知消息
+message FriendAddReqListNoticeMessage {
+  string WeChatId = 1;  // 微信ID
+  repeated FriendReqMessage Requests = 2;  // 好友请求列表
+}

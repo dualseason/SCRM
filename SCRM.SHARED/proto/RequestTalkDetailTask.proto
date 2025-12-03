@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message RequestTalkDetailTaskMessage {
+  int64 MsgId = 1;
+  string WeChatId = 2;
+  string FriendId = 3;
+  string MsgSvrId = 4;
+  string Md5 = 5;
+  bool GetOriginal = 6;
+}

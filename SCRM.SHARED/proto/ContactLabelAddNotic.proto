@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "ContactLabelInfoNotice.proto";
+
+// 联系人标签添加通知消息
+message ContactLabelAddNoticeMessage {
+  string WeChatId = 1;      // 微信ID
+  LabelInfoMessage Label = 2; // 标签信息
+}

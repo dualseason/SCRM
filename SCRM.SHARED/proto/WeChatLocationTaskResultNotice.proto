@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message WeChatLocationTaskResultNoticeMessage {
+  string WeChatId = 1;
+  string IMEI = 2;
+  bool Success = 3;
+  float Lng = 4;
+  float Lat = 5;
+  string Address = 6;
+}

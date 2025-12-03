@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// OneKeyLikeTask Message
+// Extracted from: OneKeyLikeTask.java
+message OneKeyLikeTaskMessage {
+  string WeChatId = 1;
+  int64 TaskId = 2;
+  int32 Rate = 3;
+  int32 EndTime = 4;
+  int32 Num = 5;
+  int32 TimeOut = 6;
+}

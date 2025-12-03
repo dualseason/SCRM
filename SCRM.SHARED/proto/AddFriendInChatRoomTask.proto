@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// 在聊天室中添加好友任务消息
+message AddFriendInChatRoomTaskMessage {
+  string WeChatId = 1;  // 微信ID
+  string ChatroomId = 2;  // 聊天室ID
+  string FriendId = 3;  // 好友ID
+  string Message = 4;  // 消息
+  string Remark = 5;  // 备注
+  int64 TaskId = 6;  // 任务ID
+  int32 Permission = 11;  // 权限
+}

@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message SmsReadNoticeMessage {
+  string WeChatId = 1;
+  string IMEI = 2;
+  int32 SmsId = 3;
+  int32 ThreadId = 4;
+}

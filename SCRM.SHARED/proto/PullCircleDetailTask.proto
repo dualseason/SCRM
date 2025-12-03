@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// PullCircleDetailTask Message
+// Extracted from: PullCircleDetailTask.java
+// Note: Field number 2 is missing (possibly reserved or removed)
+message PullCircleDetailTaskMessage {
+  string WeChatId = 1;
+  int64 CircleId = 3;
+  bool GetBigMap = 4;
+}

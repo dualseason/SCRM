@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message WeChatOfflineNoticeMessage {
+  string WeChatId = 1;
+  string IMEI = 2;
+  int32 Reason = 3;
+}

@@ -9,7 +9,7 @@ using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
 using System.Net;
-using Jubo.JuLiao.IM.Wx.Proto;
+using SCRM.SHARED.Proto;
 using Google.Protobuf;
 using System;
 using Google.Protobuf.WellKnownTypes;

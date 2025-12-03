@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// PullFriendAddReqListTask Message
+// Extracted from: PullFriendAddReqListTask.java
+message PullFriendAddReqListTaskMessage {
+  string WeChatId = 1;
+  int64 StartTime = 2;
+  bool OnlyNew = 3;
+  bool GetAll = 4;
+}

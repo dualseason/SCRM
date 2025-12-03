@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message PostFriendDetectTaskMessage {
+  string WeChatId = 1;
+  int64 TaskId = 2;
+  string Message = 3;
+  bool OnlyCheck = 4;
+  int32 SkipHour = 5;
+  int32 Mode = 6;
+  int32 Max = 7;
+}

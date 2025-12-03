@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message PostSNSNewsTaskMessage {
+  string WeChatId = 1;
+  string Content = 2;
+  AttachmentMessage Attachment = 3;
+  string Comment = 4;
+  int64 TaskId = 5;
+  VisibleMessage Visible = 6;
+  bool SendSlow = 7;
+  PoiMessage Poi = 8;
+  repeated string ExtComment = 9;
+
+  message AttachmentMessage {
+    EnumAttachType Type = 1;
+    repeated string Content = 2;
+
+    enum EnumAttachType {
+      Link = 0;
+      Picture = 2;
+      ShortVideo = 3;
+      LongVideo = 4;
+      ShiPinHao = 5;
+      ExtLink = 6;
+      FinderLive = 7;
+    }
+  }
+
+  message VisibleMessage {
+    EnumVisibleType Type = 1;
+    string Labels = 2;
+    string Friends = 3;
+
+    enum EnumVisibleType {
+      Public = 0;
+      Private = 1;
+      WhoVisible = 2;
+      WhoInvisible = 3;
+    }
+  }
+
+  message PoiMessage {
+    string City = 1;
+    string Name = 2;
+    string Address = 3;
+    float Lat = 4;
+    float Lng = 5;
+    string PoiId = 6;
+  }
+}

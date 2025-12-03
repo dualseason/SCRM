@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message QwUserMessage {
+  string UserId = 1;
+  string Name = 2;
+  string Avatar = 3;
+}
+
+message QwUserPushNoticeMessage {
+  string WeChatId = 1;
+  repeated QwUserMessage Users = 2;
+  int32 Size = 3;
+  int32 Count = 4;
+  int32 Page = 5;
+  int64 TaskId = 6;
+}

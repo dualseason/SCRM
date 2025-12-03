@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "BizContactPushNotice.proto";
+
+// 企业微信联系人添加通知消息
+message BizContactAddNoticeMessage {
+  string WeChatId = 1;            // 微信ID
+  BizContactMessage Contact = 2;  // 联系人信息
+}

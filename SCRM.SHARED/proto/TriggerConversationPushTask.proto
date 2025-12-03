@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// TriggerConversationPushTask Message
+// Extracted from: TriggerConversationPushTask.java
+message TriggerConversationPushTaskMessage {
+  string WeChatId = 1;
+  int64 StartTime = 2;
+  int64 EndTime = 3;
+  bool WithName = 4;
+  int64 TaskId = 5;
+  int32 Limit = 6;
+  int32 Offset = 7;
+}

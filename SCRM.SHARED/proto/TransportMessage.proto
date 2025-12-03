@@ -1,0 +1,325 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "google/protobuf/any.proto";
+
+// 传输消息
+message TransportMessage {
+  int64 Id = 1;
+  string AccessToken = 2;
+  EnumMsgType MsgType = 3;
+  google.protobuf.Any Content = 4;
+  int64 RefMessageId = 5;
+}
+
+// 消息类型枚举
+enum EnumMsgType {
+  UnknownMsg = 0;
+  HeartBeatReq = 1001;
+  MsgReceivedAck = 1002;
+  Error = 1003;
+  DeviceAuthReq = 1010;
+  DeviceAuthRsp = 1011;
+  DeviceExitNotice = 1012;
+  AccountForceOfflineNotice = 1013;
+  RedirectNotice = 1015;
+  TriggerDeviceInfo = 1016;
+  TriggerWechatPushTask = 1019;
+  WeChatOnlineNotice = 1020;
+  WeChatOfflineNotice = 1021;
+  FriendAddNotice = 1022;
+  FriendDelNotice = 1023;
+  FriendTalkNotice = 1024;
+  TaskResultNotice = 1025;
+  WeChatTalkToFriendNotice = 1026;
+  FriendAddReqeustNotice = 1027;
+  TalkToFriendTaskResultNotice = 1028;
+  RequestTalkDetailTaskResultNotice = 1029;
+  PullWeChatQrCodeTaskResultNotice = 1030;
+  CircleNewPublishNotice = 1031;
+  CircleDelNotice = 1032;
+  CircleLikeNotice = 1033;
+  CircleCommentNotice = 1034;
+  PostMessageReadNotice = 1035;
+  ChatRoomAddNotice = 1037;
+  ContactLabelAddNotice = 1038;
+  TakeMoneyTaskResultNotice = 1039;
+  CircleDetailNotice = 1040;
+  ChatRoomDelNotice = 1041;
+  ChatRoomChangedNotice = 1042;
+  PullChatRoomQrCodeTaskResultNotice = 1043;
+  ContactLabelDelNotice = 1044;
+  ChatMsgIdsPushNotice = 1050;
+  ChatMsgFilePushNotice = 1051;
+  FriendChangeNotice = 1052;
+  PhoneStateWarningNotice = 1053;
+  MsgDelNotice = 1054;
+  ConvDelNotice = 1055;
+  GroupSendHistoryPushNotice = 1056;
+  TalkToFriendTask = 1070;
+  PostSNSNewsTask = 1071;
+  AddFriendsTask = 1072;
+  PostSNSNewsTaskResultNotice = 1073;
+  DeleteSNSNewsTask = 1074;
+  AcceptFriendAddRequestTask = 1075;
+  WeChatGroupSendTask = 1076;
+  RequestTalkDetailTask = 1078;
+  PullWeChatQrCodeTask = 1079;
+  TriggerFriendPushTask = 1080;
+  TriggerCirclePushTask = 1081;
+  CircleCommentDeleteTask = 1082;
+  CircleCommentDeleteTaskResultNotice = 1083;
+  CircleCommentReplyTask = 1084;
+  CircleCommentReplyTaskResultNotice = 1085;
+  TriggerMessageReadTask = 1086;
+  RevokeMessageTask = 1087;
+  ForwardMessageTask = 1088;
+  TriggerHistoryMsgPushTask = 1089;
+  PullChatRoomQrCodeTask = 1090;
+  SendMultiPictureTask = 1091;
+  ForwardMultiMessageTask = 1092;
+  UpgradeAppNotice = 1093;
+  UpgradeDeviceAppNotice = 1094;
+  PostFriendDetectTask = 1095;
+  PostStopFriendDetectTask = 1096;
+  PostDeleteDeviceNotice = 1097;
+  OneKeyLikeTask = 1098;
+  ModifyFriendMemoTask = 1101;
+  AddFriendWithSceneTask = 1102;
+  TakeLuckyMoneyTask = 1200;
+  PullFriendCircleTask = 1201;
+  PullCircleDetailTask = 1202;
+  CircleLikeTask = 1203;
+  TriggerChatroomPushTask = 1210;
+  RequestChatRoomInfoTask = 1211;
+  RequestContactsInfoTask = 1212;
+  ChatRoomActionTask = 1213;
+  AddFriendInChatRoomTask = 1214;
+  AddFriendFromPhonebookTask = 1215;
+  DeleteFriendTask = 1216;
+  SendLuckyMoneyTask = 1217;
+  RequestTalkContentTask = 1218;
+  RequestTalkContentTaskResultNotice = 1219;
+  ForwardMessageByContentTask = 1220;
+  ChatRoomInviteApproveTask = 1221;
+  WechatLogoutTask = 1222;
+  PhoneActionTask = 1223;
+  ContactLabelTask = 1224;
+  ContactLabelDeleteTask = 1225;
+  VoiceTransTextTask = 1226;
+  FindContactTask = 1227;
+  FindContactTaskResult = 1228;
+  AgreeJoinChatRoomTask = 1229;
+  ClearAllChatMsgTask = 1230;
+  SendFriendVerifyTask = 1231;
+  TriggerConversationPushTask = 1232;
+  WechatSettingTask = 1233;
+  PullFriendAddReqListTask = 1234;
+  TriggerBizContactPushTask = 1235;
+  AddFriendNameCardTask = 1236;
+  GetGroupSendHistoryTask = 1237;
+  TriggerUnreadPushTask = 1238;
+  TriggerLabelPushTask = 1239;
+  TriggerQwConvPushTask = 1240;
+  TriggerChatMsgIdsPushTask = 1251;
+  RequestTalkMsgTask = 1252;
+  RequestTalkMsgTaskResultNotice = 1253;
+  SearchBizContactTask = 1254;
+  SearchBizContactTaskResultNotice = 1255;
+  PhoneStateTask = 1256;
+  PhoneStateTaskResultNotice = 1257;
+  WeChatLocationTask = 1258;
+  WeChatLocationTaskResultNotice = 1259;
+  RemittanceTask = 1260;
+  WalletBalanceTask = 1262;
+  WalletBalanceTaskResultNotice = 1263;
+  AddFriendNotice = 1264;
+  QueryHbDetailTask = 1265;
+  QueryHbDetailTaskResultNotice = 1266;
+  JoinGroupByQrTask = 1267;
+  SendJielongTask = 1268;
+  CDNDownloadFileTask = 1269;
+  ContactSetLabelTask = 1270;
+  CDNDownloadResultNotice = 1271;
+  PullEmojiInfoTask = 1272;
+  PullEmojiInfoTaskResultNotice = 1273;
+  TriggerCircleMsgPushTask = 1274;
+  CircleMsgReadTask = 1275;
+  CircleMsgClearTask = 1276;
+  GetContactInfoTask = 1277;
+  ContactInfoNotice = 1278;
+  GetFriendDetectResult = 1279;
+  FriendDetectResultNotice = 1280;
+  TriggerUnReadTask = 1281;
+  ScreenShotTask = 1282;
+  ScreenShotTaskResultNotice = 1283;
+  GetA8KeyTask = 1284;
+  TriggerQwUserPush = 1285;
+  QwUserPUshNotice = 1286;
+  QueryHbStatusTask = 1287;
+  QueryHbStatusTaskResultNotice = 1288;
+  GetPoiListTask = 1290;
+  GetPoiListTaskResultNotice = 1291;
+  SendSmsTask = 1289;
+  CallLogPushNotice = 1300;
+  SmsPushNotice = 1301;
+  SmsReadNotice = 1302;
+  SmsSentNotice = 1303;
+  PullSmsTask = 1304;
+  PullSmsTaskResultNotice = 1305;
+  PullCallLogTask = 1306;
+  PullCallLogTaskResultNotice = 1307;
+  TriggerConfigPush = 1380;
+  ConfigPushNotice = 1381;
+  SetConfigTask = 1382;
+  SetForbiddenWord = 1383;
+  FriendPushNotice = 2026;
+  PostDeviceInfoNotice = 2027;
+  PostFriendDetectCountNotice = 2028;
+  CirclePushNotice = 2029;
+  OneKeyLikeTaskResultNotice = 2030;
+  ChatroomPushNotice = 2031;
+  ContactLabelInfoNotice = 2032;
+  HistoryMsgPushNotice = 2033;
+  ChatRoomMembersNotice = 2034;
+  ConversationPushNotice = 2035;
+  FriendAddReqListNotice = 2036;
+  BizContactPushNotice = 2037;
+  BizContactAddNotice = 2038;
+  CircleMsgPushNotice = 2039;
+  QwConversPushNotice = 2040;
+  BizConversPushNotice = 2041;
+  UnreadListPushNotice = 2042;
+  GetWeChatsReq = 3050;
+  GetWeChatsRsp = 3051;
+  RecentFriendChangeNotice = 3052;
+  TodayFriendChangeNotice = 3053;
+  AccountLogoutNotice = 3054;
+  WeChatLoginNotice = 3055;
+  SyncFriendListAsyncReq = 3056;
+  SyncFriendListAsyncRsp = 3057;
+  SyncRecentFriendListAsyncReq = 3058;
+  SyncRecentFriendListAsyncRsp = 3059;
+  SyncTodayFriendListAsyncReq = 3060;
+  SyncTodayFriendListAsyncRsp = 3061;
+  SyncFriendMessageAsyncReq = 3062;
+  SyncFriendMessageAsyncRsp = 3063;
+  TalkToFriendTaskReceived = 3064;
+  ReadChatMessageNotice = 3065;
+  SyncFriendAddReqeustAsyncReq = 3066;
+  SyncFriendAddRequestAsyncRsp = 3067;
+  WeChatForceOfflineNotice = 3068;
+  SyncQuickReplyAsyncReq = 3069;
+  SyncQuickReplyAsyncRsp = 3070;
+  QuickReplyAddNotice = 3071;
+  QuickReplyAddReceived = 3072;
+  QuickReplyDelNotice = 3073;
+  GetTagGroupReq = 3074;
+  GetTagGroupRsp = 3075;
+  GetTagFriendsReq = 3076;
+  GetTagFriendsRsp = 3077;
+  WeChatForceOnlineNotice = 3078;
+  DeleteRecentFriendNotice = 3079;
+  DeleteTodayFriendNotice = 3080;
+  WeChatInfoChangeNotice = 3081;
+  GetLastestVersionReq = 3082;
+  GetLastestVersionRsp = 3083;
+  CheckDeviceAppVersionReq = 3084;
+  CheckDeviceAppVersionRsp = 3085;
+  NewAppVersionPublishNotice = 3086;
+  WeChatLoginNoticeResp = 3087;
+  GroupMemberAddProgress = 3089;
+  PostAppInfoReq = 3201;
+  PostLogReq = 3202;
+}
+
+// 错误代码枚举
+enum EnumErrorCode {
+  Success = 0;
+  NoRight = 1001;
+  InvalidParam = 1002;
+  InternalError = 1003;
+  TargetNotOnline = 1004;
+}
+
+// 性别枚举
+enum EnumGender {
+  UnknownGender = 0;
+  Male = 1;
+  Female = 2;
+}
+
+// 内容类型枚举
+enum EnumContentType {
+  UnknownContent = 0;
+  Text = 1;
+  Picture = 2;
+  Voice = 3;
+  Video = 4;
+  System = 5;
+  Link = 6;
+  LinkExt = 7;
+  File = 8;
+  NameCard = 9;
+  Location = 10;
+  LuckyMoney = 11;
+  MoneyTrans = 12;
+  WeApp = 13;
+  Emoji = 14;
+  RoomManage = 15;
+  Sys_LuckyMoney = 16;
+  RoomSystem = 17;
+  BizLink = 18;
+  AudioCall = 19;
+  VideoCall = 20;
+  NotifyMsg = 21;
+  QuoteMsg = 22;
+  JieLongMsg = 23;
+  ShiPinHao = 24;
+  RoomLiving = 25;
+  PaiYiPai = 26;
+  FinderLive = 28;
+  KefuNameCard = 29;
+  QiyeNameCard = 30;
+  UnSupport = 99;
+}
+
+// 在线状态枚举
+enum EnumOnlineState {
+  UnknownState = 0;
+  Online = 1;
+  Offline = 2;
+}
+
+// 任务类型枚举
+enum EnumTaskType {
+  UnknownTask = 0;
+  ReadTencentNews = 1;
+  ReadMPArticles = 2;
+  ReadKYKArticles = 3;
+}
+
+// 账号类型枚举
+enum EnumAccountType {
+  UnknownAccountType = 0;
+  Main = 1;
+  SubUser = 2;
+}
+
+// 发送状态枚举
+enum EnumSendStatus {
+  NoAction = 0;
+  Sending = 1;
+  SendSuccess = 17;
+  SendError = 16;
+}
+
+// 强制下线原因枚举
+enum EnumForceOfflineReason {
+  NoReason = 0;
+  FuckedByOtherAuthorizer = 1;
+  ByReAlloc = 2;
+  ByDeviceOffline = 3;
+  ByWeChatOffline = 4;
+}

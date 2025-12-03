@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "TransportMessage.proto";
+
+// 账号登出通知消息
+message AccountLogoutNoticeMessage {
+  int64 UnionId = 1;  // 联合ID
+  EnumAccountType AccountType = 2;  // 账号类型
+}

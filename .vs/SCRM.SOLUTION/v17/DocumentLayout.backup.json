@@ -1,14 +1,74 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "D:\\Code\\SCRM.SOLUTION\\",
+  "WorkspaceRootPath": "E:\\fan\\work\\code\\vs\\SCRM\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|d:\\code\\scrm.solution\\scrm.api\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\models\\entities\\appversion.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\models\\entities\\appversion.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\models\\entities\\groupinvitation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\models\\entities\\groupinvitation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\models\\entities\\messagesynclog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\models\\entities\\messagesynclog.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\models\\entities\\messagerevocation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\models\\entities\\messagerevocation.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\models\\entities\\permission.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\models\\entities\\permission.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\models\\entities\\role.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\models\\entities\\role.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\appsettings.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{87654321-4321-8765-CBA9-87654321CBA9}|SCRM.TEST\\SCRM.TEST.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.test\\appsettings.test.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}",
+      "RelativeMoniker": "D:0:0:{87654321-4321-8765-CBA9-87654321CBA9}|SCRM.TEST\\SCRM.TEST.csproj|solutionrelative:scrm.test\\appsettings.test.json||{90A6B3A7-C1A3-4009-A288-E2FF89E96FA0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}|SCRM.SHARED\\SCRM.SHARED.shproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.shared\\proto\\addfriendinchatroomtask.proto||{3B902123-F8A7-4915-9F01-361F908088D0}",
+      "RelativeMoniker": "D:0:0:{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}|SCRM.SHARED\\SCRM.SHARED.shproj|solutionrelative:scrm.shared\\proto\\addfriendinchatroomtask.proto||{3B902123-F8A7-4915-9F01-361F908088D0}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\scrm.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\scrm.api.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\controllers\\clienttaskcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\controllers\\clienttaskcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\core\\netty\\messagerouter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\core\\netty\\messagerouter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\clienttaskservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\clienttaskservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|d:\\code\\scrm.solution\\scrm.api\\services\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|E:\\fan\\work\\code\\vs\\SCRM\\SCRM.SHARE\\SCRM.SHARE.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|",
+      "RelativeMoniker": "D:0:0:{A2FE74E1-B743-11D0-AE1A-00A0C90FFFC3}|\u003CMiscFiles\u003E|solutionrelative:SCRM.SHARE\\SCRM.SHARE.csproj||{FA3CD31E-987B-443A-9B81-186104E8DAC1}|"
     }
   ],
   "DocumentGroupContainers": [
@@ -18,37 +78,212 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 2,
+          "SelectedChildIndex": 0,
           "Children": [
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AppVersion.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\AppVersion.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Models\\Entities\\AppVersion.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\AppVersion.cs",
+              "RelativeToolTip": "SCRM.API\\Models\\Entities\\AppVersion.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-03T11:46:03.343Z",
+              "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "ApplicationDbContext.cs",
-              "DocumentMoniker": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
-              "ToolTip": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
-              "RelativeToolTip": "SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
-              "ViewState": "AgIAAAIAAAAAAAAAAAAuwAsAAAAAAAAAAAAAAA==",
+              "Title": "GroupInvitation.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\GroupInvitation.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Models\\Entities\\GroupInvitation.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\GroupInvitation.cs",
+              "RelativeToolTip": "SCRM.API\\Models\\Entities\\GroupInvitation.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-30T07:04:05.434Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-03T11:45:43.188Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "AuthController.cs",
-              "DocumentMoniker": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
-              "ToolTip": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
-              "RelativeToolTip": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
-              "ViewState": "AgIAACQAAAAAAAAAAAAkwEIAAAAIAAAAAAAAAA==",
+              "DocumentIndex": 2,
+              "Title": "MessageSyncLog.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\MessageSyncLog.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Models\\Entities\\MessageSyncLog.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\MessageSyncLog.cs",
+              "RelativeToolTip": "SCRM.API\\Models\\Entities\\MessageSyncLog.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-11-30T05:37:30.442Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-03T11:45:39.663Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "MessageRevocation.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\MessageRevocation.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Models\\Entities\\MessageRevocation.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\MessageRevocation.cs",
+              "RelativeToolTip": "SCRM.API\\Models\\Entities\\MessageRevocation.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-03T11:45:36.436Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Permission.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\Permission.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Models\\Entities\\Permission.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\Permission.cs",
+              "RelativeToolTip": "SCRM.API\\Models\\Entities\\Permission.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-03T11:45:33.44Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "Role.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\Role.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Models\\Entities\\Role.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Models\\Entities\\Role.cs",
+              "RelativeToolTip": "SCRM.API\\Models\\Entities\\Role.cs",
+              "ViewState": "AgIAAB0AAAAAAAAAAAAxwAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-03T11:45:27.975Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Program.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Program.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Program.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Program.cs",
+              "RelativeToolTip": "SCRM.API\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABwAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-03T11:44:57.746Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "appsettings.json",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\appsettings.json",
+              "RelativeDocumentMoniker": "SCRM.API\\appsettings.json",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\appsettings.json",
+              "RelativeToolTip": "SCRM.API\\appsettings.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-12-03T11:44:38.425Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "appsettings.test.json",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.TEST\\appsettings.test.json",
+              "RelativeDocumentMoniker": "SCRM.TEST\\appsettings.test.json",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.TEST\\appsettings.test.json",
+              "RelativeToolTip": "SCRM.TEST\\appsettings.test.json",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvwAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.001642|",
+              "WhenOpened": "2025-12-03T11:44:34.219Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "AddFriendInChatRoomTask.proto",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.SHARED\\proto\\AddFriendInChatRoomTask.proto",
+              "RelativeDocumentMoniker": "SCRM.SHARED\\proto\\AddFriendInChatRoomTask.proto",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.SHARED\\proto\\AddFriendInChatRoomTask.proto",
+              "RelativeToolTip": "SCRM.SHARED\\proto\\AddFriendInChatRoomTask.proto",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvw4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003853|",
+              "WhenOpened": "2025-12-03T11:25:23.129Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "SCRM.API.csproj",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\SCRM.API.csproj",
+              "RelativeDocumentMoniker": "SCRM.API\\SCRM.API.csproj",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\SCRM.API.csproj",
+              "RelativeToolTip": "SCRM.API\\SCRM.API.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvy4AAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-12-03T10:55:23.2Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 16,
+              "Title": "SCRM.SHARE.csproj",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.SHARE\\SCRM.SHARE.csproj",
+              "RelativeDocumentMoniker": "SCRM.SHARE\\SCRM.SHARE.csproj",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.SHARE\\SCRM.SHARE.csproj",
+              "RelativeToolTip": "SCRM.SHARE\\SCRM.SHARE.csproj",
+              "ViewState": "AgIAAAAAAAAAAAAAAADwvxUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000758|",
+              "WhenOpened": "2025-12-03T10:52:42.492Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "MessageRouter.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Core\\Netty\\MessageRouter.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Core\\Netty\\MessageRouter.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Core\\Netty\\MessageRouter.cs",
+              "RelativeToolTip": "SCRM.API\\Core\\Netty\\MessageRouter.cs",
+              "ViewState": "AgIAAEEAAAAAAAAAAAAqwGMAAABAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-03T10:51:51.916Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 13,
+              "Title": "ClientTaskService.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\ClientTaskService.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\ClientTaskService.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\ClientTaskService.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\ClientTaskService.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAADkAAAAWAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-03T10:51:19.187Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
+              "Title": "ClientTaskController.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Controllers\\ClientTaskController.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Controllers\\ClientTaskController.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Controllers\\ClientTaskController.cs",
+              "RelativeToolTip": "SCRM.API\\Controllers\\ClientTaskController.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAMAAAALAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-03T10:41:37.606Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
+              "Title": "ApplicationDbContext.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "ViewState": "AgIAAAIAAAAAAAAAAAAuwAsAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-30T07:04:05.434Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 14,
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "RelativeToolTip": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "ViewState": "AgIAACcAAAAAAAAAAAAkwEAAAABGAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-11-30T05:37:30.442Z"
             }
           ]
         }

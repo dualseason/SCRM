@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// 朋友圈消息清除任务消息
+message CircleMsgClearTaskMessage {
+  string WeChatId = 1;  // 微信ID
+  int64 CircleId = 2;   // 朋友圈ID
+  int32 CommentId = 3;  // 评论ID
+  bool IsRead = 4;      // 是否已读
+}

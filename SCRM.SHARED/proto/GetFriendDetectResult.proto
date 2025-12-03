@@ -1,0 +1,7 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message GetFriendDetectResultMessage {
+  string WeChatId = 1;
+}

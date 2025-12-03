@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message GetA8KeyTaskMessage {
+  string WeChatId = 1;
+  int32 Type = 2;
+  string Url = 3;
+  string UserName = 4;
+  string MsgSvrId = 5;
+  int32 Reason = 6;
+  int64 TaskId = 7;
+}

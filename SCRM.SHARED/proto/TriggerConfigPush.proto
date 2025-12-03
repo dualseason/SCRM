@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// TriggerConfigPush Message
+// Extracted from: TriggerConfigPush.java
+message TriggerConfigPushMessage {
+  string IMEI = 1;
+  string WeChatId = 2;
+}

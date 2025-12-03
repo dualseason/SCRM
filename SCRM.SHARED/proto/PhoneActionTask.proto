@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+enum EnumPhoneAction {
+  None = 0;
+  Reboot = 1;
+  UploadLog = 2;
+  UploadFile = 3;
+  CleanAppCache = 4;
+  CleanWxCache = 5;
+  CleanFileUrlCache = 6;
+  PhoneCall = 7;
+  RestartWx = 9;
+  RestartSelf = 10;
+}
+
+message PhoneActionTaskMessage {
+  string WeChatId = 1;
+  string Imei = 2;
+  EnumPhoneAction Action = 3;
+  string StrParam = 4;
+  int32 IntParam = 5;
+  int64 TaskId = 6;
+}

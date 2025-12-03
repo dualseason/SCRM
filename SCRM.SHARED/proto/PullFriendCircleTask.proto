@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message PullFriendCircleTaskMessage {
+  string WeChatId = 1;
+  string FriendId = 2;
+  int64 StartTime = 3;
+  int32 Count = 4;
+  int64 RefTime = 5;
+  int64 RefSnsId = 6;
+  int64 TaskId = 7;
+}

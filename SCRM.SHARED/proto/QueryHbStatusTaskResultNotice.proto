@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message QueryHbStatusTaskResultNoticeMessage {
+  string WeChatId = 1;
+  bool Success = 2;
+  string ErrMsg = 3;
+  string HbUrl = 4;
+  int32 HbType = 5;
+  int32 HbStatus = 6;
+  int32 RevStatus = 7;
+  string StatusMsg = 8;
+}

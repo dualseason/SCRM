@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "TransportMessage.proto";
+
+// FriendAddReqeustNotice definition
+// Restored from FriendAddReqeustNotice.java
+message FriendAddReqeustNoticeMessage {
+    string WeChatId = 1;
+    string FriendId = 2;
+    string FriendNo = 3;
+    string FriendNick = 4;
+    string Reason = 5;
+    string Avatar = 6;
+    int32 Source = 7;
+    string SourceUser = 8;
+    EnumGender Gender = 9;
+    string Province = 10;
+    string City = 11;
+}

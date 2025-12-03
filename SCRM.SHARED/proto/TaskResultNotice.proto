@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "TransportMessage.proto";
+
+// TaskResultNotice Message
+// Extracted from: TaskResultNotice.java
+message TaskResultNoticeMessage {
+  bool Success = 1;
+  EnumErrorCode Code = 2;
+  string ErrMsg = 3;
+  int64 TaskId = 4;
+  EnumMsgType TaskType = 5;
+  string WeChatId = 6;
+}

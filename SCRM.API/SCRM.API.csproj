@@ -41,8 +41,7 @@
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Protobuf Include="..\Proto\**\*.proto" ProtoRoot="..\Proto" GrpcServices="None" />
-  </ItemGroup>
+
+	<Import Project="..\SCRM.SHARED\SCRM.SHARED.projitems" Label="Shared" />
 
   </Project>

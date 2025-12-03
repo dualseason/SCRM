@@ -1,4 +1,4 @@
-using Jubo.JuLiao.IM.Wx.Proto;
+using SCRM.SHARED.Proto;
 using System;
 using System.Threading.Tasks;
 using DotNetty.Transport.Channels;

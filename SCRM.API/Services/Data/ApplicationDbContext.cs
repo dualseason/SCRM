@@ -89,6 +89,7 @@ namespace SCRM.Services.Data
         // ==================== 十、其他功能 ====================
         public DbSet<SystemNotification> SystemNotifications { get; set; }
         public DbSet<AppVersion> AppVersions { get; set; }
+        public DbSet<SrClient> SrClients { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -200,6 +201,16 @@ namespace SCRM.Services.Data
                 entity.ToTable("app_versions");
                 entity.HasKey(e => e.VersionId);
                 entity.HasIndex(e => new { e.Platform, e.VersionNumber }).IsUnique();
+                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            // 配置 SrClient
+            modelBuilder.Entity<SrClient>(entity =>
+            {
+                entity.ToTable("sr_clients");
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => e.MachineId).IsUnique();
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });

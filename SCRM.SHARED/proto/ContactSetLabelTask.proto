@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// 联系人设置标签任务消息
+message ContactSetLabelTaskMessage {
+  string WeChatId = 1;          // 微信ID
+  string FriendId = 2;          // 好友ID
+  repeated int32 LabelIds = 3;  // 标签ID列表
+  int64 taskId = 4;             // 任务ID
+}

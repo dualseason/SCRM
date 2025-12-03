@@ -2,7 +2,7 @@ using Xunit;
 using FluentAssertions;
 using Moq;
 using SCRM.Core.Netty;
-using Jubo.JuLiao.IM.Wx.Proto;
+using SCRM.SHARED.Proto;
 using DotNetty.Transport.Channels;
 using System.Threading.Tasks;
 using SCRM.Services;

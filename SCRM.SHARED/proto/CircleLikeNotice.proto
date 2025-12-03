@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// 朋友圈点赞通知消息
+message CircleLikeNoticeMessage {
+  string WeChatId = 1;     // 微信ID
+  int64 CircleId = 2;      // 朋友圈ID
+  string FriendId = 3;     // 好友ID
+  bool IsDelete = 4;       // 是否删除
+  int64 PublishTime = 5;   // 发布时间
+  string NickName = 6;     // 昵称
+}

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "TransportMessage.proto";
+
+// ErrorMessage definition
+// Restored from ErrorMessageOuterClass.java
+message ErrorMessage {
+    EnumErrorCode ErrorCode = 1;
+    string ErrorMsg = 2;
+}

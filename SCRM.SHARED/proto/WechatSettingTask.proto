@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+enum EnumSettings {
+  ChangeNickName = 0;
+  ChangeAvatar = 1;
+  NeedVerify = 2;
+  ChangeGender = 3;
+  ChangeZone = 4;
+  ChangeSignature = 5;
+}
+
+message WechatSettingTaskMessage {
+  string WeChatId = 1;
+  EnumSettings Action = 2;
+  string Content = 3;
+  int32 IntParam = 4;
+  int64 TaskId = 5;
+}

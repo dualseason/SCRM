@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// ForwardMessageTask definition
+// Restored from ForwardMessageTask.java
+message ForwardMessageTaskMessage {
+    int64 MsgSrvId = 1;
+    string WeChatId = 2;
+    string FriendIds = 3;
+    string ExtMsg = 4;
+    string Talker = 5;
+    int64 TaskId = 6;
+}

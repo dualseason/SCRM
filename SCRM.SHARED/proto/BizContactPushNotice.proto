@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// 企业微信联系人消息
+message BizContactMessage {
+  string Username = 1;  // 用户名
+  string Alias = 2;     // 别名
+  string Nickname = 3;  // 昵称
+  string Avatar = 4;    // 头像
+  string Icon = 5;      // 图标
+  string Desc = 6;      // 描述
+  string Company = 7;   // 公司
+}
+
+// 企业微信联系人推送通知消息
+message BizContactPushNoticeMessage {
+  string WeChatId = 1;                      // 微信ID
+  repeated BizContactMessage Contacts = 2;  // 联系人列表
+  int64 TaskId = 3;                         // 任务ID
+}

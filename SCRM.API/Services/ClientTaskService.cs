@@ -1,6 +1,6 @@
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
-using Jubo.JuLiao.IM.Wx.Proto;
+using SCRM.SHARED.Proto;
 using SCRM.Services;
 using System;
 using System.Threading.Tasks;

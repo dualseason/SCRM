@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message HbRecordMessage {
+  string UserName = 1;
+  int32 Amount = 2;
+  string Time = 3;
+}
+
+message QueryHbDetailTaskResultNoticeMessage {
+  string WeChatId = 1;
+  bool Success = 2;
+  string ErrMsg = 3;
+  string HbUrl = 4;
+  int32 TotalNum = 5;
+  int32 TotalAmount = 6;
+  int32 RecNum = 7;
+  int32 RecAmount = 8;
+  repeated HbRecordMessage Records = 9;
+  string Sender = 10;
+  string Wishing = 11;
+  int32 HbType = 12;
+  int32 HbKind = 13;
+  int32 HbStatus = 14;
+  int32 RevStatus = 15;
+}

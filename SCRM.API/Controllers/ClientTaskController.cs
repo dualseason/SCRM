@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SCRM.Services;
 using System.Threading.Tasks;
-using Jubo.JuLiao.IM.Wx.Proto;
+using SCRM.SHARED.Proto;
 
 namespace SCRM.Controllers
 {

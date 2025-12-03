@@ -1,5 +1,5 @@
 using DotNetty.Transport.Channels;
-using Jubo.JuLiao.IM.Wx.Proto;
+using SCRM.SHARED.Proto;
 using System;
 using System.Threading.Tasks;
 using SCRM.Shared.Core;

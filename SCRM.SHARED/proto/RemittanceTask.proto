@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message RemittanceTaskMessage {
+  string WeChatId = 1;
+  string FriendId = 2;
+  int32 Money = 3;
+  string Passwd = 4;
+  string Memo = 5;
+  int64 TaskId = 6;
+  string RoomId = 7;
+}

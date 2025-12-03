@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// TriggerFriendPushTask Message
+// Extracted from: TriggerFriendPushTask.java
+message TriggerFriendPushTaskMessage {
+  string WeChatId = 1;
+  int64 TaskId = 2;
+}

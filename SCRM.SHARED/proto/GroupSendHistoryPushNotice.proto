@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "TransportMessage.proto";
+
+message MassMessage {
+  string ToList = 1;
+  int32 ToCount = 2;
+  EnumContentType ContentType = 3;
+  string Content = 4;
+  int64 CreateTime = 5;
+  int32 Status = 6;
+}
+
+message GroupSendHistoryPushNoticeMessage {
+  string WeChatId = 1;
+  repeated MassMessage Messages = 2;
+  int64 TaskId = 3;
+}

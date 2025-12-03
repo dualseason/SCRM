@@ -1,3 +1,4 @@
+﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
@@ -8,36 +9,86 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SCRM.TEST", "SCRM.TEST\SCRM
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCRM.MAUI", "SCRM.MAUI\SCRM.MAUI.csproj", "{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCRM.SHARE", "SCRM.SHARE\SCRM.SHARE.csproj", "{DD34EE6A-8DB5-40AF-8442-591A0D2363FA}"
+Project("{D954291E-2A0B-460D-934E-DC6B0785DB48}") = "SCRM.SHARED", "SCRM.SHARED\SCRM.SHARED.shproj", "{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCRM.WEB", "SCRM.WEB\SCRM.WEB.csproj", "{1D844E0F-4445-43EC-89C7-FA5B80EE809B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{12345678-1234-5678-9ABC-123456789ABC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{12345678-1234-5678-9ABC-123456789ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{12345678-1234-5678-9ABC-123456789ABC}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{12345678-1234-5678-9ABC-123456789ABC}.Debug|x64.Build.0 = Debug|Any CPU
+		{12345678-1234-5678-9ABC-123456789ABC}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{12345678-1234-5678-9ABC-123456789ABC}.Debug|x86.Build.0 = Debug|Any CPU
 		{12345678-1234-5678-9ABC-123456789ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{12345678-1234-5678-9ABC-123456789ABC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{12345678-1234-5678-9ABC-123456789ABC}.Release|x64.ActiveCfg = Release|Any CPU
+		{12345678-1234-5678-9ABC-123456789ABC}.Release|x64.Build.0 = Release|Any CPU
+		{12345678-1234-5678-9ABC-123456789ABC}.Release|x86.ActiveCfg = Release|Any CPU
+		{12345678-1234-5678-9ABC-123456789ABC}.Release|x86.Build.0 = Release|Any CPU
 		{87654321-4321-8765-CBA9-87654321CBA9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{87654321-4321-8765-CBA9-87654321CBA9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{87654321-4321-8765-CBA9-87654321CBA9}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{87654321-4321-8765-CBA9-87654321CBA9}.Debug|x64.Build.0 = Debug|Any CPU
+		{87654321-4321-8765-CBA9-87654321CBA9}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{87654321-4321-8765-CBA9-87654321CBA9}.Debug|x86.Build.0 = Debug|Any CPU
 		{87654321-4321-8765-CBA9-87654321CBA9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{87654321-4321-8765-CBA9-87654321CBA9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{87654321-4321-8765-CBA9-87654321CBA9}.Release|x64.ActiveCfg = Release|Any CPU
+		{87654321-4321-8765-CBA9-87654321CBA9}.Release|x64.Build.0 = Release|Any CPU
+		{87654321-4321-8765-CBA9-87654321CBA9}.Release|x86.ActiveCfg = Release|Any CPU
+		{87654321-4321-8765-CBA9-87654321CBA9}.Release|x86.Build.0 = Release|Any CPU
 		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|x64.Build.0 = Debug|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Debug|x86.Build.0 = Debug|Any CPU
 		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{DD34EE6A-8DB5-40AF-8442-591A0D2363FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DD34EE6A-8DB5-40AF-8442-591A0D2363FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DD34EE6A-8DB5-40AF-8442-591A0D2363FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DD34EE6A-8DB5-40AF-8442-591A0D2363FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Release|x64.ActiveCfg = Release|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Release|x64.Build.0 = Release|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Release|x86.ActiveCfg = Release|Any CPU
+		{BE2183A7-A731-4BDC-8D45-CDA8C2B1046E}.Release|x86.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}.Debug|x64.ActiveCfg = Debug|x64
+		{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}.Debug|x86.ActiveCfg = Debug|x86
+		{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}.Release|x64.ActiveCfg = Release|x64
+		{A1B2C3D4-E5F6-4789-0123-456789ABCDEF}.Release|x86.ActiveCfg = Release|x86
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Debug|x64.Build.0 = Debug|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Debug|x86.Build.0 = Debug|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Release|x64.ActiveCfg = Release|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Release|x64.Build.0 = Release|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Release|x86.ActiveCfg = Release|Any CPU
+		{1D844E0F-4445-43EC-89C7-FA5B80EE809B}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {FEDCBA98-7654-3210-ABCD-FEDCBA987654}
+	EndGlobalSection
+	GlobalSection(SharedMSBuildProjectFiles) = preSolution
+		SCRM.SHARED\SCRM.SHARED.projitems*{12345678-1234-5678-9abc-123456789abc}*SharedItemsImports = 5
+		SCRM.SHARED\SCRM.SHARED.projitems*{a1b2c3d4-e5f6-4789-0123-456789abcdef}*SharedItemsImports = 13
 	EndGlobalSection
 EndGlobal

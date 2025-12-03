@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// 清除所有聊天消息任务消息
+message ClearAllChatMsgTaskMessage {
+  string WeChatId = 1;  // 微信ID
+  int32 Flag = 2;       // 标志
+  int64 TaskId = 3;     // 任务ID
+}

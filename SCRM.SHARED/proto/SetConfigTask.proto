@@ -1,0 +1,13 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "ConfigPushNotice.proto";
+
+message SetConfigTaskMessage {
+  string IMEI = 1;
+  string WeChatId = 2;
+  repeated BoolConfigMessage BoolConfs = 7;
+  repeated IntConfigMessage IntConfs = 8;
+  repeated StrConfigMessage StrConfs = 9;
+}

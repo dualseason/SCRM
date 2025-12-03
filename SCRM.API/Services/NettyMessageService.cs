@@ -4,7 +4,7 @@ using SCRM.Core.Netty;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using Jubo.JuLiao.IM.Wx.Proto;
+using SCRM.SHARED.Proto;
 using Google.Protobuf.WellKnownTypes;
 
 namespace SCRM.Services

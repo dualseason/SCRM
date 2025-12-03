@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// TriggerUnReadTask Message
+// Extracted from: TriggerUnReadTask.java
+message TriggerUnReadTaskMessage {
+  string WeChatId = 1;
+  string FriendId = 2;
+  int64 TaskId = 3;
+}

@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+// 聊天室操作枚举
+enum EnumChatRoomAction {
+  RoomName = 0;          // 群名称
+  ModifyPublicNoti = 1;  // 修改群公告
+  AddMember = 2;         // 添加成员
+  KickMember = 3;        // 踢出成员
+  RoomShowName = 4;      // 群显示名称
+  AddToPhonebook = 5;    // 添加到通讯录
+  NewMsgNoti = 6;        // 新消息通知
+  ExitRoom = 7;          // 退出群聊
+  CreateRoom = 8;        // 创建群聊
+  ViewAllMember = 9;     // 查看所有成员
+  TransferOwner = 10;    // 转让群主
+  SetVerify = 11;        // 设置验证
+  AddManager = 12;       // 添加管理员
+  DelManager = 13;       // 删除管理员
+  SetRemark = 14;        // 设置备注
+  SetTop = 16;           // 置顶
+}
+
+// 聊天室操作任务消息
+message ChatRoomActionTaskMessage {
+  string WeChatId = 1;             // 微信ID
+  string ChatRoomId = 2;           // 聊天室ID
+  EnumChatRoomAction Action = 3;   // 操作类型
+  string Content = 4;              // 内容
+  int32 IntValue = 5;              // 整数值
+  int64 taskId = 6;                // 任务ID
+}

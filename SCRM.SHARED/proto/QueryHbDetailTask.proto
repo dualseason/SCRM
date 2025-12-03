@@ -1,0 +1,8 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message QueryHbDetailTaskMessage {
+  string WeChatId = 1;
+  string HbUrl = 2;
+}

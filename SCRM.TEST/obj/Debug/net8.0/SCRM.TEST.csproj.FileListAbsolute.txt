@@ -9,7 +9,6 @@ E:\fan\work\code\vs\SCRM\SCRM.TEST\obj\Debug\net8.0\SCRM.TEST.AssemblyInfoInputs
 E:\fan\work\code\vs\SCRM\SCRM.TEST\obj\Debug\net8.0\SCRM.TEST.AssemblyInfo.cs
 E:\fan\work\code\vs\SCRM\SCRM.TEST\obj\Debug\net8.0\SCRM.TEST.csproj.CoreCompileInputs.cache
 E:\fan\work\code\vs\SCRM\SCRM.TEST\obj\Debug\net8.0\SCRM.TEST.sourcelink.json
-E:\fan\work\code\vs\SCRM\SCRM.TEST\bin\Debug\net8.0\appsettings.Development.json
 E:\fan\work\code\vs\SCRM\SCRM.TEST\bin\Debug\net8.0\appsettings.json
 E:\fan\work\code\vs\SCRM\SCRM.TEST\bin\Debug\net8.0\testhost.exe
 E:\fan\work\code\vs\SCRM\SCRM.TEST\bin\Debug\net8.0\testhost.dll

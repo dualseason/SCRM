@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+message RequestChatRoomInfoTaskMessage {
+  string WeChatId = 1;
+  string ChatRoomId = 2;
+  int32 Flag = 3;
+}

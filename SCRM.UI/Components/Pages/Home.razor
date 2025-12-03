@@ -1,0 +1,36 @@
+@page "/"
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@inject IDeviceService DeviceService
+
+<h1>Device Management</h1>
+
+<RadzenCard>
+    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Device List</RadzenText>
+    <RadzenDataGrid Data="@devices" TItem="Device" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true" IsLoading="@isLoading">
+        <Columns>
+            <RadzenDataGridColumn TItem="Device" Property="DeviceId" Title="ID" Width="50px" />
+            <RadzenDataGridColumn TItem="Device" Property="DeviceName" Title="Name" />
+            <RadzenDataGridColumn TItem="Device" Property="DeviceType" Title="Type" />
+            <RadzenDataGridColumn TItem="Device" Property="IsActive" Title="Active" />
+            <RadzenDataGridColumn TItem="Device" Property="CreatedAt" Title="Created At" FormatString="{0:d}" />
+        </Columns>
+    </RadzenDataGrid>
+</RadzenCard>
+
+@code {
+    IEnumerable<Device> devices;
+    bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            devices = await DeviceService.GetDevicesAsync();
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+}

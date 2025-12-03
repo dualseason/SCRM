@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package  SCRM.SHARED.Proto;
+
+import "TransportMessage.proto";
+
+message WeChatOnlineNoticeMessage {
+  string WeChatId = 1;
+  string WeChatNo = 2;
+  string WeChatNick = 3;
+  EnumGender Gender = 4;
+  string Country = 5;
+  string Province = 6;
+  string City = 7;
+  string Avatar = 8;
+  string IMEI = 9;
+  string Phone = 10;
+}

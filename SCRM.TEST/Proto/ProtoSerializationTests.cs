@@ -1,6 +1,6 @@
 using Xunit;
 using FluentAssertions;
-using Jubo.JuLiao.IM.Wx.Proto;
+using SCRM.SHARED.Proto;
 using Google.Protobuf;
 
 namespace SCRM.TEST.Proto
