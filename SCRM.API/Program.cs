@@ -13,6 +13,9 @@ using System.Text;
 using Serilog;
 using System.Globalization;
 using SCRM.Shared.Core;
+using SCRM.API.Hubs;
+using Microsoft.AspNetCore.Identity;
+using SCRM.SHARED.Models;
 
 public partial class Program
 {
@@ -67,14 +70,36 @@ public partial class Program
         // Add services to the container.
         builder.Services.AddMemoryCache();
         // Add EF Core PostgreSQL
+        var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+        dataSourceBuilder.EnableDynamicJson();
+        var dataSource = dataSourceBuilder.Build();
         builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+            options.UseNpgsql(dataSource));
         // Configure JWT settings
         builder.Services.Configure<JwtSettings>(
             builder.Configuration.GetSection("JwtSettings"));
+            
+        // Configure Netty settings
+        builder.Services.Configure<NettySettings>(
+            builder.Configuration.GetSection("NettySettings"));
 
         // Add JWT services
         builder.Services.AddScoped<JwtService>();
+
+        // Configure Identity
+        builder.Services.AddIdentityCore<ApplicationUser>(options =>
+        {
+            options.SignIn.RequireConfirmedAccount = false;
+            options.Password.RequireNonAlphanumeric = false;
+            options.Password.RequireLowercase = false;
+            options.Password.RequireUppercase = false;
+            options.Password.RequireDigit = false;
+            options.Password.RequiredLength = 6;
+        })
+            .AddRoles<IdentityRole>()
+            .AddEntityFrameworkStores<ApplicationDbContext>()
+            .AddSignInManager()
+            .AddDefaultTokenProviders();
 
         // Configure Authentication
         var jwtSettings = builder.Configuration.GetSection("JwtSettings").Get<JwtSettings>();
@@ -135,6 +160,7 @@ public partial class Program
             });
         });
 
+        builder.Services.AddSignalR();
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
@@ -217,7 +243,7 @@ public partial class Program
         // Add Rate Limiting middleware
         // app.UseRateLimiter(); // TODO: Configure built-in rate limiter if needed
 
-        app.UseHttpsRedirection();
+        // app.UseHttpsRedirection();
 
         // Add Authentication & Authorization middleware
         app.UseAuthentication();
@@ -225,6 +251,24 @@ public partial class Program
 
         // Map controllers
         app.MapControllers();
+        
+        // Map SignalR Hubs
+        app.MapHub<ClientHub>("/hubs/client");
+
+        // Initialize Seed Data
+        using (var scope = app.Services.CreateScope())
+        {
+            var services = scope.ServiceProvider;
+            try
+            {
+                SCRM.API.Data.SeedData.InitializeAsync(services).Wait();
+            }
+            catch (Exception ex)
+            {
+                var logger = services.GetRequiredService<ILogger<Program>>();
+                logger.LogError(ex, "An error occurred seeding the DB.");
+            }
+        }
 
         app.Run();
     }

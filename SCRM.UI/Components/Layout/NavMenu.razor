@@ -1,26 +1,16 @@
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">SCRM.MAUI</a>
-    </div>
-</div>
+@using Radzen
+@using Radzen.Blazor
+@using Microsoft.AspNetCore.Components.Authorization
 
-<div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-    </nav>
-</div>
+<RadzenPanelMenu>
+    <AuthorizeView>
+        <Authorized>
+            <RadzenPanelMenuItem Text="Home" Path="" Icon="home" />
+            <RadzenPanelMenuItem Text="Chat" Path="chat" Icon="chat" />
+            <RadzenPanelMenuItem Text="Contacts" Path="contacts" Icon="contacts" />
+        </Authorized>
+    </AuthorizeView>
+</RadzenPanelMenu>
 
 @code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
 }

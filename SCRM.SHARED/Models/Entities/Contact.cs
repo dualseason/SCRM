@@ -1,7 +1,7 @@
-﻿namespace SCRM.API.Models.Entities;
+namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 鑱旂郴浜鸿〃
+/// 联系人表
 /// </summary>
 public class Contact
 {
@@ -27,4 +27,3 @@ public class Contact
     public DateTime UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
 }
-

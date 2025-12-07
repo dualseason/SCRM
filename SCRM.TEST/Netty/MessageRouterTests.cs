@@ -16,11 +16,14 @@ namespace SCRM.TEST.Netty
         private readonly Mock<IChannel> _mockChannel;
         private readonly ConnectionManager _connectionManager;
 
+        private readonly Mock<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory> _mockScopeFactory;
+
         public MessageRouterTests(TestInitializer initializer) : base(initializer)
         {
             var mockLogger = new Mock<Microsoft.Extensions.Logging.ILogger<ConnectionManager>>();
             _connectionManager = new ConnectionManager(mockLogger.Object);
-            _router = new MessageRouter(_connectionManager);
+            _mockScopeFactory = new Mock<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>();
+            _router = new MessageRouter(_connectionManager, _mockScopeFactory.Object);
             _mockContext = new Mock<IChannelHandlerContext>();
             _mockChannel = new Mock<IChannel>();
             _mockContext.Setup(x => x.Channel).Returns(_mockChannel.Object);

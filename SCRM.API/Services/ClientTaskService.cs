@@ -11,10 +11,19 @@ namespace SCRM.Services
     {
         private readonly NettyMessageService _nettyMessageService;
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<long, TaskCompletionSource<SCRM.SHARED.Models.TaskResult>> _pendingTasks = new();
 
         public ClientTaskService(NettyMessageService nettyMessageService)
         {
             _nettyMessageService = nettyMessageService;
+        }
+
+        public void CompleteTask(long taskId, bool success, string? message = null)
+        {
+            if (_pendingTasks.TryRemove(taskId, out var tcs))
+            {
+                tcs.TrySetResult(new SCRM.SHARED.Models.TaskResult { Success = success, Message = message });
+            }
         }
 
         /// <summary>
@@ -32,21 +41,43 @@ namespace SCRM.Services
         /// <summary>
         /// 发送给好友发消息任务
         /// </summary>
-        public async Task<bool> SendTalkToFriendTaskAsync(string connectionId, string friendWxId, string content, EnumContentType contentType = EnumContentType.Text)
+        public async Task<SCRM.SHARED.Models.TaskResult> SendTalkToFriendTaskAsync(string connectionId, string friendWxId, string content, EnumContentType contentType = EnumContentType.Text)
         {
+            var taskId = DateTime.UtcNow.Ticks;
             var task = new TalkToFriendTaskMessage
             {
                 FriendId = friendWxId,
                 Content = ByteString.CopyFromUtf8(content),
                 ContentType = contentType,
-                MsgId = DateTime.UtcNow.Ticks,
+                MsgId = taskId,
                 Immediate = true
             };
 
-            return await _nettyMessageService.SendMessageToNettyAsync(
+            var tcs = new TaskCompletionSource<SCRM.SHARED.Models.TaskResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pendingTasks.TryAdd(taskId, tcs);
+
+            var sent = await _nettyMessageService.SendMessageToNettyAsync(
                 task, 
                 EnumMsgType.TalkToFriendTask.ToString(), 
                 connectionId);
+
+            if (!sent)
+            {
+                _pendingTasks.TryRemove(taskId, out _);
+                return SCRM.SHARED.Models.TaskResult.Fail("Failed to send to Netty");
+            }
+
+            // Wait for result with timeout (e.g. 10 seconds)
+            var timeoutTask = Task.Delay(10000);
+            var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                _pendingTasks.TryRemove(taskId, out _);
+                return SCRM.SHARED.Models.TaskResult.Fail("Timeout waiting for client response");
+            }
+
+            return await tcs.Task;
         }
 
         /// <summary>

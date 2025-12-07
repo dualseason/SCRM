@@ -15,6 +15,8 @@ using System.Security.Claims;
 using SCRM.Models.Dtos;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Identity;
+using SCRM.SHARED.Models;
 
 namespace SCRM.Services
 {
@@ -25,17 +27,56 @@ namespace SCRM.Services
         private readonly ApplicationDbContext _context;
         private readonly JwtSettings _jwtSettings;
         private readonly IMemoryCache _cache;
+        private readonly UserManager<ApplicationUser> _userManager;
         
         public JwtService(
             ApplicationDbContext context,
             IOptions<JwtSettings> jwtSettings,
-            IMemoryCache cache)
+            IMemoryCache cache,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _jwtSettings = jwtSettings.Value;
-            _cache = cache;        }
+            _cache = cache;
+            _userManager = userManager;
+        }
 
-        public async Task<string> GenerateTokenAsync(User user)
+        public async Task<string> GenerateTokenAsync(ApplicationUser user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+
+            var roles = await _userManager.GetRolesAsync(user);
+            
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, user.Id),
+                new Claim(ClaimTypes.Name, user.UserName ?? "Unknown"),
+                new Claim("user_id", user.Id),
+                new Claim("username", user.UserName ?? "Unknown")
+            };
+
+            if (!string.IsNullOrEmpty(user.Email)) claims.Add(new Claim(ClaimTypes.Email, user.Email));
+
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _jwtSettings.Issuer,
+                audience: _jwtSettings.Audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public async Task<string> GenerateTokenAsync(LegacyWechatUser user)
         {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
@@ -47,13 +88,25 @@ namespace SCRM.Services
             var claims = new List<Claim>
             {
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim("first_name", user.FirstName ?? ""),
-                new Claim("last_name", user.LastName ?? ""),
+                new Claim(ClaimTypes.Name, user.UserName ?? "Unknown"),
                 new Claim("user_id", user.Id.ToString()),
-                new Claim("username", user.UserName)
+                new Claim("username", user.UserName ?? "Unknown")
             };
+
+            if (!string.IsNullOrEmpty(user.Email))
+            {
+                claims.Add(new Claim(ClaimTypes.Email, user.Email));
+            }
+
+            if (!string.IsNullOrEmpty(user.FirstName))
+            {
+                claims.Add(new Claim("first_name", user.FirstName));
+            }
+
+            if (!string.IsNullOrEmpty(user.LastName))
+            {
+                claims.Add(new Claim("last_name", user.LastName));
+            }
 
             // 添加角色claims
             foreach (var role in roles)
@@ -81,7 +134,48 @@ namespace SCRM.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        public string GenerateRefreshTokenAsync(User user)
+        public string GenerateDeviceToken(WechatAccount device)
+        {
+            if (device == null)
+                throw new ArgumentNullException(nameof(device));
+
+            var claims = new List<Claim>
+            {
+                new Claim(ClaimTypes.NameIdentifier, device.AccountId.ToString()),
+                new Claim("device_imei", device.WechatNumber ?? ""),
+                new Claim("device_uuid", device.ClientUuid ?? ""),
+                new Claim("is_device", "true")
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+            var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var token = new JwtSecurityToken(
+                issuer: _jwtSettings.Issuer,
+                audience: _jwtSettings.Audience,
+                claims: claims,
+                expires: DateTime.UtcNow.AddDays(365), // Devices have longer token life
+                signingCredentials: credentials
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+
+        public string GenerateRefreshTokenAsync(ApplicationUser user)
+        {
+            if (user == null) throw new ArgumentNullException(nameof(user));
+            var refreshToken = Guid.NewGuid().ToString("N");
+            var cacheKey = $"refresh_token_{user.Id}";
+            var cacheOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_jwtSettings.RefreshTokenExpiryDays)
+            };
+            _cache.Set(cacheKey, refreshToken, cacheOptions);
+            _logger.Information("Generated refresh token for user {UserId}", user.Id);
+            return refreshToken;
+        }
+
+        public string GenerateRefreshTokenAsync(LegacyWechatUser user)
         {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
@@ -97,7 +191,7 @@ namespace SCRM.Services
 
             _cache.Set(cacheKey, refreshToken, cacheOptions);
 
-            _logger.Information("Generated refresh token for user {UserId}", user.Id);
+            _logger.Information("Generated refresh token for user {LegacyWechatUserId}", user.Id);
             return refreshToken;
         }
 
@@ -113,7 +207,7 @@ namespace SCRM.Services
 
             if (!isValid)
             {
-                _logger.Warning("Invalid refresh token for user {UserId}", userId);
+                _logger.Warning("Invalid refresh token for user {LegacyWechatUserId}", userId);
             }
 
             return isValid;
@@ -154,11 +248,31 @@ namespace SCRM.Services
             {
                 var cacheKey = $"refresh_token_{userId}";
                 _cache.Remove(cacheKey);
-                _logger.Information("Revoked refresh token for user {UserId}", userId);
+                _logger.Information("Revoked refresh token for user {LegacyWechatUserId}", userId);
             }
         }
 
-        public async Task<TokenResponse> GenerateTokenResponseAsync(User user)
+        public async Task<TokenResponse> GenerateTokenResponseAsync(ApplicationUser user)
+        {
+            var token = await GenerateTokenAsync(user);
+            var refreshToken = GenerateRefreshTokenAsync(user);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            return new TokenResponse
+            {
+                Token = token,
+                RefreshToken = refreshToken,
+                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
+                User = new UserDto
+                {
+                    UserName = user.UserName,
+                    Email = user.Email,
+                    Roles = roles.ToList()
+                }
+            };
+        }
+
+        public async Task<TokenResponse> GenerateTokenResponseAsync(LegacyWechatUser user)
         {
             var token = await GenerateTokenAsync(user);
             var refreshToken = GenerateRefreshTokenAsync(user);

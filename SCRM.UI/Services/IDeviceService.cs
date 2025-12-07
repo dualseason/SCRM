@@ -4,7 +4,7 @@ namespace SCRM.UI.Services
 {
     public interface IDeviceService
     {
-        Task<IEnumerable<Device>> GetDevicesAsync();
-        Task<Device?> GetDeviceAsync(int id);
+        Task<IEnumerable<SrClient>> GetDevicesAsync();
+        Task<SrClient?> GetDeviceAsync(string id);
     }
 }

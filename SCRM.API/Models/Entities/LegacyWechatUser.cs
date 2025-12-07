@@ -3,10 +3,10 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 用户实体 - WechatAccount的别名，用于兼容性
+/// 用户实体 - WechatAccount的别名，用于兼容性 (已重命名为 LegacyWechatUser)
 /// </summary>
 [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-public class User
+public class LegacyWechatUser
 {
     /// <summary>
     /// 用户ID (映射到AccountId)
@@ -126,13 +126,13 @@ public class User
     /// <summary>
     /// 默认构造函数
     /// </summary>
-    public User() { }
+    public LegacyWechatUser() { }
 
     /// <summary>
     /// 从微信账号构造用户
     /// </summary>
     /// <param name="wechatAccount">微信账号</param>
-    public User(WechatAccount wechatAccount)
+    public LegacyWechatUser(WechatAccount wechatAccount)
     {
         WechatAccount = wechatAccount;
     }
@@ -143,7 +143,7 @@ public class User
     /// <param name="userId">用户ID</param>
     /// <param name="userName">用户名</param>
     /// <param name="email">邮箱</param>
-    public User(long userId, string userName, string? email = null)
+    public LegacyWechatUser(long userId, string userName, string? email = null)
     {
         WechatAccount = new WechatAccount
         {
@@ -154,19 +154,19 @@ public class User
     }
 
     /// <summary>
-    /// 隐式转换操作符：从WechatAccount转换为User
+    /// 隐式转换操作符：从WechatAccount转换为LegacyWechatUser
     /// </summary>
     /// <param name="wechatAccount">微信账号</param>
-    public static implicit operator User(WechatAccount? wechatAccount)
+    public static implicit operator LegacyWechatUser(WechatAccount? wechatAccount)
     {
-        return new User(wechatAccount ?? new WechatAccount());
+        return new LegacyWechatUser(wechatAccount ?? new WechatAccount());
     }
 
     /// <summary>
-    /// 隐式转换操作符：从User转换为WechatAccount
+    /// 隐式转换操作符：从LegacyWechatUser转换为WechatAccount
     /// </summary>
     /// <param name="user">用户</param>
-    public static implicit operator WechatAccount?(User user)
+    public static implicit operator WechatAccount?(LegacyWechatUser user)
     {
         return user?.WechatAccount;
     }

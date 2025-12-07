@@ -129,4 +129,10 @@ public class Device
     /// 导航属性：系统通知
     /// </summary>
     public virtual ICollection<SystemNotification> SystemNotifications { get; set; } = new List<SystemNotification>();
+
+    /// <summary>
+    /// 当前连接ID (非数据库字段)
+    /// </summary>
+    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
+    public string? ConnectionId { get; set; }
 }

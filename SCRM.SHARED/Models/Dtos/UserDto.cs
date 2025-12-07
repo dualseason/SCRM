@@ -17,6 +17,10 @@ namespace SCRM.Models.Dtos
         public string RefreshToken { get; set; } = string.Empty;
         public DateTime ExpiresAt { get; set; }
         public UserDto User { get; set; } = new UserDto();
+        
+        // Dynamic Configuration
+        public string TcpHost { get; set; } = string.Empty;
+        public int TcpPort { get; set; }
     }
 
     public class UserPermissionInfo

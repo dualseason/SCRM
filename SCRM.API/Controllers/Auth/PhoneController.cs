@@ -2,10 +2,15 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.DTOs;
 using SCRM.API.Models.Entities;
+using SCRM.API.Utils;
 using SCRM.Services;
 using SCRM.Services.Data;
+using SCRM.API.Filters;
 using System;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace SCRM.Controllers.Auth
@@ -24,101 +29,252 @@ namespace SCRM.Controllers.Auth
             _jwtService = jwtService;
         }
 
-        [HttpPost("phone_login")]
-        public async Task<IActionResult> Login([FromBody] DeviceInfoConfig request)
+        private async Task<T> GetDecryptedBody<T>()
         {
             try
             {
-                if (string.IsNullOrEmpty(request.RegCode))
+                using (StreamReader reader = new StreamReader(Request.Body, Encoding.UTF8))
                 {
-                    return Ok(ApiResponse<UserAuthToken>.Fail(1, "注册码不能为空"));
+                    string encryptedBody = await reader.ReadToEndAsync();
+                    if (string.IsNullOrEmpty(encryptedBody)) return default;
+
+                    // Decrypt
+                    string json = EncryptionHelper.DecryptDefault(encryptedBody);
+                    if (string.IsNullOrEmpty(json))
+                    {
+                        _logger.Warning($"Failed to decrypt body. Length: {encryptedBody.Length}");
+                        return default;
+                    }
+
+                    // Deserialize
+                    return JsonSerializer.Deserialize<T>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
                 }
-
-                // Map RegCode to Wxid
-                var account = await _context.WechatAccounts
-                    .FirstOrDefaultAsync(u => u.Wxid == request.RegCode && !u.IsDeleted);
-
-                if (account == null)
-                {
-                    return Ok(ApiResponse<UserAuthToken>.Fail(1, "用户未注册"));
-                }
-
-                // Update device info
-                account.WechatNumber = request.Imei; // Map IMEI to WechatNumber
-                account.Nickname = $"{request.Hsman} {request.Hstype}"; // Map Device Model to Nickname
-                account.LastOnlineAt = DateTime.UtcNow;
-                
-                await _context.SaveChangesAsync();
-
-                // Generate Token (using Wxid as UserId for token generation if possible, or AccountId)
-                // Assuming JwtService can handle WechatAccount or we map it to User
-                var user = new User(account);
-                var tokenResponse = await _jwtService.GenerateTokenResponseAsync(user);
-
-                return Ok(ApiResponse<UserAuthToken>.Success(new UserAuthToken
-                {
-                    UserId = account.AccountId.ToString(),
-                    Token = tokenResponse.Token
-                }));
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Phone login error");
-                return Ok(ApiResponse<UserAuthToken>.Fail(-1, "服务器内部错误"));
+                _logger.Error(ex, "Error reading/decrypting body");
+                return default;
             }
         }
 
         [HttpPost("phone_reg")]
-        public async Task<IActionResult> Register([FromBody] BasicDeviceInfo request)
+        [ClientApiKeyAuth]
+        public async Task<IActionResult> Register()
         {
+            var request = await GetDecryptedBody<PhoneRegDto>();
+            if (request == null) return Ok(ApiResponse<UserAuthToken>.Fail(1, "无效的请求数据"));
+
+            string clientUuid = HttpContext.Items["ClientUuid"]?.ToString();
+            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
             try
             {
-                if (string.IsNullOrEmpty(request.RegCode))
+                if (string.IsNullOrEmpty(request.UserEmail))
                 {
-                    return Ok(ApiResponse<UserAuthToken>.Fail(1, "注册码不能为空"));
+                    if (!string.IsNullOrEmpty(request.RegCode) && request.RegCode.Contains("@"))
+                    {
+                        request.UserEmail = request.RegCode;
+                    }
+                    else
+                    {
+                        return Ok(ApiResponse<UserAuthToken>.Fail(1, "用户邮箱不能为空"));
+                    }
                 }
 
-                var existingAccount = await _context.WechatAccounts
-                    .FirstOrDefaultAsync(u => u.Wxid == request.RegCode);
-
-                if (existingAccount != null)
+                // 1. Find User by Email
+                // Note: User entity mapping might be complex, but we try to query by Email.
+                // If User.Email maps to WechatAccount.MobilePhone, this query effectively searches WechatAccounts.
+                // But we use _context.Users to be consistent with DbContext.
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.UserEmail);
+                if (user == null)
                 {
-                    return Ok(ApiResponse<UserAuthToken>.Fail(1, "该注册码已被使用"));
+                    return Ok(ApiResponse<UserAuthToken>.Fail(1, "用户不存在"));
                 }
 
-                var newAccount = new WechatAccount
+                // 2. Find or Create SrClient
+                var srClient = await _context.SrClients.Include(c => c.Accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
+                if (srClient == null)
                 {
-                    Wxid = request.RegCode,
-                    WechatNumber = request.Imei,
-                    Nickname = $"{request.Hsman} {request.Hstype}",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    LastOnlineAt = DateTime.UtcNow,
-                    IsActive = true
-                };
+                    srClient = new SrClient
+                    {
+                        uuid = clientUuid,
+                        createdAt = DateTime.UtcNow,
+                        tcpHost = "192.168.1.226", // TODO: Get from config
+                        tcpPort = 8647,
+                        status = 1,
+                        isOnline = true,
+                        lastLoginAt = DateTime.UtcNow,
+                        ip = clientIp
+                    };
+                    _context.SrClients.Add(srClient);
+                }
+                else
+                {
+                    srClient.updatedAt = DateTime.UtcNow;
+                    srClient.ip = clientIp;
+                    srClient.lastLoginAt = DateTime.UtcNow;
+                    srClient.isOnline = true;
+                }
 
-                _context.WechatAccounts.Add(newAccount);
+                // 3. Bind Client to User
+                // We convert long Id to string because OwnerId is string?
+                srClient.OwnerId = user.Id.ToString();
+
                 await _context.SaveChangesAsync();
 
-                var user = new User(newAccount);
-                var tokenResponse = await _jwtService.GenerateTokenResponseAsync(user);
-
-                return Ok(ApiResponse<UserAuthToken>.Success(new UserAuthToken
+                // 4. Return Token
+                var token = new UserAuthToken
                 {
-                    UserId = newAccount.AccountId.ToString(),
-                    Token = tokenResponse.Token
-                }));
+                    userId = user.Id.ToString(),
+                    token = "API_KEY_AUTH",
+                    tcpHost = srClient.tcpHost,
+                    tcpPort = srClient.tcpPort
+                };
+
+                return Ok(ApiResponse<UserAuthToken>.Success(token));
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Phone register error");
-                return Ok(ApiResponse<UserAuthToken>.Fail(-1, "注册失败"));
+                _logger.Error(ex, "Phone registration error");
+                return Ok(ApiResponse<UserAuthToken>.Fail(-1, "服务器内部错误"));
+            }
+        }
+
+        [HttpPost("phone_login")]
+        [ClientApiKeyAuth]
+        public async Task<IActionResult> Login()
+        {
+            var request = await GetDecryptedBody<SCRM.API.Models.DTOs.Device>();
+            if (request == null) return Ok(ApiResponse<SrClient>.Fail(1, "无效的请求数据"));
+
+            // Get Client UUID from Header (Validated by Filter)
+            string clientUuid = HttpContext.Items["ClientUuid"].ToString();
+            string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+            try
+            {
+                if (string.IsNullOrEmpty(request.regCode))
+                {
+                    return Ok(ApiResponse<SrClient>.Fail(1, "注册码不能为空"));
+                }
+
+                WechatAccount account = null;
+
+                // 1. Try to find by UUID (Primary)
+                if (!string.IsNullOrEmpty(clientUuid))
+                {
+                    account = await _context.WechatAccounts
+                        .FirstOrDefaultAsync(u => u.ClientUuid == clientUuid && !u.IsDeleted);
+                }
+
+                // 2. Fallback: Try to find by IMEI (Legacy/Migration)
+                if (account == null)
+                {
+                    // Handle Auto-Registration Logic
+                    if (request.regCode == "AUTO_REG_CODE")
+                    {
+                        account = await _context.WechatAccounts
+                            .FirstOrDefaultAsync(u => u.WechatNumber == request.imei && !u.IsDeleted);
+
+                        if (account == null)
+                        {
+                            // Auto-create new account
+                            account = new WechatAccount
+                            {
+                                WechatNumber = request.imei,
+                                ClientUuid = clientUuid, // Bind UUID immediately
+                                Nickname = $"{request.hsman} {request.hstype}",
+                                CreatedAt = DateTime.UtcNow,
+                                UpdatedAt = DateTime.UtcNow,
+                                IsActive = true,
+                                Wxid = Guid.NewGuid().ToString("N"),
+                                VipExpiryDate = DateTime.UtcNow.AddDays(7)
+                            };
+                            _context.WechatAccounts.Add(account);
+                            await _context.SaveChangesAsync();
+                        }
+                        else
+                        {
+                            // Found by IMEI, but UUID was missing or different. Update it.
+                            if (!string.IsNullOrEmpty(clientUuid) && account.ClientUuid != clientUuid)
+                            {
+                                account.ClientUuid = clientUuid;
+                                await _context.SaveChangesAsync();
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // Regular Login with RegCode (Wxid)
+                        account = await _context.WechatAccounts
+                            .FirstOrDefaultAsync(u => u.Wxid == request.regCode && !u.IsDeleted);
+                        
+                        // If found, bind UUID
+                        if (account != null && !string.IsNullOrEmpty(clientUuid) && account.ClientUuid != clientUuid)
+                        {
+                            account.ClientUuid = clientUuid;
+                            await _context.SaveChangesAsync();
+                        }
+                    }
+                }
+
+                if (account == null)
+                {
+                    return Ok(ApiResponse<SrClient>.Fail(1, "用户未注册"));
+                }
+
+                // Update device info
+                if (account.WechatNumber != request.imei)
+                {
+                     account.WechatNumber = request.imei;
+                }
+                account.Nickname = $"{request.hsman} {request.hstype}";
+                account.LastOnlineAt = DateTime.UtcNow;
+                
+                // Find or Create SrClient
+                var srClient = await _context.SrClients.Include(c => c.Accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
+                if (srClient == null)
+                {
+                    srClient = new SrClient
+                    {
+                        uuid = clientUuid,
+                        createdAt = DateTime.UtcNow
+                    };
+                    _context.SrClients.Add(srClient);
+                }
+
+                srClient.device = request;
+                srClient.tcpHost = "192.168.1.226";
+                srClient.tcpPort = 8647;
+                srClient.updatedAt = DateTime.UtcNow;
+                srClient.ip = clientIp;
+                srClient.lastLoginAt = DateTime.UtcNow;
+                srClient.isOnline = true;
+                srClient.status = 1;
+
+                // Ensure account is in the list
+                if (!srClient.Accounts.Any(a => a.AccountId == account.AccountId))
+                {
+                    srClient.Accounts.Add(account);
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Ok(ApiResponse<SrClient>.Success(srClient));
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Phone login error");
+                return Ok(ApiResponse<SrClient>.Fail(-1, "服务器内部错误"));
             }
         }
 
         [HttpPost("phone_heartBeat2")]
-        public async Task<IActionResult> Heartbeat([FromBody] UserSearchParams request)
+        public async Task<IActionResult> Heartbeat()
         {
+            var request = await GetDecryptedBody<UserSearchParams>();
+            // request might be null if decryption fails, but for heartbeat we might be lenient or just return error
+            if (request == null) return Ok(ApiResponse<UserAuthInfo>.Fail(1, "无效的请求数据"));
             // Heartbeat logic usually just updates last online time. 
             // Since the request doesn't carry the token in the body (it might be in header), 
             // we rely on the Authorization header if the client sends it.
@@ -126,40 +282,44 @@ namespace SCRM.Controllers.Auth
             // Let's check if we can identify the user. 
             // For now, just return success to keep the client happy.
             
-            return Ok(ApiResponse<UserAuthInfo>.Success(new UserAuthInfo { UserIdentifier = "1" }));
+            return Ok(ApiResponse<UserAuthInfo>.Success(new UserAuthInfo { userIdentifier = "1" }));
         }
 
         [HttpPost("phone_validation")]
-        public async Task<IActionResult> Validate([FromBody] ExtendedDeviceInfo request)
+        public async Task<IActionResult> Validate()
         {
+            var request = await GetDecryptedBody<ExtendedDeviceInfo>();
+            if (request == null) return Ok(ApiResponse<SrClient>.Fail(1, "无效的请求数据"));
+
              try
             {
-                if (string.IsNullOrEmpty(request.RegCode))
+                if (string.IsNullOrEmpty(request.regCode))
                 {
-                    return Ok(ApiResponse<UserAuthToken>.Fail(1, "注册码不能为空"));
+                    return Ok(ApiResponse<SrClient>.Fail(1, "注册码不能为空"));
                 }
 
                 var account = await _context.WechatAccounts
-                    .FirstOrDefaultAsync(u => u.Wxid == request.RegCode && !u.IsDeleted);
+                    .FirstOrDefaultAsync(u => u.Wxid == request.regCode && !u.IsDeleted);
 
                 if (account == null)
                 {
-                    return Ok(ApiResponse<UserAuthToken>.Fail(1, "用户不存在"));
+                    return Ok(ApiResponse<SrClient>.Fail(1, "用户不存在"));
                 }
 
-                var user = new User(account);
-                var tokenResponse = await _jwtService.GenerateTokenResponseAsync(user);
-
-                return Ok(ApiResponse<UserAuthToken>.Success(new UserAuthToken
+                var srClient = new SrClient
                 {
-                    UserId = account.AccountId.ToString(),
-                    Token = tokenResponse.Token
-                }));
+                    uuid = "VALIDATION_SUCCESS",
+                    tcpHost = "192.168.1.226",
+                    tcpPort = 8647,
+                    Accounts = new List<WechatAccount> { account }
+                };
+
+                return Ok(ApiResponse<SrClient>.Success(srClient));
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Phone validation error");
-                return Ok(ApiResponse<UserAuthToken>.Fail(-1, "验证失败"));
+                return Ok(ApiResponse<SrClient>.Fail(-1, "验证失败"));
             }
         }
     }

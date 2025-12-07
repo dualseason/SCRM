@@ -9,6 +9,9 @@ using System;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading.Tasks;
+using SCRM.SHARED.Models;
+using Microsoft.AspNetCore.Identity;
+using SCRM.Models.Configurations;
 
 namespace SCRM.Controllers.Auth
 {
@@ -20,13 +23,20 @@ namespace SCRM.Controllers.Auth
 
         private readonly ApplicationDbContext _context;
         private readonly JwtService _jwtService;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly NettySettings _nettySettings;
         
         public AuthController(
             ApplicationDbContext context,
-            JwtService jwtService)
+            JwtService jwtService,
+            UserManager<ApplicationUser> userManager,
+            Microsoft.Extensions.Options.IOptions<NettySettings> nettySettings)
         {
             _context = context;
-            _jwtService = jwtService;        }
+            _jwtService = jwtService;
+            _userManager = userManager;
+            _nettySettings = nettySettings.Value;
+        }
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
@@ -38,23 +48,17 @@ namespace SCRM.Controllers.Auth
                     return BadRequest(new { Message = "用户名和密码不能为空" });
                 }
 
-                var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.UserName == request.UserName && u.IsActive);
-
-                if (user == null)
+                var user = await _userManager.FindByNameAsync(request.UserName);
+                if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
                 {
                     return Unauthorized(new { Message = "用户名或密码错误" });
                 }
 
-                // WeChat CRM系统暂时不使用密码验证
-                // 实际项目中可以集成企业微信或其他认证方式
-                // TODO: 根据实际需求实现合适的认证机制
-
-                // 更新最后登录时间
-                user.LastLoginAt = DateTime.UtcNow;
-                await _context.SaveChangesAsync();
-
                 var tokenResponse = await _jwtService.GenerateTokenResponseAsync(user);
+                
+                // Populate TCP Configuration
+                tokenResponse.TcpHost = _nettySettings.Host;
+                tokenResponse.TcpPort = _nettySettings.Port;
 
                 _logger.Information("User {UserName} logged in successfully", request.UserName);
                 return Ok(new { Success = true, Data = tokenResponse });
@@ -76,28 +80,38 @@ namespace SCRM.Controllers.Auth
                     return BadRequest(new { Message = "用户ID和刷新令牌不能为空" });
                 }
 
-                if (!long.TryParse(request.UserId, out var userId))
-                {
-                    return BadRequest(new { Message = "无效的用户ID" });
-                }
-
                 var isValidRefreshToken = _jwtService.ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
                 if (!isValidRefreshToken)
                 {
                     return Unauthorized(new { Message = "无效的刷新令牌" });
                 }
 
-                var user = await _context.Users
-                    .FirstOrDefaultAsync(u => u.Id == userId && u.IsActive);
-
+                var user = await _userManager.FindByIdAsync(request.UserId);
                 if (user == null)
                 {
+                    // Try legacy user
+                    if (long.TryParse(request.UserId, out var legacyUserId))
+                    {
+                        var legacyUser = await _context.LegacyWechatUsers.FirstOrDefaultAsync(u => u.Id == legacyUserId && u.IsActive);
+                        if (legacyUser != null)
+                        {
+                             var legacyTokenResponse = await _jwtService.GenerateTokenResponseAsync(legacyUser);
+                             // Populate TCP Configuration
+                             legacyTokenResponse.TcpHost = _nettySettings.Host;
+                             legacyTokenResponse.TcpPort = _nettySettings.Port;
+                             return Ok(new { Success = true, Data = legacyTokenResponse });
+                        }
+                    }
                     return Unauthorized(new { Message = "用户不存在或已被禁用" });
                 }
 
                 var tokenResponse = await _jwtService.GenerateTokenResponseAsync(user);
+                
+                // Populate TCP Configuration
+                tokenResponse.TcpHost = _nettySettings.Host;
+                tokenResponse.TcpPort = _nettySettings.Port;
 
-                _logger.Information("Token refreshed for user {UserId}", userId);
+                _logger.Information("Token refreshed for user {UserId}", request.UserId);
                 return Ok(new { Success = true, Data = tokenResponse });
             }
             catch (Exception ex)
@@ -114,10 +128,10 @@ namespace SCRM.Controllers.Auth
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim != null && int.TryParse(userIdClaim.Value, out var userId))
+                if (userIdClaim != null)
                 {
-                    _jwtService.RevokeRefreshTokenAsync(userId.ToString());
-                    _logger.Information("User {UserId} logged out", userId);
+                    _jwtService.RevokeRefreshTokenAsync(userIdClaim.Value);
+                    _logger.Information("User {UserId} logged out", userIdClaim.Value);
                 }
 
                 return Ok(new { Success = true, Message = "退出登录成功" });
@@ -136,45 +150,54 @@ namespace SCRM.Controllers.Auth
             try
             {
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                if (userIdClaim == null)
                 {
                     return Unauthorized(new { Message = "无效的用户信息" });
                 }
 
-                var user = await _context.WechatAccounts
-                    .Where(u => u.AccountId == userId)
-                    .Select(u => new
-                    {
-                        Id = u.AccountId,
-                        UserName = u.Wxid,
-                        Email = (string)null,
-                        FirstName = u.Nickname,
-                        LastName = (string)null,
-                        PhoneNumber = u.MobilePhone,
-                        IsActive = u.IsActive,
-                        LastLoginAt = u.LastOnlineAt,
-                        u.CreatedAt
-                    })
-                    .FirstOrDefaultAsync();
-
-                if (user == null)
+                var user = await _userManager.FindByIdAsync(userIdClaim.Value);
+                if (user != null)
                 {
-                    return NotFound(new { Message = "用户不存在" });
+                     return Ok(new { Success = true, Data = new {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        Email = user.Email,
+                        // Add other properties as needed
+                     }});
                 }
 
-                return Ok(new { Success = true, Data = user });
+                // Legacy fallback
+                if (long.TryParse(userIdClaim.Value, out var userId))
+                {
+                    var legacyUser = await _context.WechatAccounts
+                        .Where(u => u.AccountId == userId)
+                        .Select(u => new
+                        {
+                            Id = u.AccountId,
+                            UserName = u.Wxid,
+                            Email = (string)null,
+                            FirstName = u.Nickname,
+                            LastName = (string)null,
+                            PhoneNumber = u.MobilePhone,
+                            IsActive = u.IsActive,
+                            LastLoginAt = u.LastOnlineAt,
+                            u.CreatedAt
+                        })
+                        .FirstOrDefaultAsync();
+
+                    if (legacyUser != null)
+                    {
+                        return Ok(new { Success = true, Data = legacyUser });
+                    }
+                }
+
+                return NotFound(new { Message = "用户不存在" });
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Error getting user profile");
                 return StatusCode(500, new { Message = "获取用户信息过程中发生错误" });
             }
-        }
-
-        private bool VerifyPassword(string password, string passwordHash)
-        {
-            // 使用 BCrypt.Net 进行安全的密码验证
-            return BCrypt.Net.BCrypt.Verify(password, passwordHash);
         }
     }
 

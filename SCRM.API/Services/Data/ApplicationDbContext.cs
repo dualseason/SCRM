@@ -1,17 +1,20 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
+using SCRM.SHARED.Models;
 
 namespace SCRM.Services.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
         {
         }
 
         // ==================== 身份验证和授权实体集合 ====================
-        public DbSet<User> Users { get; set; }
+        public DbSet<LegacyWechatUser> LegacyWechatUsers { get; set; }
         public DbSet<WechatAccount> WechatAccounts { get; set; }
+        public DbSet<VipKey> VipKeys { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }
@@ -95,8 +98,8 @@ namespace SCRM.Services.Data
         {
             base.OnModelCreating(modelBuilder);
 
-            // 配置 User 实体
-            modelBuilder.Entity<User>(entity =>
+            // 配置 LegacyWechatUser 实体
+            modelBuilder.Entity<LegacyWechatUser>(entity =>
             {
                 entity.ToTable("users");
                 entity.HasKey(e => e.UserId);
@@ -209,10 +212,10 @@ namespace SCRM.Services.Data
             modelBuilder.Entity<SrClient>(entity =>
             {
                 entity.ToTable("sr_clients");
-                entity.HasKey(e => e.Id);
-                entity.HasIndex(e => e.MachineId).IsUnique();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasKey(e => e.uuid);
+                entity.OwnsOne(e => e.device, b => b.ToJson());
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
         }
     }

@@ -14,7 +14,7 @@ namespace SCRM.Services.Data
         }
 
         // ==================== 既有实体集合 ====================
-        public DbSet<User> Users { get; set; }
+        public DbSet<LegacyWechatUser> LegacyWechatUsers { get; set; }
         public DbSet<Role> Roles { get; set; }
         public DbSet<Permission> Permissions { get; set; }
         public DbSet<UserRole> UserRoles { get; set; }

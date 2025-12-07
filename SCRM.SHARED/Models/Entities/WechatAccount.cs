@@ -1,73 +1,90 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using SCRM.SHARED.Models;
 
 namespace SCRM.API.Models.Entities
 {
     /// <summary>
-    /// 寰俊璐﹀彿淇℃伅琛?
+    /// 微信账号信息表
     /// </summary>
     [Table("wechat_accounts")]
     public class WechatAccount
     {
-        /// <summary>璐﹀彿ID</summary>
+        /// <summary>账号ID</summary>
         [Key]
         [Column("account_id")]
         public long AccountId { get; set; }
 
-        /// <summary>寰俊WXID</summary>
+        /// <summary>
+        /// 所属用户ID (ApplicationUser)
+        /// </summary>
+        [Column("owner_id")]
+        public string? OwnerId { get; set; }
+
+        [ForeignKey("OwnerId")]
+        public virtual ApplicationUser? Owner { get; set; }
+
+        /// <summary>微信WXID</summary>
         [Required]
         [Column("wxid")]
         [StringLength(100)]
         public string Wxid { get; set; } = string.Empty;
 
-        /// <summary>寰俊鍙?/summary>
+        /// <summary>微信号</summary>
         [Column("wechat_number")]
         [StringLength(50)]
         public string? WechatNumber { get; set; }
 
-        /// <summary>寰俊鏄电О</summary>
+        /// <summary>
+        /// 客户端生成的唯一标识符 (UUID)
+        /// </summary>
+        [Column("client_uuid")]
+        [StringLength(64)]
+        public string? ClientUuid { get; set; }
+
+        /// <summary>微信昵称</summary>
         [Column("nickname")]
         [StringLength(100)]
         public string? Nickname { get; set; }
 
-        /// <summary>鎵嬫満鍙?/summary>
+        /// <summary>手机号</summary>
         [Column("mobile_phone")]
         [StringLength(20)]
         public string? MobilePhone { get; set; }
 
-        /// <summary>鎬у埆锛?-鏈煡 1-鐢?2-濂?/summary>
+        /// <summary>性别：0-未知 1-男 2-女</summary>
         [Column("gender")]
         public short? Gender { get; set; }
 
-        /// <summary>澶村儚URL</summary>
+        /// <summary>头像URL</summary>
         [Column("avatar_url")]
         [StringLength(500)]
         public string? AvatarUrl { get; set; }
 
-        /// <summary>涓€х鍚?/summary>
+        /// <summary>个性签名</summary>
         [Column("signature")]
         [StringLength(500)]
         public string? Signature { get; set; }
 
-        /// <summary>浜岀淮鐮乁RL</summary>
+        /// <summary>二维码URL</summary>
         [Column("qr_code_url")]
         [StringLength(500)]
         public string? QrCodeUrl { get; set; }
 
-        /// <summary>鍦板尯</summary>
+        /// <summary>地区</summary>
         [Column("region")]
         [StringLength(100)]
         public string? Region { get; set; }
 
-        /// <summary>璐﹀彿鐘舵€侊細1-姝ｅ父鍦ㄧ嚎 2-绂荤嚎 3-鍐荤粨 4-娉ㄩ攢 5-寮傚父</summary>
+        /// <summary>账号状态：1-正常在线 2-离线 3-冻结 4-注销 5-异常</summary>
         [Column("account_status")]
         public short? AccountStatus { get; set; }
 
-        /// <summary>鏈€鍚庡湪绾挎椂闂?/summary>
+        /// <summary>最后在线时间</summary>
         [Column("last_online_at")]
         public DateTime? LastOnlineAt { get; set; }
 
-        /// <summary>鏄惁鍒犻櫎</summary>
+        /// <summary>是否删除</summary>
         [Column("is_deleted")]
         public bool IsDeleted { get; set; }
 
@@ -79,17 +96,27 @@ namespace SCRM.API.Models.Entities
             set { IsDeleted = !value; }
         }
 
-        /// <summary>鍒涘缓鏃堕棿</summary>
+        /// <summary>创建时间</summary>
         [Column("created_at")]
         public DateTime? CreatedAt { get; set; }
 
-        /// <summary>鏇存柊鏃堕棿</summary>
+        /// <summary>更新时间</summary>
         [Column("updated_at")]
         public DateTime? UpdatedAt { get; set; }
 
-        /// <summary>鍒犻櫎鏃堕棿</summary>
+        /// <summary>删除时间</summary>
         [Column("deleted_at")]
         public DateTime? DeletedAt { get; set; }
+
+        /// <summary>VIP过期时间</summary>
+        [Column("vip_expiry_date")]
+        public DateTime? VipExpiryDate { get; set; }
+
+        /// <summary>是否是VIP</summary>
+        [NotMapped]
+        public bool IsVip
+        {
+            get { return VipExpiryDate.HasValue && VipExpiryDate.Value > DateTime.UtcNow; }
+        }
     }
 }
-

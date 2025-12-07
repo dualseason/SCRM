@@ -6,6 +6,8 @@ using System.Net;
 using System.Threading.Tasks;
 using SCRM.Shared.Core;
 using SCRM.Services;
+using Microsoft.Extensions.Options;
+using SCRM.Models.Configurations;
 
 namespace SCRM.Core.Netty
 {
@@ -17,11 +19,13 @@ namespace SCRM.Core.Netty
         private IChannel _channel;
         private readonly IEventLoopGroup _bossGroup;
         private readonly IEventLoopGroup _workerGroup;
+        private readonly NettySettings _nettySettings;
 
-        public NettyServer(IServiceProvider serviceProvider)
+        public NettyServer(IServiceProvider serviceProvider, IOptions<NettySettings> nettySettings)
         {
             _serviceProvider = serviceProvider;
-            Port = 8647;
+            _nettySettings = nettySettings.Value;
+            Port = _nettySettings.Port;
 
             _bossGroup = new MultithreadEventLoopGroup(1);
             _workerGroup = new MultithreadEventLoopGroup();
@@ -39,7 +43,7 @@ namespace SCRM.Core.Netty
                         IChannelPipeline pipeline = channel.Pipeline;
                         
                         pipeline.AddLast(new ProtobufDecoder());
-                        pipeline.AddLast(new ProtobufEncoder());
+                        pipeline.AddLast(new ProtobufEncoder());    
 
                         var messageRouter = (MessageRouter)_serviceProvider.GetService(typeof(MessageRouter))!;
                         var connectionManager = (ConnectionManager)_serviceProvider.GetService(typeof(ConnectionManager))!;

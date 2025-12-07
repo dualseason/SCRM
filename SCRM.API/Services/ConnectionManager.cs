@@ -167,13 +167,24 @@ namespace SCRM.Services
             return Task.FromResult(connection);
         }
 
-        public Task UpdateConnectionActivityAsync(string connectionId)
+        public Task<bool> UpdateConnectionActivityAsync(string connectionId)
         {
             if (_connections.TryGetValue(connectionId, out var connection))
             {
                 connection.LastActivityAt = DateTime.UtcNow;
+                return Task.FromResult(true);
             }
-            return Task.CompletedTask;
+            return Task.FromResult(false);
+        }
+
+        public Task<bool> IsConnectionAuthenticatedAsync(string connectionId)
+        {
+            if (_connections.TryGetValue(connectionId, out var connection))
+            {
+                // Must have a valid UserId to be considered authenticated
+                return Task.FromResult(!string.IsNullOrEmpty(connection.UserId));
+            }
+            return Task.FromResult(false);
         }
 
         public Task<bool> IsUserOnlineAsync(string userId)
