@@ -6,230 +6,173 @@
 @using Radzen
 @using Radzen.Blazor
 @inject NotificationService NotificationService
+@inject CrmStore Store
+@implements IDisposable
 
-@implements IAsyncDisposable
-@inject SignalRService SignalRService
-@inject NavigationManager NavigationManager
-
-<div class="row" style="height: calc(100vh - 100px);">
-    <!-- Left Sidebar: Device List & Friend List -->
-    <div class="col-md-3" style="height: 100%; overflow-y: auto; border-right: 1px solid #e0e0e0;">
-        <RadzenCard Style="margin-bottom: 10px;">
-            <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Select Device</RadzenText>
-            <RadzenDropDown Data="@clients" ValueProperty="ConnectionId" 
-                            @bind-Value="selectedConnectionId" Change="@OnClientSelected" 
-                            Style="width: 100%;" Placeholder="Select a device..." >
-                <Template Context="client">
-                    @($"{client.device?.hsman} {client.device?.hstype} ({client.WeChatNick ?? "Unknown"})")
-                </Template>
-            </RadzenDropDown>
-            
-            @if (selectedClient != null)
-            {
-                <div style="margin-top: 10px; padding: 10px; background-color: #f5f5f5; border-radius: 5px;">
-                    <RadzenText TextStyle="TextStyle.Caption">Current WeChat:</RadzenText>
-                    <div style="display: flex; align-items: center;">
-                        <RadzenIcon Icon="account_circle" Style="margin-right: 5px;" />
-                        <div>
-                            <div style="font-weight: bold;">@(selectedClient.WeChatNick ?? "Unknown")</div>
-                            <div style="font-size: 0.8em; color: #666;">@(selectedClient.WeChatId ?? "Not logged in")</div>
-                        </div>
-                    </div>
-                </div>
-            }
-        </RadzenCard>
-
-        @if (contacts != null)
-        {
-             <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3" Style="margin: 10px 0;">Friends (@contacts.Count())</RadzenText>
-             <RadzenListBox Data="@contacts" TextProperty="Nickname" ValueProperty="Wxid" 
-                            @bind-Value="friendWxId" Change="@OnFriendSelected"
-                            Style="height: calc(100% - 200px); width: 100%; border: none;" >
-                <Template Context="contact">
-                    <div style="display: flex; align-items: center;">
-                        <RadzenImage Path="@(contact.Avatar)" Style="width: 30px; height: 30px; border-radius: 50%; margin-right: 10px;" />
-                        <div>
-                            <div>@contact.Nickname</div>
-                            <div style="font-size: 0.8em; color: #999;">@contact.Wxid</div>
-                        </div>
-                    </div>
-                </Template>
-             </RadzenListBox>
-        }
-    </div>
+<RadzenLayout Style="height: calc(100vh - 60px); display: flex; flex-direction: row; overflow: hidden;">
     
-    <!-- Right Content: Chat Area -->
-    <div class="col-md-9" style="height: 100%; display: flex; flex-direction: column;">
-        @if (!string.IsNullOrEmpty(friendWxId))
-        {
-            <RadzenCard Style="flex: 1; display: flex; flex-direction: column; padding: 0;">
-                <div style="padding: 15px; border-bottom: 1px solid #eee; background-color: #f9f9f9;">
-                    <RadzenText TextStyle="TextStyle.H6" Style="margin: 0;">Chat with @(selectedContact?.Nickname ?? friendWxId)</RadzenText>
-                </div>
-
-                <div id="chat-history" style="flex: 1; overflow-y: auto; padding: 20px; background-color: #fff;">
-                    @foreach (var msg in messages.Where(m => m.FriendId == friendWxId || m.FriendId == "filehelper")) // Filter by friend
-                    {
-                        <div style="margin-bottom: 15px; display: flex; justify-content: @(msg.IsSent ? "flex-end" : "flex-start");">
-                            <div style="max-width: 70%; padding: 10px 15px; border-radius: 15px; 
-                                        background-color: @(msg.IsSent ? "#dcf8c6" : "#f1f0f0"); 
-                                        color: #000; box-shadow: 0 1px 2px rgba(0,0,0,0.1);">
-                                @msg.Content
+    <!-- Left Pane: Devices -->
+    <RadzenSidebar Style="width: 250px; background-color: #f0f2f5; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column;">
+        <RadzenPanelMenu Style="width: 100%; height: 100%;">
+            <div style="padding: 10px; border-bottom: 1px solid #ddd; background-color: #e9ecef;">
+                <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3" Style="margin: 0;">Devices</RadzenText>
+            </div>
+            <div style="flex: 1; overflow-y: auto;">
+                <RadzenListBox Data="@Store.Devices" Value="@Store.SelectedDevice" 
+                               ValueProperty="uuid"
+                               Change="@(args => SelectDevice(args))"
+                               Style="width: 100%; height: 100%; border: none; background-color: transparent;">
+                    <Template Context="device">
+                        <div style="display: flex; align-items: center; padding: 5px;">
+                            <RadzenIcon Icon="smartphone" Style="margin-right: 10px; color: #555;" />
+                            <div style="overflow: hidden;">
+                                <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @(device.WeChatNick ?? device.device?.hsman ?? "Unknown")
+                                </div>
+                                <div style="font-size: 0.8em; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @(device.WeChatId ?? "Offline")
+                                </div>
                             </div>
                         </div>
-                    }
-                </div>
+                    </Template>
+                </RadzenListBox>
+            </div>
+        </RadzenPanelMenu>
+    </RadzenSidebar>
 
-                <div style="padding: 15px; border-top: 1px solid #eee; background-color: #f9f9f9;">
-                    <div class="row">
-                        <div class="col-md-10">
-                            <RadzenTextArea @bind-Value="messageContent" Rows="1" Style="width: 100%; border-radius: 20px; padding: 10px;" Placeholder="Type a message..." @onkeydown="@Enter" />
+    <!-- Middle Pane: Contacts -->
+    <RadzenSidebar Style="width: 300px; background-color: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column;">
+        @if (Store.SelectedDevice != null)
+        {
+             <div style="padding: 10px; border-bottom: 1px solid #eee;">
+                <RadzenTextBox Placeholder="Search friends..." Style="width: 100%;" />
+            </div>
+            <div style="flex: 1; overflow-y: auto;">
+                 <RadzenListBox Data="@Store.Contacts" Value="@Store.SelectedContact"
+                               ValueProperty="Wxid"
+                               Change="@(args => SelectContact(args))"
+                               Style="width: 100%; height: 100%; border: none;">
+                    <Template Context="contact">
+                        <div style="display: flex; align-items: center; padding: 5px;">
+                            <RadzenImage Path="@(contact.Avatar)" Style="width: 40px; height: 40px; border-radius: 4px; margin-right: 10px;" />
+                            <div style="flex: 1; overflow: hidden;">
+                                <div style="font-weight: 500; font-size: 0.95em;">@contact.Nickname</div>
+                                <div style="font-size: 0.8em; color: #999; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @contact.Wxid
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-2">
-                            <RadzenButton Icon="send" Click="@SendMessage" ButtonStyle="ButtonStyle.Primary" Style="width: 100%; border-radius: 20px;" Disabled="@(string.IsNullOrEmpty(selectedConnectionId) || string.IsNullOrEmpty(friendWxId) || string.IsNullOrEmpty(messageContent))" />
-                        </div>
-                    </div>
-                </div>
-            </RadzenCard>
+                    </Template>
+                 </RadzenListBox>
+            </div>
         }
         else
         {
-            <div style="flex: 1; display: flex; align-items: center; justify-content: center; color: #ccc;">
-                <RadzenText TextStyle="TextStyle.H4">Select a friend to start chatting</RadzenText>
+             <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #999;">
+                Select a device
+             </div>
+        }
+    </RadzenSidebar>
+
+    <!-- Right Pane: Chat -->
+    <RadzenBody Style="flex: 1; background-color: #f5f5f5; display: flex; flex-direction: column; padding: 0;">
+        @if (Store.SelectedContact != null)
+        {
+            <!-- Chat Header -->
+            <div style="padding: 15px; background-color: white; border-bottom: 1px solid #e0e0e0; display: flex; align-items: center;">
+                <RadzenText TextStyle="TextStyle.H6" Style="margin: 0; flex: 1;">
+                    @Store.SelectedContact.Nickname <span style="font-size: 0.8em; color: #888;">(@Store.SelectedContact.Wxid)</span>
+                </RadzenText>
+            </div>
+
+            <!-- Chat History -->
+            <div id="chat-scroller" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column;">
+                @if (Store.ChatHistory.TryGetValue(Store.SelectedContact.Wxid, out var messages))
+                {
+                    @foreach (var msg in messages)
+                    {
+                        <div style="margin-bottom: 15px; display: flex; justify-content: @(msg.Direction == 1 ? "flex-end" : "flex-start");">
+                            <div style="max-width: 70%; padding: 10px 15px; border-radius: 8px; 
+                                        background-color: @(msg.Direction == 1 ? "#95ec69" : "#ffffff"); 
+                                        color: #000; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
+                                <div style="white-space: pre-wrap; word-break: break-word;">@msg.Content</div>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <!-- Input Area -->
+            <div style="padding: 15px; background-color: white; border-top: 1px solid #e0e0e0;">
+                 <RadzenTextArea @bind-Value="messageInput" Rows="3" Style="width: 100%; margin-bottom: 10px; border: 1px solid #ddd;" Placeholder="Type a message..." @onkeydown="@Enter" />
+                 <div style="text-align: right;">
+                     <RadzenButton Text="Send" Click="@SendMessage" ButtonStyle="ButtonStyle.Success" Icon="send" Disabled="@(string.IsNullOrWhiteSpace(messageInput))" />
+                 </div>
             </div>
         }
-    </div>
-</div>
+        else
+        {
+            <div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #ccc;">
+                <div style="text-align: center;">
+                    <RadzenIcon Icon="chat" Style="font-size: 4em; color: #ddd; margin-bottom: 10px;" />
+                    <RadzenText TextStyle="TextStyle.H5" style="color: #999;">Select a contact to start chatting</RadzenText>
+                </div>
+            </div>
+        }
+    </RadzenBody>
+</RadzenLayout>
 
 @code {
-    IEnumerable<SrClient> clients;
-    IEnumerable<Contact> contacts;
-    SrClient selectedClient;
-    Contact selectedContact;
-    string selectedConnectionId;
-    string friendWxId; 
-    string messageContent = "";
-    List<ChatMessage> messages = new List<ChatMessage>();
-
-    class ChatMessage
-    {
-        public string FriendId { get; set; }
-        public string Content { get; set; }
-        public bool IsSent { get; set; }
-        public DateTime Time { get; set; }
-    }
+    string messageInput = "";
 
     protected override async Task OnInitializedAsync()
     {
-        var hubUrl = "http://localhost:42718/hubs/client"; 
-        await SignalRService.InitializeAsync(hubUrl);
-        
-        SignalRService.OnMessageReceived += OnMessageReceived;
-        SignalRService.OnWeChatStatusChanged += OnWeChatStatusChanged;
+        Store.OnChange += StateHasChanged;
+        await Store.InitializeAsync();
+    }
 
-        await LoadClients();
-
-        // Join groups for all active clients
-        if (clients != null)
+    void SelectDevice(object value)
+    {
+        // Value is UUID because ValueProperty="uuid"
+        if (value is string uuid)
         {
-            foreach (var client in clients)
+            var device = Store.Devices.FirstOrDefault(d => d.uuid == uuid);
+            if (device != null)
             {
-                if (!string.IsNullOrEmpty(client.ConnectionId))
-                {
-                    await SignalRService.JoinGroupAsync(client.ConnectionId);
-                }
+                _ = Store.SelectDeviceAsync(device);
             }
         }
     }
 
-    private void OnMessageReceived(string friendId, string content, bool isSent)
+    void SelectContact(object value)
     {
-        // Only append if it belongs to the current conversation
-        if (friendId == friendWxId)
+        if (value is string wxid)
         {
-            messages.Add(new ChatMessage { FriendId = friendId, Content = content, IsSent = isSent, Time = DateTime.Now });
-            InvokeAsync(StateHasChanged);
-            // TODO: Scroll to bottom
-        }
-    }
-
-    private void OnWeChatStatusChanged(string wxid, string nick, bool isOnline)
-    {
-        InvokeAsync(async () => {
-            await LoadClients();
-            if (selectedClient != null && selectedClient.WeChatId == wxid)
+            var contact = Store.Contacts.FirstOrDefault(c => c.Wxid == wxid);
+            if (contact != null)
             {
-                selectedClient.WeChatNick = nick;
-                StateHasChanged();
+                _ = Store.SelectContactAsync(contact);
             }
-        });
-    }
-
-    async Task LoadClients()
-    {
-        clients = await SignalRService.GetDevicesAsync();
-    }
-
-    async Task OnClientSelected(object value)
-    {
-        var connId = value as string;
-        selectedClient = clients.FirstOrDefault(c => c.ConnectionId == connId);
-        friendWxId = null;
-        selectedContact = null;
-        contacts = null;
-
-        if (selectedClient != null && selectedClient.WechatAccountId.HasValue)
-        {
-            contacts = await SignalRService.GetContactsAsync(selectedClient.WechatAccountId.Value);
-        }
-    }
-
-    async Task OnFriendSelected(object value)
-    {
-        var wxid = value as string;
-        selectedContact = contacts.FirstOrDefault(c => c.Wxid == wxid);
-        
-        if (selectedClient != null && selectedClient.WechatAccountId.HasValue && !string.IsNullOrEmpty(wxid))
-        {
-            var history = await SignalRService.GetChatHistoryAsync(selectedClient.WechatAccountId.Value, wxid);
-            messages = history.Select(m => new ChatMessage 
-            { 
-                FriendId = m.Direction == 1 ? m.ReceiverWxid : m.SenderWxid,
-                Content = m.Content,
-                IsSent = m.Direction == 1,
-                Time = m.CreatedAt
-            }).ToList();
         }
     }
 
     async Task SendMessage()
     {
-        if (string.IsNullOrEmpty(selectedConnectionId) || string.IsNullOrEmpty(friendWxId)) return;
-
-        var result = await SignalRService.SendMessageAsync(selectedConnectionId, friendWxId, messageContent);
-
-        if (result.Success)
-        {
-            messageContent = ""; 
-        }
-        else
-        {
-            NotificationService.Notify(NotificationSeverity.Error, "Error", $"Failed to send message: {result.Message}");
-        }
+        if (string.IsNullOrWhiteSpace(messageInput)) return;
+        await Store.SendMessageAsync(messageInput);
+        messageInput = "";
     }
 
     async Task Enter(KeyboardEventArgs e)
     {
-        if (e.Code == "Enter" || e.Code == "NumpadEnter")
+        if ((e.Code == "Enter" || e.Code == "NumpadEnter") && !e.CtrlKey)
         {
             await SendMessage();
         }
     }
 
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
-        SignalRService.OnMessageReceived -= OnMessageReceived;
-        SignalRService.OnWeChatStatusChanged -= OnWeChatStatusChanged;
-        await SignalRService.DisposeAsync();
+        Store.OnChange -= StateHasChanged;
     }
 }

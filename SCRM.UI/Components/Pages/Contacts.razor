@@ -6,8 +6,7 @@
 @using Radzen
 @using Radzen.Blazor
 @inject NotificationService NotificationService
-@implements IAsyncDisposable
-@inject SignalRService SignalRService
+@inject WeChatService WeChatService
 
 <div class="row">
     <div class="col-md-12">
@@ -78,14 +77,13 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var hubUrl = "http://localhost:42718/hubs/client"; 
-        await SignalRService.InitializeAsync(hubUrl);
+        // SignalRService is now initialized in MainLayout
         await LoadClients();
     }
 
     async Task LoadClients()
     {
-        clients = await SignalRService.GetDevicesAsync();
+        clients = await WeChatService.GetDevicesAsync();
     }
 
     async Task OnClientSelected(object value)
@@ -96,12 +94,9 @@
 
         if (selectedClient != null && selectedClient.WechatAccountId.HasValue)
         {
-            contacts = await SignalRService.GetContactsAsync(selectedClient.WechatAccountId.Value);
+            contacts = await WeChatService.GetContactsAsync(selectedClient.WechatAccountId.Value);
         }
     }
 
-    public async ValueTask DisposeAsync()
-    {
-        await SignalRService.DisposeAsync();
-    }
+    // DisposeAsync removed as it is a Shared service
 }

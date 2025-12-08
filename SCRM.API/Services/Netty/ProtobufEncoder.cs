@@ -4,7 +4,7 @@ using DotNetty.Transport.Channels;
 using Google.Protobuf;
 using SCRM.SHARED.Proto;
 
-namespace SCRM.Core.Netty
+namespace SCRM.Services.Netty
 {
     public class ProtobufEncoder : MessageToByteEncoder<TransportMessage>
     {

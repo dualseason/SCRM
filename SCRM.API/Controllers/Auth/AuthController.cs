@@ -22,18 +22,18 @@ namespace SCRM.Controllers.Auth
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 
         private readonly ApplicationDbContext _context;
-        private readonly JwtService _jwtService;
+        private readonly AuthService _authService;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly NettySettings _nettySettings;
         
         public AuthController(
             ApplicationDbContext context,
-            JwtService jwtService,
+            AuthService authService,
             UserManager<ApplicationUser> userManager,
             Microsoft.Extensions.Options.IOptions<NettySettings> nettySettings)
         {
             _context = context;
-            _jwtService = jwtService;
+            _authService = authService;
             _userManager = userManager;
             _nettySettings = nettySettings.Value;
         }
@@ -54,7 +54,7 @@ namespace SCRM.Controllers.Auth
                     return Unauthorized(new { Message = "用户名或密码错误" });
                 }
 
-                var tokenResponse = await _jwtService.GenerateTokenResponseAsync(user);
+                var tokenResponse = await _authService.GenerateTokenResponseAsync(user);
                 
                 // Populate TCP Configuration
                 tokenResponse.TcpHost = _nettySettings.Host;
@@ -80,7 +80,7 @@ namespace SCRM.Controllers.Auth
                     return BadRequest(new { Message = "用户ID和刷新令牌不能为空" });
                 }
 
-                var isValidRefreshToken = _jwtService.ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
+                var isValidRefreshToken = _authService.ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
                 if (!isValidRefreshToken)
                 {
                     return Unauthorized(new { Message = "无效的刷新令牌" });
@@ -95,7 +95,7 @@ namespace SCRM.Controllers.Auth
                         var legacyUser = await _context.LegacyWechatUsers.FirstOrDefaultAsync(u => u.Id == legacyUserId && u.IsActive);
                         if (legacyUser != null)
                         {
-                             var legacyTokenResponse = await _jwtService.GenerateTokenResponseAsync(legacyUser);
+                             var legacyTokenResponse = await _authService.GenerateTokenResponseAsync(legacyUser);
                              // Populate TCP Configuration
                              legacyTokenResponse.TcpHost = _nettySettings.Host;
                              legacyTokenResponse.TcpPort = _nettySettings.Port;
@@ -105,7 +105,7 @@ namespace SCRM.Controllers.Auth
                     return Unauthorized(new { Message = "用户不存在或已被禁用" });
                 }
 
-                var tokenResponse = await _jwtService.GenerateTokenResponseAsync(user);
+                var tokenResponse = await _authService.GenerateTokenResponseAsync(user);
                 
                 // Populate TCP Configuration
                 tokenResponse.TcpHost = _nettySettings.Host;
@@ -130,7 +130,7 @@ namespace SCRM.Controllers.Auth
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim != null)
                 {
-                    _jwtService.RevokeRefreshTokenAsync(userIdClaim.Value);
+                    _authService.RevokeRefreshTokenAsync(userIdClaim.Value);
                     _logger.Information("User {UserId} logged out", userIdClaim.Value);
                 }
 

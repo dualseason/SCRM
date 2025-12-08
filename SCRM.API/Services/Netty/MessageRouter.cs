@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
 
-namespace SCRM.Core.Netty
+namespace SCRM.Services.Netty
 {
     public class MessageRouter
     {
@@ -42,33 +42,7 @@ namespace SCRM.Core.Netty
 
             if (message.Content != null)
             {
-                _logger.Information("Original TypeUrl: {TypeUrl}", message.Content.TypeUrl);
-                // Fix legacy TypeUrl from client
-                if (message.Content.TypeUrl.Contains("JuLiao.IM.Wx.Proto"))
-                {
-                    // Force the correct TypeUrl for DeviceAuthReqMessage
-                    if (message.Content.TypeUrl.EndsWith("DeviceAuthReqMessage"))
-                    {
-                        message.Content.TypeUrl = "type.googleapis.com/" + DeviceAuthReqMessage.Descriptor.FullName;
-                    }
-                    else
-                    {
-                        // Generic fallback for other messages
-                        message.Content.TypeUrl = message.Content.TypeUrl.Replace("JuLiao/Jubo.JuLiao.IM.Wx.Proto", "type.googleapis.com/SCRM.SHARED.Proto");
-                         // Handle case where prefix was already present or missing
-                        if (!message.Content.TypeUrl.StartsWith("type.googleapis.com/"))
-                        {
-                             // If replacement resulted in no prefix (e.g. input was just JuLiao/...), add it.
-                             // But wait, my replacement string INCLUDES the prefix.
-                             // If input was "type.googleapis.com/JuLiao/...", replace gives "type.googleapis.com/type.googleapis.com/..." -> WRONG.
-                             
-                             // Better approach:
-                             string suffix = message.Content.TypeUrl.Substring(message.Content.TypeUrl.LastIndexOf('.') + 1);
-                             message.Content.TypeUrl = "type.googleapis.com/SCRM.SHARED.Proto." + suffix;
-                        }
-                    }
-                    _logger.Information("Fixed TypeUrl: {TypeUrl}", message.Content.TypeUrl);
-                }
+                _logger.Information("Incoming Content TypeUrl: {TypeUrl}", message.Content.TypeUrl);
             }
 
             try
@@ -241,7 +215,7 @@ namespace SCRM.Core.Netty
                         AccountType = EnumAccountType.Main,
                         SupplierName = "SCRM",
                         NickName = account.Nickname ?? "Unknown",
-                        Token = "Token123" // Placeholder or actual token
+                        Token = account.Wxid // Put Wxid here so client can use it as c2cServerAddress
                     }
                 };
 
@@ -253,11 +227,35 @@ namespace SCRM.Core.Netty
                     Content = Any.Pack(responseContent)
                 };
 
-                // Fix TypeUrl for legacy client response
-                // Client expects: JuLiao/Jubo.JuLiao.IM.Wx.Proto.DeviceAuthRspMessage
                 response.Content.TypeUrl = "JuLiao/Jubo.JuLiao.IM.Wx.Proto.DeviceAuthRspMessage";
 
                 await context.WriteAndFlushAsync(response);
+
+                // --- Trigger Initialization Tasks ---
+                _logger.Information("Triggering initialization tasks for AccountId: {AccountId}", account.AccountId);
+
+                try
+                {
+                    // Trigger Friend List Push
+                    long friendTaskId = DateTime.UtcNow.Ticks;
+                    bool friendTaskSent = await _clientTaskService.SendTriggerFriendPushTaskAsync(context.Channel.Id.AsLongText(), friendTaskId);
+                    if (!friendTaskSent)
+                    {
+                        _logger.Warning("Failed to trigger Friend Push for AccountId: {AccountId}", account.AccountId);
+                    }
+
+                    // Trigger Chat Room Push
+                    long chatRoomTaskId = DateTime.UtcNow.Ticks + 1; // Ensure unique ID
+                    bool chatRoomTaskSent = await _clientTaskService.SendTriggerChatRoomPushTaskAsync(context.Channel.Id.AsLongText(), chatRoomTaskId);
+                    if (!chatRoomTaskSent)
+                    {
+                        _logger.Warning("Failed to trigger Chat Room Push for AccountId: {AccountId}", account.AccountId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, "Error triggering initialization tasks for AccountId: {AccountId}", account.AccountId);
+                }
             }
         }
 
@@ -602,14 +600,16 @@ namespace SCRM.Core.Netty
                     }
 
                     // Update fields
-                    contact.Nickname = friend.FriendNick;
-                    contact.Remarks = friend.Memo;
-                    contact.Avatar = friend.Avatar;
+                    contact.Nickname = friend.FriendNick ?? "";
+                    contact.Remarks = friend.Memo ?? "";
+                    contact.Avatar = friend.Avatar ?? "";
                     contact.Gender = (int)friend.Gender;
-                    contact.Province = friend.Province;
-                    contact.City = friend.City;
-                    contact.Phone = friend.Phone;
-                    contact.Signature = friend.Desc;
+                    contact.Province = friend.Province ?? "";
+                    contact.City = friend.City ?? "";
+                    contact.Phone = friend.Phone ?? "";
+                    contact.Signature = friend.Desc ?? "";
+                    contact.Email = ""; // Required field in DB
+                    contact.Country = ""; // Required field in DB
                     
                     contact.UpdatedAt = DateTime.UtcNow;
                 }

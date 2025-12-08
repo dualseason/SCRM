@@ -1,7 +1,7 @@
 using ProtoBuf;
 using System;
 
-namespace SCRM.Core.Netty
+namespace SCRM.Services.Netty
 {
     [ProtoContract]
     public class NettyMessage

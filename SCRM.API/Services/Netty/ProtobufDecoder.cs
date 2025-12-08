@@ -5,7 +5,7 @@ using Google.Protobuf;
 using SCRM.SHARED.Proto;
 using System.Collections.Generic;
 
-namespace SCRM.Core.Netty
+namespace SCRM.Services.Netty
 {
     public class ProtobufDecoder : ByteToMessageDecoder
     {

@@ -20,13 +20,13 @@ namespace SCRM.Controllers.Auth
     public class PhoneController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly JwtService _jwtService;
+        private readonly AuthService _authService;
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 
-        public PhoneController(ApplicationDbContext context, JwtService jwtService)
+        public PhoneController(ApplicationDbContext context, AuthService authService)
         {
             _context = context;
-            _jwtService = jwtService;
+            _authService = authService;
         }
 
         private async Task<T> GetDecryptedBody<T>()

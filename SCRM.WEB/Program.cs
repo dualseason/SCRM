@@ -15,7 +15,8 @@ builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IClientTaskService, ClientTaskService>();
 builder.Services.AddScoped<IClientTaskService, ClientTaskService>();
 
-builder.Services.AddScoped<SignalRService>();
+builder.Services.AddScoped<WeChatService>();
+builder.Services.AddScoped<CrmStore>();
 builder.Services.AddRadzenComponents();
 
 builder.Services.AddBlazoredLocalStorage();

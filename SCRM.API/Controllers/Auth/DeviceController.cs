@@ -54,28 +54,27 @@ namespace SCRM.Controllers.Auth
         [Authorize]
         public async Task<ActionResult<IEnumerable<SrClient>>> GetDevices()
         {
-            var userId = User.Identity?.Name;
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name;
             var isAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
 
-            IQueryable<SrClient> query = _context.SrClients;
+            var allClients = await _context.GetAllSrClients();
 
             if (!isAdmin && !string.IsNullOrEmpty(userId))
             {
-                query = query.Where(c => c.OwnerId == userId || c.OwnerId == null);
+               return allClients.Where(c => c.OwnerId == userId || c.OwnerId == null).ToList();
             }
 
-            return await query.ToListAsync();
+            return allClients;
         }
 
         [HttpGet("{id}")]
         [Authorize]
         public async Task<ActionResult<SrClient>> GetDevice(string id)
         {
-            var userId = User.Identity?.Name;
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name;
             var isAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
 
-            var client = await _context.SrClients
-                .FirstOrDefaultAsync(c => c.uuid == id);
+            var client = await _context.GetSrClient(id);
 
             if (client == null)
             {

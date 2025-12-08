@@ -216,6 +216,12 @@ namespace SCRM.Services.Data
                 entity.OwnsOne(e => e.device, b => b.ToJson());
                 entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                // Configure relationship with WechatAccount
+                entity.HasMany(e => e.Accounts)
+                      .WithOne()
+                      .HasForeignKey(w => w.ClientUuid)
+                      .HasPrincipalKey(e => e.uuid);
             });
         }
     }

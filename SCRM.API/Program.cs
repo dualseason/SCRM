@@ -7,7 +7,7 @@ using SCRM.Services.Data;
 using SCRM.API.Models.Entities;
 using SCRM.Services;
 using SCRM.Models.Configurations;
-using SCRM.Core.Netty;
+using SCRM.Services.Netty;
 
 using System.Text;
 using Serilog;
@@ -84,7 +84,11 @@ public partial class Program
             builder.Configuration.GetSection("NettySettings"));
 
         // Add JWT services
-        builder.Services.AddScoped<JwtService>();
+        // Add JWT services
+        // Services consolidated into AuthService
+        // builder.Services.AddScoped<JwtService>(); -- Removed
+        // builder.Services.AddScoped<PermissionService>(); -- Removed
+        builder.Services.AddScoped<AuthService>();
 
         // Configure Identity
         builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -125,10 +129,25 @@ public partial class Program
                 IssuerSigningKey = new SymmetricSecurityKey(key),
                 ClockSkew = TimeSpan.Zero
             };
+
+            // Configure SignalR token reading from query string
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    var accessToken = context.Request.Query["access_token"];
+                    var path = context.HttpContext.Request.Path;
+                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    {
+                        context.Token = accessToken;
+                    }
+                    return Task.CompletedTask;
+                }
+            };
         });
 
         // Add Authorization services
-        builder.Services.AddScoped<PermissionService>();
+        // PermissionService removed - consolidated into AuthService
 
         builder.Services.AddAuthorization(options =>
         {

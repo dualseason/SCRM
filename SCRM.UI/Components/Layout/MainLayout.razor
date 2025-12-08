@@ -3,6 +3,7 @@
 @using Radzen.Blazor
 @using Microsoft.AspNetCore.Components.Authorization
 @using Blazored.LocalStorage
+@using SCRM.UI.Services
 @inject NavigationManager Navigation
 @inject ILocalStorageService LocalStorage
 @inject AuthenticationStateProvider AuthStateProvider
@@ -50,6 +51,14 @@
 
 @code {
     bool sidebarExpanded = true;
+    [Inject] WeChatService WeChatService { get; set; }
+    [Inject] HttpClient HttpClient { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var hubUrl = new Uri(HttpClient.BaseAddress!, "hubs/client").ToString();
+        await WeChatService.InitializeAsync(hubUrl);
+    }
 
     private async Task Logout()
     {
