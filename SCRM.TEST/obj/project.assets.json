@@ -4811,6 +4811,7 @@
           "Microsoft.AspNetCore.Authentication.JwtBearer": "8.0.0",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "8.0.0",
           "Microsoft.EntityFrameworkCore": "8.0.0",
+          "Microsoft.EntityFrameworkCore.Sqlite": "8.0.0",
           "Microsoft.Extensions.Caching.StackExchangeRedis": "10.0.0",
           "Microsoft.Extensions.Logging.Console": "10.0.0",
           "Npgsql.EntityFrameworkCore.PostgreSQL": "8.0.0",
@@ -13205,23 +13206,23 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\catic\\.nuget\\packages\\": {},
+    "C:\\Users\\duals\\.nuget\\packages\\": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.TEST\\SCRM.TEST.csproj",
+      "projectUniqueName": "D:\\Code\\SCRM.SOLUTION\\SCRM.TEST\\SCRM.TEST.csproj",
       "projectName": "SCRM.TEST",
-      "projectPath": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.TEST\\SCRM.TEST.csproj",
-      "packagesPath": "C:\\Users\\catic\\.nuget\\packages\\",
-      "outputPath": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.TEST\\obj\\",
+      "projectPath": "D:\\Code\\SCRM.SOLUTION\\SCRM.TEST\\SCRM.TEST.csproj",
+      "packagesPath": "C:\\Users\\duals\\.nuget\\packages\\",
+      "outputPath": "D:\\Code\\SCRM.SOLUTION\\SCRM.TEST\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
       ],
       "configFilePaths": [
-        "C:\\Users\\catic\\AppData\\Roaming\\NuGet\\NuGet.Config",
+        "C:\\Users\\duals\\AppData\\Roaming\\NuGet\\NuGet.Config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
         "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
       ],
@@ -13237,8 +13238,8 @@
         "net8.0": {
           "targetAlias": "net8.0",
           "projectReferences": {
-            "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\SCRM.API.csproj": {
-              "projectPath": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\SCRM.API.csproj"
+            "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\SCRM.API.csproj": {
+              "projectPath": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\SCRM.API.csproj"
             }
           }
         }
@@ -13336,7 +13337,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.300/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\9.0.306/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(dotnet build:*)",
+      "Bash(dotnet run)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(dotnet add:*)",
+      "Bash(tasklist:*)",
+      "Bash(dotnet ef database update:*)",
+      "Bash(taskkill:*)",
+      "Bash(dotnet ef:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

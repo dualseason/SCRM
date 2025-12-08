@@ -69,12 +69,22 @@ public partial class Program
 
         // Add services to the container.
         builder.Services.AddMemoryCache();
-        // Add EF Core PostgreSQL
-        var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
-        dataSourceBuilder.EnableDynamicJson();
-        var dataSource = dataSourceBuilder.Build();
-        builder.Services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(dataSource));
+        // Add EF Core Database
+        if (builder.Environment.IsDevelopment())
+        {
+            // Use SQLite in development
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlite("Data Source=scrm_dev.db"));
+        }
+        else
+        {
+            // Use PostgreSQL in production
+            var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
+            dataSourceBuilder.EnableDynamicJson();
+            var dataSource = dataSourceBuilder.Build();
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseNpgsql(dataSource));
+        }
         // Configure JWT settings
         builder.Services.Configure<JwtSettings>(
             builder.Configuration.GetSection("JwtSettings"));
@@ -255,18 +265,27 @@ public partial class Program
         // Map SignalR Hubs
         app.MapHub<ClientHub>("/hubs/client");
 
-        // Initialize Seed Data
+        // Ensure database is created and migrated
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
             try
             {
+                var dbContext = services.GetRequiredService<ApplicationDbContext>();
+
+                // Create database if it doesn't exist
+                dbContext.Database.EnsureCreated();
+
+                // Apply pending migrations
+                dbContext.Database.Migrate();
+
+                // Initialize Seed Data
                 SCRM.API.Data.SeedData.InitializeAsync(services).Wait();
             }
             catch (Exception ex)
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred seeding the DB.");
+                logger.LogError(ex, "An error occurred initializing the database.");
             }
         }
 

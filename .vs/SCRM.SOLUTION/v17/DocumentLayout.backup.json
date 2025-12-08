@@ -1,30 +1,14 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "E:\\fan\\work\\code\\vs\\SCRM\\",
+  "WorkspaceRootPath": "D:\\Code\\SCRM.SOLUTION\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{1D844E0F-4445-43EC-89C7-FA5B80EE809B}|SCRM.WEB\\SCRM.WEB.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.web\\layout\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{1D844E0F-4445-43EC-89C7-FA5B80EE809B}|SCRM.WEB\\SCRM.WEB.csproj|solutionrelative:scrm.web\\layout\\mainlayout.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.ui\\components\\pages\\chat.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\components\\pages\\chat.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\core\\netty\\messagerouter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\core\\netty\\messagerouter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\clienttaskservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\clienttaskservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.ui\\components\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\components\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|d:\\code\\scrm.solution\\scrm.api\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\controllers\\auth\\authcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|d:\\code\\scrm.solution\\scrm.api\\data\\seeddata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{12345678-1234-5678-9ABC-123456789ABC}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\data\\seeddata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     }
   ],
   "DocumentGroupContainers": [
@@ -34,84 +18,36 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 1,
           "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "MainLayout.razor",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.WEB\\Layout\\MainLayout.razor",
-              "RelativeDocumentMoniker": "SCRM.WEB\\Layout\\MainLayout.razor",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.WEB\\Layout\\MainLayout.razor",
-              "RelativeToolTip": "SCRM.WEB\\Layout\\MainLayout.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-12-07T12:08:30.615Z",
+              "Title": "AuthController.cs",
+              "DocumentMoniker": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "ToolTip": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "RelativeToolTip": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
+              "ViewState": "AgIAACsAAAAAAAAAAAAtwEEAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-08T14:34:33.539Z",
               "EditorCaption": ""
             },
             {
               "$type": "Document",
               "DocumentIndex": 1,
-              "Title": "Chat.razor",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Chat.razor",
-              "RelativeDocumentMoniker": "SCRM.UI\\Components\\Pages\\Chat.razor",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Chat.razor",
-              "RelativeToolTip": "SCRM.UI\\Components\\Pages\\Chat.razor",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABgAAAAcAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-12-07T11:55:45.085Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 2,
-              "Title": "MessageRouter.cs",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Core\\Netty\\MessageRouter.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Core\\Netty\\MessageRouter.cs",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Core\\Netty\\MessageRouter.cs",
-              "RelativeToolTip": "SCRM.API\\Core\\Netty\\MessageRouter.cs",
-              "ViewState": "AgIAAKoAAAAAAAAAAAAgwNQAAAAbAAAAAAAAAA==",
+              "Title": "SeedData.cs",
+              "DocumentMoniker": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Data\\SeedData.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Data\\SeedData.cs",
+              "ToolTip": "D:\\Code\\SCRM.SOLUTION\\SCRM.API\\Data\\SeedData.cs",
+              "RelativeToolTip": "SCRM.API\\Data\\SeedData.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABMAAAAtAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-06T08:45:20.045Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "ClientTaskService.cs",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\ClientTaskService.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Services\\ClientTaskService.cs",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\ClientTaskService.cs",
-              "RelativeToolTip": "SCRM.API\\Services\\ClientTaskService.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAABQAAAAgAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-06T08:10:50.968Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
-              "Title": "Login.razor",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Login.razor",
-              "RelativeDocumentMoniker": "SCRM.UI\\Components\\Pages\\Login.razor",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Login.razor",
-              "RelativeToolTip": "SCRM.UI\\Components\\Pages\\Login.razor",
-              "ViewState": "AgIAACEAAAAAAAAAAAAAAEsAAABAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-12-05T20:06:35.365Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "AuthController.cs",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
-              "RelativeToolTip": "SCRM.API\\Controllers\\Auth\\AuthController.cs",
-              "ViewState": "AgIAAAEAAAAAAAAAAAAtwDgAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-05T11:33:22.499Z",
+              "WhenOpened": "2025-12-08T14:25:00.581Z",
               "EditorCaption": ""
             }
           ]
