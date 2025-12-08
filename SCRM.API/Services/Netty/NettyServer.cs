@@ -9,7 +9,7 @@ using SCRM.Services;
 using Microsoft.Extensions.Options;
 using SCRM.Models.Configurations;
 
-namespace SCRM.Core.Netty
+namespace SCRM.Services.Netty
 {
     public class NettyServer
     {

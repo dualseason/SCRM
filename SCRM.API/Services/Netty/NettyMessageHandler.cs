@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 using SCRM.Shared.Core;
 using SCRM.Services;
 
-namespace SCRM.Core.Netty
+namespace SCRM.Services.Netty
 {
     public class NettyMessageHandler : ChannelHandlerAdapter
     {

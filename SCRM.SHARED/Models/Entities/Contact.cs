@@ -6,7 +6,7 @@ namespace SCRM.API.Models.Entities;
 public class Contact
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string Wxid { get; set; }
     public string Nickname { get; set; }
     public string Remarks { get; set; }

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using SCRM.Core.Netty;
+using SCRM.Services.Netty;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

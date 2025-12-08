@@ -1,6 +1,7 @@
 syntax = "proto3";
 
-package  SCRM.SHARED.Proto;
+package  Jubo.JuLiao.IM.Wx.Proto;
+option csharp_namespace = "SCRM.SHARED.Proto";
 
 // TriggerUnreadPushTask Message
 // Extracted from: TriggerUnreadPushTask.java

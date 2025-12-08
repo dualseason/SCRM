@@ -263,3 +263,5 @@ azure-pipelines.yml
 # User secrets
 secrets.json
 
+/.vs
+/SCRM.TEST/obj

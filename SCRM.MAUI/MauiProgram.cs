@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using Radzen;
 using SCRM.UI.Services;
+using Blazored.LocalStorage;
 
 namespace SCRM.MAUI
 {
@@ -33,6 +34,10 @@ namespace SCRM.MAUI
                 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(baseUrl) });
                 builder.Services.AddScoped<IDeviceService, DeviceService>();
                 builder.Services.AddScoped<IClientTaskService, ClientTaskService>();
+                
+                builder.Services.AddBlazoredLocalStorage();
+                builder.Services.AddScoped<WeChatService>();
+                builder.Services.AddScoped<CrmStore>();
 
                 return builder.Build();
             }

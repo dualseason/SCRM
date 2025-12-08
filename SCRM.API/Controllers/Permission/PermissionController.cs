@@ -17,12 +17,12 @@ namespace SCRM.Controllers.Permission
     public class PermissionController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
-        private readonly PermissionService _permissionService;
+        private readonly AuthService _authService;
 
-        public PermissionController(ApplicationDbContext context, PermissionService permissionService)
+        public PermissionController(ApplicationDbContext context, AuthService authService)
         {
             _context = context;
-            _permissionService = permissionService;
+            _authService = authService;
         }
 
         [HttpGet]
@@ -31,7 +31,7 @@ namespace SCRM.Controllers.Permission
         {
             try
             {
-                var permissions = await _permissionService.GetAllPermissionsAsync();
+                var permissions = await _authService.GetAllPermissionsAsync();
                 return Ok(new { Success = true, Data = permissions });
             }
             catch (Exception)
@@ -46,7 +46,7 @@ namespace SCRM.Controllers.Permission
         {
             try
             {
-                var permissions = await _permissionService.GetAllPermissionsAsync();
+                var permissions = await _authService.GetAllPermissionsAsync();
                 var grouped = permissions
                     .GroupBy(p => p.Module)
                     .ToDictionary(g => g.Key, g => g.OrderBy(p => p.SortOrder).ToList());
@@ -65,7 +65,7 @@ namespace SCRM.Controllers.Permission
         {
             try
             {
-                var permissionInfo = await _permissionService.GetUserPermissionInfoAsync(userId);
+                var permissionInfo = await _authService.GetUserPermissionInfoAsync(userId);
                 return Ok(new { Success = true, Data = permissionInfo });
             }
             catch (Exception)
@@ -85,7 +85,7 @@ namespace SCRM.Controllers.Permission
                     return Unauthorized(new { Success = false, Message = "无效的用户信息" });
                 }
 
-                var permissionInfo = await _permissionService.GetUserPermissionInfoAsync(userId);
+                var permissionInfo = await _authService.GetUserPermissionInfoAsync(userId);
                 return Ok(new { Success = true, Data = permissionInfo });
             }
             catch (Exception)
@@ -105,7 +105,7 @@ namespace SCRM.Controllers.Permission
                     return Unauthorized(new { Success = false, Message = "无效的用户信息" });
                 }
 
-                var hasPermission = await _permissionService.HasPermissionAsync(userId, request.Permission);
+                var hasPermission = await _authService.HasPermissionAsync(userId, request.Permission);
                 return Ok(new { Success = true, Data = new { HasPermission = hasPermission } });
             }
             catch (Exception)
@@ -125,7 +125,7 @@ namespace SCRM.Controllers.Permission
                     return Unauthorized(new { Success = false, Message = "无效的用户信息" });
                 }
 
-                var hasPermission = await _permissionService.HasPermissionAsync(userId, permission);
+                var hasPermission = await _authService.HasPermissionAsync(userId, permission);
                 return Ok(new { Success = true, Data = new { HasPermission = hasPermission, Permission = permission } });
             }
             catch (Exception)
@@ -145,8 +145,8 @@ namespace SCRM.Controllers.Permission
                     return Unauthorized(new { Success = false, Message = "无效的用户信息" });
                 }
 
-                var hasAllPermissions = await _permissionService.HasAllPermissionsAsync(userId, request.Permissions);
-                var hasAnyPermission = await _permissionService.HasAnyPermissionAsync(userId, request.Permissions);
+                var hasAllPermissions = await _authService.HasAllPermissionsAsync(userId, request.Permissions);
+                var hasAnyPermission = await _authService.HasAnyPermissionAsync(userId, request.Permissions);
 
                 return Ok(new {
                     Success = true,
@@ -168,7 +168,7 @@ namespace SCRM.Controllers.Permission
         {
             try
             {
-                if (_permissionService is PermissionService service)
+                if (_authService is AuthService service)
                 {
                     service.ClearAllCache();
                 }
