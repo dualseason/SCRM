@@ -1,11 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
 using SCRM.Services.Data;
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 
 namespace SCRM.Controllers.Auth
 {

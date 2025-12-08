@@ -10,7 +10,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<Routes>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:42718") });
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:63727") });
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IClientTaskService, ClientTaskService>();
 builder.Services.AddScoped<IClientTaskService, ClientTaskService>();

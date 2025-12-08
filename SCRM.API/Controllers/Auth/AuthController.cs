@@ -1,14 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
 using SCRM.Services.Data;
-using SCRM.API.Models.Entities;
 using SCRM.Services;
-using System;
-using System.Linq;
 using System.Security.Claims;
-using System.Threading.Tasks;
 using SCRM.SHARED.Models;
 using Microsoft.AspNetCore.Identity;
 using SCRM.Models.Configurations;
@@ -58,13 +53,21 @@ namespace SCRM.Controllers.Auth
             {
                 if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Password))
                 {
-                    return BadRequest(new { Message = "用户名和密码不能为空" });
+                    return BadRequest(new SCRM.Models.Dtos.ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "用户名和密码不能为空"
+                });
                 }
 
                 var user = await _userManager.FindByNameAsync(request.UserName);
                 if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
                 {
-                    return Unauthorized(new { Message = "用户名或密码错误" });
+                    return Unauthorized(new SCRM.Models.Dtos.ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "用户名或密码错误"
+                });
                 }
 
                 var tokenResponse = await _authService.GenerateTokenResponseAsync(user);
@@ -74,12 +77,20 @@ namespace SCRM.Controllers.Auth
                 tokenResponse.TcpPort = _nettySettings.Port;
 
                 _logger.Information("User {UserName} logged in successfully", request.UserName);
-                return Ok(new { Success = true, Data = tokenResponse });
+                return Ok(new SCRM.Models.Dtos.ApiResponse<SCRM.Models.Dtos.TokenResponse>
+                {
+                    Success = true,
+                    Data = tokenResponse
+                });
             }
             catch (Exception ex)
             {
                 _logger.Error(ex, "Error during login for user {UserName}", request.UserName);
-                return StatusCode(500, new { Message = "登录过程中发生错误" });
+                return StatusCode(500, new SCRM.Models.Dtos.ApiResponse<object>
+                {
+                    Success = false,
+                    Message = "登录过程中发生错误"
+                });
             }
         }
 
@@ -121,7 +132,11 @@ namespace SCRM.Controllers.Auth
                              // Populate TCP Configuration
                              legacyTokenResponse.TcpHost = _nettySettings.Host;
                              legacyTokenResponse.TcpPort = _nettySettings.Port;
-                             return Ok(new { Success = true, Data = legacyTokenResponse });
+                             return Ok(new SCRM.Models.Dtos.ApiResponse<SCRM.Models.Dtos.TokenResponse>
+                             {
+                                 Success = true,
+                                 Data = legacyTokenResponse
+                             });
                         }
                     }
                     return Unauthorized(new { Message = "用户不存在或已被禁用" });

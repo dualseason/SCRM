@@ -28,9 +28,9 @@ namespace SCRM.MAUI
                 builder.Services.AddRadzenComponents();
                 
                 // Register HttpClient and DeviceService
-                // Note: For Android Emulator, use http://10.0.2.2:42718 (or whatever port API runs on)
-                // For Windows, use http://localhost:42718
-                string baseUrl = DeviceInfo.Platform == DevicePlatform.Android ? "http://10.0.2.2:42718" : "http://localhost:42718";
+                // Note: For Android Emulator, use http://10.0.2.2:63727 (or whatever port API runs on)
+                // For Windows, use http://localhost:63727
+                string baseUrl = DeviceInfo.Platform == DevicePlatform.Android ? "http://10.0.2.2:63727" : "http://localhost:63727";
                 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(baseUrl) });
                 builder.Services.AddScoped<IDeviceService, DeviceService>();
                 builder.Services.AddScoped<IClientTaskService, ClientTaskService>();
