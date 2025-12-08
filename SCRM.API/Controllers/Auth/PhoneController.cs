@@ -15,14 +15,23 @@ using System.Threading.Tasks;
 
 namespace SCRM.Controllers.Auth
 {
+    /// <summary>
+    /// 手机认证控制器 - 处理手机客户端的注册、登录、心跳和验证功能
+    /// </summary>
     [ApiController]
     [Route("")] // Root route to match /phone_login directly
+    [Produces("application/json")]
     public class PhoneController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly AuthService _authService;
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 
+        /// <summary>
+        /// 初始化手机认证控制器
+        /// </summary>
+        /// <param name="context">数据库上下文</param>
+        /// <param name="authService">认证服务</param>
         public PhoneController(ApplicationDbContext context, AuthService authService)
         {
             _context = context;
@@ -57,6 +66,17 @@ namespace SCRM.Controllers.Auth
             }
         }
 
+        /// <summary>
+        /// 手机客户端注册接口
+        /// </summary>
+        /// <returns>注册结果和用户认证令牌</returns>
+        /// <remarks>
+        /// 此接口需要客户端API密钥认证，请求体需加密传输
+        /// </remarks>
+        /// <response code="200">注册成功或处理完成</response>
+        /// <response code="400">请求数据无效或用户邮箱为空</response>
+        /// <response code="401">客户端API密钥无效</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpPost("phone_reg")]
         [ClientApiKeyAuth]
         public async Task<IActionResult> Register()
@@ -140,6 +160,18 @@ namespace SCRM.Controllers.Auth
             }
         }
 
+        /// <summary>
+        /// 手机客户端登录接口
+        /// </summary>
+        /// <returns>登录结果和客户端设备信息</returns>
+        /// <remarks>
+        /// 此接口需要客户端API密钥认证，请求体需加密传输。
+        /// 支持自动注册逻辑，当注册码为AUTO_REG_CODE时自动创建新账户。
+        /// </remarks>
+        /// <response code="200">登录成功</response>
+        /// <response code="400">请求数据无效或注册码为空</response>
+        /// <response code="401">客户端API密钥无效</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpPost("phone_login")]
         [ClientApiKeyAuth]
         public async Task<IActionResult> Login()
@@ -269,6 +301,17 @@ namespace SCRM.Controllers.Auth
             }
         }
 
+        /// <summary>
+        /// 手机客户端心跳接口
+        /// </summary>
+        /// <returns>心跳响应结果</returns>
+        /// <remarks>
+        /// 用于维持客户端连接状态，更新最后在线时间。
+        /// 请求体需加密传输。
+        /// </remarks>
+        /// <response code="200">心跳成功</response>
+        /// <response code="400">请求数据无效</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpPost("phone_heartBeat2")]
         public async Task<IActionResult> Heartbeat()
         {
@@ -285,6 +328,17 @@ namespace SCRM.Controllers.Auth
             return Ok(ApiResponse<UserAuthInfo>.Success(new UserAuthInfo { userIdentifier = "1" }));
         }
 
+        /// <summary>
+        /// 手机客户端验证接口
+        /// </summary>
+        /// <returns>验证结果和客户端信息</returns>
+        /// <remarks>
+        /// 用于验证客户端注册码的有效性，返回临时的客户端信息用于测试。
+        /// 请求体需加密传输。
+        /// </remarks>
+        /// <response code="200">验证成功</response>
+        /// <response code="400">请求数据无效或注册码为空</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpPost("phone_validation")]
         public async Task<IActionResult> Validate()
         {

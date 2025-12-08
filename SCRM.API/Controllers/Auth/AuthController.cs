@@ -15,8 +15,12 @@ using SCRM.Models.Configurations;
 
 namespace SCRM.Controllers.Auth
 {
+    /// <summary>
+    /// 身份认证控制器
+    /// </summary>
     [ApiController]
     [Route("api/auth")]
+    [Produces("application/json")]
     public class AuthController : ControllerBase
     {
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
@@ -38,6 +42,15 @@ namespace SCRM.Controllers.Auth
             _nettySettings = nettySettings.Value;
         }
 
+        /// <summary>
+        /// 用户登录
+        /// </summary>
+        /// <param name="request">登录请求信息</param>
+        /// <returns>登录结果和令牌信息</returns>
+        /// <response code="200">登录成功</response>
+        /// <response code="400">用户名或密码为空</response>
+        /// <response code="401">用户名或密码错误</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
@@ -70,6 +83,15 @@ namespace SCRM.Controllers.Auth
             }
         }
 
+        /// <summary>
+        /// 刷新访问令牌
+        /// </summary>
+        /// <param name="request">刷新令牌请求信息</param>
+        /// <returns>新的令牌信息</returns>
+        /// <response code="200">刷新成功</response>
+        /// <response code="400">用户ID或刷新令牌为空</response>
+        /// <response code="401">无效的刷新令牌</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
@@ -121,6 +143,13 @@ namespace SCRM.Controllers.Auth
             }
         }
 
+        /// <summary>
+        /// 用户退出登录
+        /// </summary>
+        /// <returns>退出登录结果</returns>
+        /// <response code="200">退出成功</response>
+        /// <response code="401">未授权</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpPost("logout")]
         [Authorize]
         public async Task<IActionResult> Logout()
@@ -143,6 +172,14 @@ namespace SCRM.Controllers.Auth
             }
         }
 
+        /// <summary>
+        /// 获取当前用户资料信息
+        /// </summary>
+        /// <returns>用户资料信息</returns>
+        /// <response code="200">获取成功</response>
+        /// <response code="401">未授权</response>
+        /// <response code="404">用户不存在</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpGet("profile")]
         [Authorize]
         public async Task<IActionResult> GetProfile()
@@ -201,19 +238,43 @@ namespace SCRM.Controllers.Auth
         }
     }
 
+    /// <summary>
+    /// 登录请求模型
+    /// </summary>
     public class LoginRequest
     {
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 
+        /// <summary>
+        /// 用户名
+        /// </summary>
+        /// <example>skradmin@qq.com</example>
         public string UserName { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 密码
+        /// </summary>
+        /// <example>123456</example>
         public string Password { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// 刷新令牌请求模型
+    /// </summary>
     public class RefreshTokenRequest
     {
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 
+        /// <summary>
+        /// 用户ID
+        /// </summary>
+        /// <example>1</example>
         public string UserId { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 刷新令牌
+        /// </summary>
+        /// <example>your_refresh_token_here</example>
         public string RefreshToken { get; set; } = string.Empty;
     }
 }

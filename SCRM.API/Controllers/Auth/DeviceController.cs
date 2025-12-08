@@ -9,20 +9,37 @@ using System.Threading.Tasks;
 
 namespace SCRM.Controllers.Auth
 {
+    /// <summary>
+    /// 设备管理控制器 - 管理VIP密钥生成和设备信息
+    /// </summary>
     [ApiController]
     [Route("api/device")]
+    [Produces("application/json")]
     public class DeviceController : ControllerBase
     {
         private readonly ApplicationDbContext _context;
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 
+        /// <summary>
+        /// 初始化设备管理控制器
+        /// </summary>
+        /// <param name="context">数据库上下文</param>
         public DeviceController(ApplicationDbContext context)
         {
             _context = context;
         }
 
+        /// <summary>
+        /// 生成VIP密钥
+        /// </summary>
+        /// <param name="request">VIP密钥生成请求</param>
+        /// <returns>生成的VIP密钥信息</returns>
+        /// <response code="200">成功生成VIP密钥</response>
+        /// <response code="401">未授权访问</response>
+        /// <response code="403">权限不足（仅管理员可生成）</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpPost("generate_vip")]
-        [Authorize(Roles = "Admin,SuperAdmin")] // Only admins can generate keys
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> GenerateVipKey([FromBody] GenerateVipKeyRequest request)
         {
             try
@@ -50,6 +67,14 @@ namespace SCRM.Controllers.Auth
                 return StatusCode(500, new { Message = "Error generating VIP key" });
             }
         }
+
+        /// <summary>
+        /// 获取设备列表
+        /// </summary>
+        /// <returns>设备列表</returns>
+        /// <response code="200">成功获取设备列表</response>
+        /// <response code="401">未授权访问</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<IEnumerable<SrClient>>> GetDevices()
@@ -67,6 +92,16 @@ namespace SCRM.Controllers.Auth
             return allClients;
         }
 
+        /// <summary>
+        /// 根据ID获取指定设备信息
+        /// </summary>
+        /// <param name="id">设备ID</param>
+        /// <returns>设备详细信息</returns>
+        /// <response code="200">成功获取设备信息</response>
+        /// <response code="401">未授权访问</response>
+        /// <response code="403">权限不足（无权访问该设备）</response>
+        /// <response code="404">设备不存在</response>
+        /// <response code="500">服务器内部错误</response>
         [HttpGet("{id}")]
         [Authorize]
         public async Task<ActionResult<SrClient>> GetDevice(string id)
@@ -90,9 +125,21 @@ namespace SCRM.Controllers.Auth
         }
     }
 
+    /// <summary>
+    /// VIP密钥生成请求模型
+    /// </summary>
     public class GenerateVipKeyRequest
     {
+        /// <summary>
+        /// VIP有效天数（默认30天）
+        /// </summary>
+        /// <example>30</example>
         public int Days { get; set; } = 30;
-        public int Type { get; set; } = 0; // 0=Month, 1=Season, 2=Year, 3=Forever, 4=Day, 5=Week
+
+        /// <summary>
+        /// VIP类型（0=月卡，1=季卡，2=年卡，3=永久，4=日卡，5=周卡）
+        /// </summary>
+        /// <example>0</example>
+        public int Type { get; set; } = 0;
     }
 }
