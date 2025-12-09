@@ -1,0 +1,37 @@
+@using SCRM.UI.Services
+@inject WeChatService WeChatService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<div style="display: flex; flex-direction: column; gap: 15px;">
+    <RadzenText TextStyle="TextStyle.Body1">Enter the details of the friend request you want to accept.</RadzenText>
+    
+    <RadzenTextBox @bind-Value="friendId" Placeholder="Friend Wxid (e.g., wxid_xxx)" Style="width: 100%;" />
+    <RadzenTextBox @bind-Value="friendNick" Placeholder="Friend Nickname" Style="width: 100%;" />
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+        <RadzenButton Text="Cancel" ButtonStyle="ButtonStyle.Light" Click="@(() => DialogService.Close(false))" />
+        <RadzenButton Text="Accept Request" Icon="check" ButtonStyle="ButtonStyle.Success" Click="@AcceptRequest" Disabled="@(string.IsNullOrWhiteSpace(friendId))" />
+    </div>
+</div>
+
+@code {
+    [Parameter] public string ConnectionId { get; set; }
+
+    string friendId;
+    string friendNick;
+
+    async Task AcceptRequest()
+    {
+        var success = await WeChatService.AcceptFriendRequestAsync(ConnectionId, friendId, friendNick ?? "");
+        if (success)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Sent", "Accept Friend Request command sent.");
+            DialogService.Close(true);
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send command.");
+        }
+    }
+}

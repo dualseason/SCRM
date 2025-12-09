@@ -8,6 +8,7 @@ public class MomentsLike
     public int Id { get; set; }
     public int PostId { get; set; }
     public string LikerWxid { get; set; }
+    public string LikerNickname { get; set; }
     public DateTime LikeTime { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }

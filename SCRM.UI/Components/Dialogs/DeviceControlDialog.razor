@@ -1,0 +1,85 @@
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@inject WeChatService WeChatService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<div style="display: flex; flex-direction: column; gap: 20px;">
+    <!-- Screenshot Section -->
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Screenshot</RadzenText>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+            <RadzenButton Text="Take Screenshot" Icon="camera_alt" Click="@RequestScreenshot" IsBusy="@isTakingScreenshot" />
+        </div>
+        @if (!string.IsNullOrEmpty(screenshotUrl))
+        {
+            <div style="text-align: center; border: 1px solid #eee; padding: 10px;">
+                <RadzenImage Path="@screenshotUrl" Style="max-width: 100%; max-height: 400px;" />
+            </div>
+        }
+    </RadzenCard>
+
+    <!-- System Actions Section -->
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">System Actions</RadzenText>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <RadzenButton Text="Clean App Cache" Icon="cleaning_services" ButtonStyle="ButtonStyle.Info" Click="@(() => ExecuteAction(4, "Clean App Cache"))" />
+            <RadzenButton Text="Clean WeChat Cache" Icon="delete_sweep" ButtonStyle="ButtonStyle.Info" Click="@(() => ExecuteAction(5, "Clean WeChat Cache"))" />
+            <RadzenButton Text="Restart WeChat" Icon="restart_alt" ButtonStyle="ButtonStyle.Warning" Click="@(() => ExecuteAction(9, "Restart WeChat"))" />
+             <RadzenButton Text="Reboot Phone" Icon="power_settings_new" ButtonStyle="ButtonStyle.Danger" Click="@(() => ExecuteAction(1, "Reboot Phone"))" />
+        </div>
+    </RadzenCard>
+</div>
+
+@code {
+    [Parameter] public string ConnectionId { get; set; }
+    
+    string screenshotUrl;
+    bool isTakingScreenshot;
+
+    protected override void OnInitialized()
+    {
+        WeChatService.OnScreenShotReceived += HandleScreenshot;
+    }
+
+    async Task RequestScreenshot()
+    {
+        isTakingScreenshot = true;
+        screenshotUrl = null;
+        var success = await WeChatService.RequestScreenShotAsync(ConnectionId);
+        if (!success)
+        {
+            isTakingScreenshot = false;
+            NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send screenshot request.");
+        }
+    }
+
+    void HandleScreenshot(string url)
+    {
+        screenshotUrl = url;
+        isTakingScreenshot = false;
+        InvokeAsync(StateHasChanged);
+    }
+
+    async Task ExecuteAction(int action, string actionName)
+    {
+        var confirmed = await DialogService.Confirm($"Are you sure you want to {actionName}?", "Confirm Action", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (confirmed == true)
+        {
+            var success = await WeChatService.ExecutePhoneActionAsync(ConnectionId, action);
+            if (success)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "Sent", $"{actionName} command sent.");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "Failed", $"Could not send {actionName} command.");
+            }
+        }
+    }
+
+    public void Dispose()
+    {
+        WeChatService.OnScreenShotReceived -= HandleScreenshot;
+    }
+}

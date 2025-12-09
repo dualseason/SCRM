@@ -21,5 +21,6 @@ public class RedPacket
     public DateTime ExpiryTime { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
+    public bool IsDeleted { get; set; }
 }
 

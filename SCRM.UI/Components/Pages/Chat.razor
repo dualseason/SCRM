@@ -3,9 +3,13 @@
 @using Microsoft.AspNetCore.Authorization
 @using SCRM.API.Models.Entities
 @using SCRM.UI.Services
+@using SCRM.UI.Components.Dialogs
 @using Radzen
 @using Radzen.Blazor
 @inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject ContextMenuService ContextMenuService
+@inject WeChatService WeChatService
 @inject CrmStore Store
 @implements IDisposable
 
@@ -23,9 +27,9 @@
                                Change="@(args => SelectDevice(args))"
                                Style="width: 100%; height: 100%; border: none; background-color: transparent;">
                     <Template Context="device">
-                        <div style="display: flex; align-items: center; padding: 5px;">
+                       <div style="display: flex; align-items: center; padding: 5px; width: 100%;">
                             <RadzenIcon Icon="smartphone" Style="margin-right: 10px; color: #555;" />
-                            <div style="overflow: hidden;">
+                            <div style="flex: 1; overflow: hidden;">
                                 <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                     @(device.WeChatNick ?? device.device?.hsman ?? "Unknown")
                                 </div>
@@ -33,6 +37,7 @@
                                     @(device.WeChatId ?? "Offline")
                                 </div>
                             </div>
+                            <RadzenButton Icon="settings_remote" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="@(args => OpenDeviceControl(device))" @onclick:stopPropagation="true" Style="margin-left: 5px;" />
                         </div>
                     </Template>
                 </RadzenListBox>
@@ -44,8 +49,16 @@
     <RadzenSidebar Style="width: 300px; background-color: #ffffff; border-right: 1px solid #e0e0e0; display: flex; flex-direction: column;">
         @if (Store.SelectedDevice != null)
         {
-             <div style="padding: 10px; border-bottom: 1px solid #eee;">
-                <RadzenTextBox Placeholder="Search friends..." Style="width: 100%;" />
+             <div style="padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center;">
+                <RadzenTextBox Placeholder="Search friends..." Style="flex: 1; margin-right: 5px;" />
+                <RadzenSplitButton Text="Sync" Click="@(async (args) => await SyncDetails(args))" Icon="sync" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small">
+                    <ChildContent>
+                        <RadzenSplitButtonItem Text="Sync Friends" Value="friends" Icon="people" />
+                        <RadzenSplitButtonItem Text="Sync Groups" Value="groups" Icon="groups" />
+                        <RadzenSplitButtonItem Text="Sync Moments" Value="moments" Icon="camera" />
+                        <RadzenSplitButtonItem Text="Friend Requests" Value="requests" Icon="person_add" />
+                    </ChildContent>
+                </RadzenSplitButton>
             </div>
             <div style="flex: 1; overflow-y: auto;">
                  <RadzenListBox Data="@Store.Contacts" Value="@Store.SelectedContact"
@@ -53,7 +66,7 @@
                                Change="@(args => SelectContact(args))"
                                Style="width: 100%; height: 100%; border: none;">
                     <Template Context="contact">
-                        <div style="display: flex; align-items: center; padding: 5px;">
+                        <div style="display: flex; align-items: center; padding: 5px; width: 100%;">
                             <RadzenImage Path="@(contact.Avatar)" Style="width: 40px; height: 40px; border-radius: 4px; margin-right: 10px;" />
                             <div style="flex: 1; overflow: hidden;">
                                 <div style="font-weight: 500; font-size: 0.95em;">@contact.Nickname</div>
@@ -61,6 +74,7 @@
                                     @contact.Wxid
                                 </div>
                             </div>
+                             <RadzenButton Icon="more_vert" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="@(args => ShowContactContextMenu(args, contact))" @onclick:stopPropagation="true" Style="margin-left: 5px;" />
                         </div>
                     </Template>
                  </RadzenListBox>
@@ -83,6 +97,10 @@
                 <RadzenText TextStyle="TextStyle.H6" Style="margin: 0; flex: 1;">
                     @Store.SelectedContact.Nickname <span style="font-size: 0.8em; color: #888;">(@Store.SelectedContact.Wxid)</span>
                 </RadzenText>
+                 @if (Store.SelectedContact.Wxid.EndsWith("@chatroom"))
+                {
+                    <RadzenButton Icon="settings" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@OpenGroupSettings" />
+                }
             </div>
 
             <!-- Chat History -->
@@ -169,6 +187,118 @@
         {
             await SendMessage();
         }
+    }
+
+    async Task SyncDetails(RadzenSplitButtonItem item)
+    {
+        if (item == null || item.Value == "friends") 
+        {
+            await Store.SyncContactsAsync();
+            NotificationService.Notify(NotificationSeverity.Info, "Sync Started", "Friends sync triggered.");
+            return;
+        }
+
+        switch (item.Value)
+        {
+            case "groups":
+                await Store.SyncChatRoomsAsync();
+                NotificationService.Notify(NotificationSeverity.Info, "Sync Started", "Groups sync triggered.");
+                break;
+            case "moments":
+                await Store.SyncMomentsAsync();
+                NotificationService.Notify(NotificationSeverity.Info, "Sync Started", "Moments sync triggered.");
+                break;
+            case "requests":
+                await OpenFriendRequests();
+                break;
+        }
+    }
+
+    // --- Device Context Menu ---
+    void ShowDeviceContextMenu(MouseEventArgs args, SrClient device)
+    {
+        ContextMenuService.Open(args, new List<ContextMenuItem>
+        {
+            new ContextMenuItem { Text = "Control Panel", Value = 1, Icon = "settings_remote" },
+            // Add more items if needed
+        }, async (e) => 
+        {
+            if ((int)e.Value == 1)
+            {
+                await OpenDeviceControl(device);
+            }
+        });
+    }
+
+    async Task OpenDeviceControl(SrClient device)
+    {
+        await DialogService.OpenAsync<DeviceControlDialog>($"Control Panel - {device.WeChatNick}",
+               new Dictionary<string, object>() { { "ConnectionId", device.ConnectionId } },
+               new DialogOptions() { Width = "600px", Height = "600px" });
+    }
+
+    // --- Contact Context Menu ---
+    void ShowContactContextMenu(MouseEventArgs args, Contact contact)
+    {
+        ContextMenuService.Open(args, new List<ContextMenuItem>
+        {
+            new ContextMenuItem { Text = "View Details", Value = 1, Icon = "info" },
+            new ContextMenuItem { Text = "Delete Friend", Value = 2, Icon = "delete_forever" }
+        }, async (e) => 
+        {
+            if ((int)e.Value == 1)
+            {
+                await DialogService.OpenAsync<ContactDetailDialog>($"Details - {contact.Nickname}",
+                    new Dictionary<string, object>() { { "Contact", contact } },
+                     new DialogOptions() { Width = "400px" });
+            }
+            else if ((int)e.Value == 2)
+            {
+                 await DeleteFriend(contact);
+            }
+        });
+    }
+
+    async Task DeleteFriend(Contact contact)
+    {
+         var confirmed = await DialogService.Confirm($"Are you sure you want to delete {contact.Nickname}?", "Delete Friend", new ConfirmOptions() { OkButtonText = "Delete", CancelButtonText = "Cancel" });
+         if (confirmed == true)
+         {
+             if (Store.SelectedDevice != null)
+             {
+                 var success = await WeChatService.DeleteFriendAsync(Store.SelectedDevice.ConnectionId, contact.Wxid);
+                 if (success)
+                 {
+                     NotificationService.Notify(NotificationSeverity.Success, "Deleted", $"Delete request sent for {contact.Nickname}.");
+                 }
+                 else
+                 {
+                     NotificationService.Notify(NotificationSeverity.Error, "Error", "Failed to send delete request.");
+                 }
+             }
+         }
+    }
+
+    // --- Header Actions ---
+    async Task OpenFriendRequests()
+    {
+        if (Store.SelectedDevice == null) return;
+         await DialogService.OpenAsync<FriendRequestsDialog>($"Accept Friend Request",
+               new Dictionary<string, object>() { { "ConnectionId", Store.SelectedDevice.ConnectionId } },
+               new DialogOptions() { Width = "400px" });
+    }
+
+    async Task OpenGroupSettings()
+    {
+        if (Store.SelectedDevice == null || Store.SelectedContact == null) return;
+        
+        await DialogService.OpenAsync<GroupSettingsDialog>($"Group Settings - {Store.SelectedContact.Nickname}",
+               new Dictionary<string, object>() { 
+                   { "ConnectionId", Store.SelectedDevice.ConnectionId },
+                   { "ChatRoomId", Store.SelectedContact.Wxid },
+                   { "CurrentGroupName", Store.SelectedContact.Nickname }
+               },
+               new DialogOptions() { Width = "500px" });
     }
 
     public void Dispose()

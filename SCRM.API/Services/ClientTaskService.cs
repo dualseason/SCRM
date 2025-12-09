@@ -224,5 +224,112 @@ namespace SCRM.Services
                 EnumMsgType.RevokeMessageTask.ToString(),
                 connectionId);
         }
+        /// <summary>
+        /// 发送群聊操作任务（踢人、拉人、改名等）
+        /// </summary>
+        public async Task<bool> SendChatRoomActionTaskAsync(string connectionId, string chatRoomId, EnumChatRoomAction action, string content, int intValue, long taskId)
+        {
+            var task = new ChatRoomActionTaskMessage
+            {
+                ChatRoomId = chatRoomId,
+                Action = action,
+                Content = content,
+                IntValue = intValue,
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.ChatRoomActionTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送同意入群任务
+        /// </summary>
+        public async Task<bool> SendAgreeJoinChatRoomTaskAsync(string connectionId, string talker, long msgSvrId, string msgContent, long taskId)
+        {
+            var task = new AgreeJoinChatRoomTaskMessage
+            {
+                Talker = talker,
+                MsgSvrId = msgSvrId,
+                MsgContent = msgContent,
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.AgreeJoinChatRoomTask.ToString(),
+                connectionId);
+        }
+        /// <summary>
+        /// 发送删除好友任务
+        /// </summary>
+        public async Task<bool> SendDeleteFriendTaskAsync(string connectionId, string friendId, long taskId)
+        {
+            var task = new DeleteFriendTaskMessage
+            {
+                FriendId = friendId,
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.DeleteFriendTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送接受好友请求任务（自动通过）
+        /// </summary>
+        public async Task<bool> SendAcceptFriendAddRequestTaskAsync(string connectionId, string friendId, string friendNick, long taskId)
+        {
+            var task = new AcceptFriendAddRequestTaskMessage
+            {
+                FriendId = friendId,
+                FriendNick = friendNick,
+                Operation = AcceptFriendAddRequestTaskMessage.Types.EnumFriendAddOperation.Accept,
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.AcceptFriendAddRequestTask.ToString(),
+                connectionId);
+        }
+        /// <summary>
+        /// 发送截屏任务
+        /// </summary>
+        public async Task<bool> SendScreenShotTaskAsync(string connectionId, long taskId)
+        {
+            var task = new ScreenShotTaskMessage
+            {
+                Type = 0, // Default type
+                Param = "default", // Default param
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.ScreenShotTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送手机操作任务（重启、清理缓存等）
+        /// </summary>
+        public async Task<bool> SendPhoneActionTaskAsync(string connectionId, EnumPhoneAction action, long taskId)
+        {
+            var task = new PhoneActionTaskMessage
+            {
+                Action = action,
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.PhoneActionTask.ToString(),
+                connectionId);
+        }
     }
 }

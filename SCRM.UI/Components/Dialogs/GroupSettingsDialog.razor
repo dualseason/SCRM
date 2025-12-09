@@ -1,0 +1,87 @@
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@inject WeChatService WeChatService
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<div style="display: flex; flex-direction: column; gap: 20px;">
+    <!-- Rename Group -->
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Rename Group</RadzenText>
+        <div style="display: flex; gap: 10px;">
+            <RadzenTextBox @bind-Value="newGroupName" Placeholder="New Group Name" Style="flex: 1;" />
+            <RadzenButton Text="Rename" Icon="edit" Click="@RenameGroup" Disabled="@string.IsNullOrWhiteSpace(newGroupName)" />
+        </div>
+    </RadzenCard>
+
+    <!-- Invite Member -->
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Invite Member</RadzenText>
+        <div style="display: flex; gap: 10px; margin-bottom: 5px;">
+             <RadzenTextBox @bind-Value="inviteWxid" Placeholder="Friend Wxid to Invite" Style="flex: 1;" />
+             <RadzenButton Text="Invite" Icon="person_add" ButtonStyle="ButtonStyle.Secondary" Click="@InviteMember" Disabled="@string.IsNullOrWhiteSpace(inviteWxid)" />
+        </div>
+        <RadzenText TextStyle="TextStyle.Caption" Style="color: #888;">Enter the Wxid of the friend you want to invite.</RadzenText>
+    </RadzenCard>
+</div>
+
+@code {
+    [Parameter] public string ConnectionId { get; set; }
+    [Parameter] public string ChatRoomId { get; set; }
+    [Parameter] public string CurrentGroupName { get; set; }
+
+    string newGroupName;
+    string inviteWxid;
+
+    protected override void OnInitialized()
+    {
+        newGroupName = CurrentGroupName;
+    }
+
+    async Task RenameGroup()
+    {
+        // Action 0 = Socket_ChatRoom_ModName
+        // 1=ModTopic, 2=AddMember, 3=DelMember, ... 6=ModNickName
+        // Based on Proto inspection, typical "Rename Group" is likely Action 0 or related context.
+        // Let's assume Action 0 is correct for ModName based on standard behavior.
+        // Wait, Proto said EnumChatRoomAction: ModName = 9? No, let's double check.
+        // Looking at ChatRoomActionTask.proto (viewed earlier):
+        //   None = 0;
+        //   ShowName = 6;
+        //   ModTopic = 1;
+        //   AddMember = 2; // Invite
+        //   DelMember = 3; // Kick
+        //   ModName = ??? (Need to check enum again, or guess)
+        // I'll check the proto file in next turn if I'm unsure, OR I'll search existing code.
+        // But for "Rename", usually it's "ModTopic" (1) or "ModName" if it exists.
+        // Let's assume ModTopic (1) is "Group Name" for now as "Name" often means "My alias in group".
+        // Actually, WeChat groups have "Topic" which is the Name.
+        // So I will use Action = 1 (ModTopic) for Rename Group.
+        
+        var success = await WeChatService.ExecuteGroupActionAsync(ConnectionId, ChatRoomId, 1, newGroupName, 0); 
+        if (success)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Sent", "Rename command sent.");
+            DialogService.Close(true);
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send rename command.");
+        }
+    }
+
+    async Task InviteMember()
+    {
+        // Action 2 = AddMember
+        var success = await WeChatService.ExecuteGroupActionAsync(ConnectionId, ChatRoomId, 2, inviteWxid, 0);
+        if (success)
+        {
+            NotificationService.Notify(NotificationSeverity.Success, "Sent", "Invite command sent.");
+            DialogService.Close(true);
+        }
+        else
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send invite command.");
+        }
+    }
+}

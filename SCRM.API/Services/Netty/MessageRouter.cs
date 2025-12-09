@@ -40,11 +40,6 @@ namespace SCRM.Services.Netty
                 _logger.Information("Incoming Content TypeUrl: {TypeUrl}", message.Content.TypeUrl);
             }
 
-            if (message.Content != null)
-            {
-                _logger.Information("Incoming Content TypeUrl: {TypeUrl}", message.Content.TypeUrl);
-            }
-
             try
             {
                 switch (message.MsgType)
@@ -67,14 +62,11 @@ namespace SCRM.Services.Netty
                     case EnumMsgType.FriendTalkNotice:
                         await HandleFriendTalkNotice(message, context);
                         break;
-                    case EnumMsgType.WeChatTalkToFriendNotice:
-                        await HandleWeChatTalkToFriendNotice(message, context);
-                        break;
-                    case EnumMsgType.FriendAddNotice:
-                        await HandleFriendAddNotice(message, context);
-                        break;
                     case EnumMsgType.ChatroomPushNotice:
                         await HandleChatRoomPushNotice(message, context);
+                        break;
+                    case EnumMsgType.ChatRoomMembersNotice:
+                        await HandleChatRoomMembersNotice(message, context);
                         break;
                     case EnumMsgType.CircleDetailNotice:
                         await HandleCircleDetailNotice(message, context);
@@ -87,6 +79,12 @@ namespace SCRM.Services.Netty
                         break;
                     case EnumMsgType.ScreenShotTaskResultNotice:
                         await HandleScreenShotTaskResultNotice(message, context);
+                        break;
+                    case EnumMsgType.QueryHbDetailTaskResultNotice:
+                        await HandleQueryHbDetailTaskResultNotice(message, context);
+                        break;
+                    case EnumMsgType.QueryHbStatusTaskResultNotice:
+                        await HandleQueryHbStatusTaskResultNotice(message, context);
                         break;
                     case EnumMsgType.PostDeviceInfoNotice:
                         await HandlePostDeviceInfoNotice(message, context);
@@ -449,18 +447,184 @@ namespace SCRM.Services.Netty
             return Task.CompletedTask;
         }
 
-        private Task HandleChatRoomPushNotice(TransportMessage message, IChannelHandlerContext context)
+        private async Task HandleChatRoomPushNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<ChatRoomPushNoticeMessage>();
-            _logger.Information("Chat Room Push Notice: {WeChatId} pushed {Count} chat rooms", notice.WeChatId, notice.ChatRooms.Count);
-            return Task.CompletedTask;
+            _logger.Information("Chat Room Push Notice: {WeChatId} pushed {Count} chat rooms (Page {Page}/{Size})", 
+                notice.WeChatId, notice.ChatRooms.Count, notice.Page, notice.Size);
+
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+
+            if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId))
+            {
+                _logger.Warning("Received ChatRoom Push from unauthenticated connection: {ConnectionId}", connectionId);
+                return;
+            }
+
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+                
+                int newCount = 0;
+                int updateCount = 0;
+
+                foreach (var room in notice.ChatRooms)
+                {
+                    // 1. 同步群组基本信息
+                    var group = await dbContext.Groups
+                        .FirstOrDefaultAsync(g => g.WechatAccountId == accountId && g.GroupWxid == room.UserName);
+
+                    if (group == null)
+                    {
+                        group = new Group
+                        {
+                            WechatAccountId = (int)accountId,
+                            GroupWxid = room.UserName,
+                            CreatedAt = DateTime.UtcNow,
+                            IsDeleted = false
+                        };
+                        dbContext.Groups.Add(group);
+                        newCount++;
+                    }
+                    else
+                    {
+                        updateCount++;
+                    }
+
+                    // 更新字段
+                    group.GroupName = room.NickName ?? "";
+                    group.OwnerWxid = room.Owner ?? "";
+                    group.GroupNotice = room.Notice ?? "";
+                    group.GroupAvatar = room.Avatar ?? "";
+                    group.MemberCount = room.MemberList.Count; // 使用 MemberList 数量作为近似值
+                    group.UpdatedAt = DateTime.UtcNow;
+
+                    // 2. 简单的成员同步 (如果需要)
+                    // 注意：这里暂不处理 ShowNameList 的全量 Member 同步，避免性能问题
+                    // 将主要依赖专门的 Member 同步消息或按需获取
+                }
+
+                await dbContext.SaveChangesAsync();
+                _logger.Information("Processed ChatRoom Push: {New} new, {Updated} updated for Account {AccountId}", newCount, updateCount, accountId);
+                
+                // 通知前端
+                await _hubContext.Clients.Group(connectionId).SendAsync("ChatRoomsUpdated", newCount);
+            }
         }
 
-        private Task HandleCircleDetailNotice(TransportMessage message, IChannelHandlerContext context)
+        private async Task HandleChatRoomMembersNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<ChatRoomMembersNoticeMessage>();
+            _logger.Information("Chat Room Members Notice: {WeChatId}, Members={Count}", notice.WeChatId, notice.Members.Count);
+            
+            // 待实现具体的成员同步逻辑
+            // 需要明确 ChatRoomMembersNoticeMessage 是否包含 ChatRoomId 上下文
+            // 目前暂做日志记录
+        }
+
+        private async Task HandleCircleDetailNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<CircleDetailNoticeMessage>();
-            _logger.Information("Circle Detail Notice: {WeChatId} - {CircleId}", notice.WeChatId, notice.Circle.CircleId);
-            return Task.CompletedTask;
+            if (notice.Circle == null) return;
+
+            var circle = notice.Circle;
+            _logger.Information("Circle Detail Notice: {WeChatId} - {CircleId} (Author: {Author})", 
+                notice.WeChatId, circle.CircleId, circle.WeChatId);
+
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+
+            if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId))
+            {
+                return;
+            }
+
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+
+                // 1. 转换时间
+                var publishTime = DateTimeOffset.FromUnixTimeSeconds(circle.PublishTime).UtcDateTime;
+
+                // 2. 查找或创建 MomentsPost (由于缺少 SnsId 字段，使用 Author + Time 判定)
+                var post = await dbContext.MomentsPosts
+                    .FirstOrDefaultAsync(p => p.WechatAccountId == accountId && p.AuthorWxid == circle.WeChatId && p.PublishTime == publishTime);
+
+                if (post == null)
+                {
+                    post = new MomentsPost
+                    {
+                        WechatAccountId = (int)accountId,
+                        AuthorWxid = circle.WeChatId,
+                        PublishTime = publishTime,
+                        CreatedAt = DateTime.UtcNow,
+                        IsDeleted = false
+                    };
+                    dbContext.MomentsPosts.Add(post);
+                }
+
+                // 3. 更新内容字段
+                if (circle.Content != null)
+                {
+                    post.PostContent = circle.Content.Text ?? "";
+                    
+                    // 处理封面图 (取第一张图片或视频缩略图)
+                    if (circle.Content.Images != null && circle.Content.Images.Count > 0)
+                    {
+                        post.PostCover = circle.Content.Images[0].ThumbImg ?? circle.Content.Images[0].Url ?? "";
+                    }
+                    else if (circle.Content.Video != null)
+                    {
+                        post.PostCover = circle.Content.Video.ThumbImg ?? "";
+                    }
+                }
+                
+                post.LikeCount = circle.Likes.Count;
+                post.CommentCount = circle.Comments.Count;
+                post.UpdatedAt = DateTime.UtcNow;
+
+                // 先保存以获取 Post.Id
+                await dbContext.SaveChangesAsync();
+
+                // 4. 同步点赞 (先删后加，简化逻辑)
+                var existingLikes = await dbContext.MomentsLikes.Where(l => l.PostId == post.Id).ToListAsync();
+                dbContext.MomentsLikes.RemoveRange(existingLikes);
+
+                foreach (var likeProto in circle.Likes)
+                {
+                    dbContext.MomentsLikes.Add(new MomentsLike
+                    {
+                        PostId = post.Id,
+                        LikerWxid = likeProto.FriendId,
+                        LikerNickname = likeProto.NickName ?? "",
+                        LikeTime = DateTimeOffset.FromUnixTimeSeconds(likeProto.PublishTime).UtcDateTime,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+
+                // 5. 同步评论 (先删后加)
+                var existingComments = await dbContext.MomentsComments.Where(c => c.PostId == post.Id).ToListAsync();
+                dbContext.MomentsComments.RemoveRange(existingComments);
+
+                foreach (var cmtProto in circle.Comments)
+                {
+                    dbContext.MomentsComments.Add(new MomentsComment
+                    {
+                        PostId = post.Id,
+                        CommenterWxid = cmtProto.FromWeChatId,
+                        CommentContent = cmtProto.Content ?? "",
+                        ReplyToWxid = cmtProto.ToWeChatId ?? "",
+                        CommentTime = DateTimeOffset.FromUnixTimeSeconds(cmtProto.PublishTime).UtcDateTime,
+                        CreatedAt = DateTime.UtcNow
+                    });
+                }
+
+                await dbContext.SaveChangesAsync();
+                
+                // 6. 前端通知
+                await _hubContext.Clients.Group(connectionId).SendAsync("MomentReceived", post.AuthorWxid, post.PostContent);
+            }
         }
 
         private Task HandlePostSNSNewsTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
@@ -477,11 +641,14 @@ namespace SCRM.Services.Netty
             return Task.CompletedTask;
         }
 
-        private Task HandleScreenShotTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
+        private async Task HandleScreenShotTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var result = message.Content.Unpack<ScreenShotTaskResultNoticeMessage>();
             _logger.Information("Screen Shot Result: Success={Success}, Url={Url}", result.Success, result.Url);
-            return Task.CompletedTask;
+
+            var connectionId = context.Channel.Id.AsLongText();
+            // Notify frontend
+            await _hubContext.Clients.Group(connectionId).SendAsync("ScreenShotReceived", result.Url);
         }
         private async Task HandlePostDeviceInfoNotice(TransportMessage message, IChannelHandlerContext context)
         {
@@ -617,6 +784,87 @@ namespace SCRM.Services.Netty
                 await dbContext.SaveChangesAsync();
                 _logger.Information("Processed Friend Push: {New} new, {Updated} updated for Account {AccountId}", newCount, updateCount, accountId);
             }
+        }
+
+
+        private async Task HandleQueryHbDetailTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<QueryHbDetailTaskResultNoticeMessage>();
+            _logger.Information("Red Packet Detail: {WeChatId} - {HbUrl} (Sender: {Sender}, Amount: {TotalAmount})", 
+                notice.WeChatId, notice.HbUrl, notice.Sender, notice.TotalAmount);
+
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+
+            if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId))
+            {
+                return;
+            }
+
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+
+                // 1. 创建红包记录 (RedPacket)
+                // 由于数据库缺少 HbUrl 唯一键，我们每次 Detail 通知都视为一次记录或者尝试去重
+                // 为防止重复，可以使用 Sender + Amount + Time (Approx) 判断，但这里简单起见，作为日志式插入
+                // 或尝试用 RedPacketMessage 存储 HbUrl 用于去重
+                
+                var rp = new RedPacket
+                {
+                    WechatAccountId = (int)accountId,
+                    SenderWxid = notice.Sender ?? "Unknown", // Proto Sender 可能是 Nickname? 暂存
+                    TotalAmount = notice.TotalAmount / 100m, // Proto 单位通常是分
+                    TotalCount = notice.TotalNum,
+                    RedPacketMessage = notice.Wishing ?? "", 
+                    // 借用 TargetWxid 存储 HbUrl 以便未来可能的关联 (Hack)
+                    TargetWxid = notice.HbUrl, 
+                    RedPacketStatus = notice.HbStatus,
+                    ReceivedCount = notice.RecNum,
+                    ReceivedAmount = notice.RecAmount / 100m,
+                    SendTime = DateTime.UtcNow, // 无法获取准确发送时间
+                    CreatedAt = DateTime.UtcNow,
+                    IsDeleted = false
+                };
+
+                dbContext.RedPackets.Add(rp);
+                await dbContext.SaveChangesAsync(); // 获取 Id
+
+                // 2. 存取领取记录 (RedPacketRecord)
+                if (notice.Records != null)
+                {
+                    foreach (var rec in notice.Records)
+                    {
+                        var record = new RedPacketRecord
+                        {
+                            RedPacketId = rp.Id,
+                            ReceiverWxid = rec.UserName,
+                            ReceivedAmount = rec.Amount / 100m,
+                            ReceiveTime = DateTime.TryParse(rec.Time, out var t) ? t : DateTime.UtcNow,
+                            ReceiveStatus = 1, // 假设存在即已领
+                            CreatedAt = DateTime.UtcNow
+                        };
+                        dbContext.RedPacketRecords.Add(record);
+                    }
+                    await dbContext.SaveChangesAsync();
+                }
+
+                _logger.Information("Saved Red Packet: Id={Id}", rp.Id);
+
+                // 3. 前端通知
+                await _hubContext.Clients.Group(connectionId).SendAsync("RedPacketReceived", rp.SenderWxid, rp.TotalAmount);
+            }
+        }
+
+        private async Task HandleQueryHbStatusTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<QueryHbStatusTaskResultNoticeMessage>();
+            _logger.Information("Red Packet Status: {WeChatId} - {HbUrl} (Status: {Status}, Msg: {Msg})", 
+                notice.WeChatId, notice.HbUrl, notice.HbStatus, notice.StatusMsg);
+            
+            // 简单通知前端
+            var connectionId = context.Channel.Id.AsLongText();
+            await _hubContext.Clients.Group(connectionId).SendAsync("RedPacketStatusChanged", notice.HbUrl, notice.HbStatus);
         }
     }
 }

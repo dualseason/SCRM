@@ -1,0 +1,36 @@
+@using SCRM.API.Models.Entities
+@using Radzen
+
+<div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
+    <RadzenImage Path="@Contact.Avatar" Style="width: 100px; height: 100px; border-radius: 50%;" />
+    
+    <RadzenText TextStyle="TextStyle.H5">@Contact.Nickname</RadzenText>
+    <RadzenText TextStyle="TextStyle.Body2" Style="color: #666;">@Contact.Wxid</RadzenText>
+
+    <div style="width: 100%; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
+            <span style="color: #888;">Remarks</span>
+            <span>@Contact.Remarks</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
+            <span style="color: #888;">Gender</span>
+            <span>@(Contact.Gender == 1 ? "Male" : (Contact.Gender == 2 ? "Female" : "Unknown"))</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
+            <span style="color: #888;">Region</span>
+            <span>@($"{Contact.Province} {Contact.City}")</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
+            <span style="color: #888;">Phone</span>
+            <span>@Contact.Phone</span>
+        </div>
+         <div style="display: flex; flex-direction: column; border-bottom: 1px solid #eee; padding: 8px 0;">
+            <span style="color: #888; margin-bottom: 4px;">Signature</span>
+            <span style="white-space: pre-wrap;">@Contact.Signature</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter] public Contact Contact { get; set; }
+}

@@ -136,6 +136,65 @@ namespace SCRM.UI.Services
             }
         }
 
+        public async Task SyncChatRoomsAsync()
+        {
+            if (SelectedDevice != null && !string.IsNullOrEmpty(SelectedDevice.ConnectionId))
+            {
+                await _weChatService.SyncChatRoomsAsync(SelectedDevice.ConnectionId);
+            }
+        }
+
+        public async Task SyncMomentsAsync()
+        {
+            if (SelectedDevice != null && !string.IsNullOrEmpty(SelectedDevice.ConnectionId))
+            {
+                await _weChatService.SyncMomentsAsync(SelectedDevice.ConnectionId);
+            }
+        }
+
+        /// <summary>
+        /// 执行当前选中设备的群聊操作
+        /// </summary>
+        public async Task ExecuteGroupActionAsync(string chatRoomId, int action, string content, int intValue = 0)
+        {
+             if (SelectedDevice != null && !string.IsNullOrEmpty(SelectedDevice.ConnectionId))
+             {
+                 await _weChatService.ExecuteGroupActionAsync(SelectedDevice.ConnectionId, chatRoomId, action, content, intValue);
+             }
+        }
+
+        public async Task AgreeJoinGroupAsync(string talker, long msgSvrId, string content)
+        {
+             if (SelectedDevice != null && !string.IsNullOrEmpty(SelectedDevice.ConnectionId))
+             {
+                 await _weChatService.AgreeJoinGroupAsync(SelectedDevice.ConnectionId, talker, msgSvrId, content);
+             }
+        }
+
+        /// <summary>
+        /// 删除当前选中的联系人
+        /// </summary>
+        public async Task DeleteCurrentContactAsync()
+        {
+             if (SelectedDevice != null && !string.IsNullOrEmpty(SelectedDevice.ConnectionId) && SelectedContact != null)
+             {
+                 await _weChatService.DeleteFriendAsync(SelectedDevice.ConnectionId, SelectedContact.Wxid);
+             }
+        }
+
+        /// <summary>
+        /// 同意好友请求（自动通过）
+        /// </summary>
+        /// <param name="friendId">请求者ID</param>
+        /// <param name="friendNick">请求者昵称</param>
+        public async Task AgreeFriendRequestAsync(string friendId, string friendNick)
+        {
+             if (SelectedDevice != null && !string.IsNullOrEmpty(SelectedDevice.ConnectionId))
+             {
+                 await _weChatService.AcceptFriendRequestAsync(SelectedDevice.ConnectionId, friendId, friendNick);
+             }
+        }
+
         private void HandleMessageReceived(string friendId, string content, bool isSent)
         {
             // Update history if exists
