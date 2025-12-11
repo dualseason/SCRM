@@ -32,9 +32,8 @@ namespace SCRM.API.Models.Entities
         public virtual ApplicationUser? Owner { get; set; }
 
         /// <summary>
-        /// SignalR Connection ID (Runtime only)
+        /// SignalR Connection ID (Persisted for targeting)
         /// </summary>
-        [NotMapped]
         public string? ConnectionId { get; set; }
 
         [NotMapped]

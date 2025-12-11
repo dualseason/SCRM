@@ -28,6 +28,9 @@
                                Style="width: 100%; height: 100%; border: none; background-color: transparent;">
                     <Template Context="device">
                        <div style="display: flex; align-items: center; padding: 5px; width: 100%;">
+                            <!-- Online Status Indicator -->
+                            <div style="width: 10px; height: 10px; border-radius: 50%; background-color: @(device.isOnline ? "#4caf50" : "#bdbdbd"); margin-right: 8px;" title="@(device.isOnline ? "Online" : "Offline")"></div>
+                            
                             <RadzenIcon Icon="smartphone" Style="margin-right: 10px; color: #555;" />
                             <div style="flex: 1; overflow: hidden;">
                                 <div style="font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">

@@ -74,6 +74,14 @@ namespace SCRM.UI.Services
             }
         }
 
+        public async Task LeaveGroupAsync(string groupName)
+        {
+            if (_hubConnection is not null)
+            {
+                await _hubConnection.InvokeAsync("LeaveGroup", groupName);
+            }
+        }
+
         public async Task<IEnumerable<SrClient>> GetDevicesAsync()
         {
             if (_hubConnection is not null)

@@ -3,6 +3,7 @@
 @inject WeChatService WeChatService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
+@implements IAsyncDisposable
 
 <div style="display: flex; flex-direction: column; gap: 20px;">
     <!-- Screenshot Section -->
@@ -37,20 +38,65 @@
     string screenshotUrl;
     bool isTakingScreenshot;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
+        await WeChatService.JoinGroupAsync(ConnectionId);
         WeChatService.OnScreenShotReceived += HandleScreenshot;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        WeChatService.OnScreenShotReceived -= HandleScreenshot;
+        await WeChatService.LeaveGroupAsync(ConnectionId);
     }
 
     async Task RequestScreenshot()
     {
         isTakingScreenshot = true;
         screenshotUrl = null;
-        var success = await WeChatService.RequestScreenShotAsync(ConnectionId);
-        if (!success)
+        
+        // Timeout Logic
+        var timeoutMs = 15000; // 15 seconds
+        var task = WeChatService.RequestScreenShotAsync(ConnectionId);
+        
+        if (await Task.WhenAny(task, Task.Delay(timeoutMs)) == task)
         {
+            // Task completed within timeout
+            var success = await task;
+            if (!success)
+            {
+                isTakingScreenshot = false;
+                NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send screenshot request.");
+            }
+            // If success, wait for event (spinner is cleared in HandleScreenshot)
+            // But we should also have a failsafe if event never comes?
+            // Actually, RequestScreenShotAsync only returns *if the command was sent*.
+            // The image comes back via SignalR event later.
+            // So we need a second timeout for the *image reception*.
+            
+            // Let's implement a secondary wait for the image
+             _ = Task.Run(async () => 
+            {
+                await Task.Delay(timeoutMs);
+                if (isTakingScreenshot && string.IsNullOrEmpty(screenshotUrl))
+                {
+                    await InvokeAsync(() => 
+                    {
+                        if (isTakingScreenshot) // Double check check
+                        {
+                            isTakingScreenshot = false;
+                            NotificationService.Notify(NotificationSeverity.Warning, "Timeout", "Screenshot capture timed out (no response).");
+                            StateHasChanged();
+                        }
+                    });
+                }
+            });
+        }
+        else
+        {
+            // Timeout sending the command (connection issue)
             isTakingScreenshot = false;
-            NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send screenshot request.");
+            NotificationService.Notify(NotificationSeverity.Error, "Timeout", "Request timed out.");
         }
     }
 
@@ -77,9 +123,6 @@
             }
         }
     }
-
-    public void Dispose()
-    {
-        WeChatService.OnScreenShotReceived -= HandleScreenshot;
-    }
 }
+
+

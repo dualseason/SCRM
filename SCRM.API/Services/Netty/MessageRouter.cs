@@ -334,6 +334,7 @@ namespace SCRM.Services.Netty
                             {
                                 client.isOnline = true;
                                 client.updatedAt = DateTime.UtcNow;
+                                client.ConnectionId = connectionId; // Update ConnectionId
                             }
                         }
 
@@ -706,6 +707,7 @@ namespace SCRM.Services.Netty
                 client.lastLoginAt = DateTime.UtcNow;
                 client.isOnline = true;
                 client.updatedAt = DateTime.UtcNow;
+                client.ConnectionId = connectionId; // Update ConnectionId
                 
                 await dbContext.SaveChangesAsync();
                 _logger.Information("Updated SrClient info for UUID: {Uuid}", clientUuid);

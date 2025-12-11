@@ -269,14 +269,24 @@ namespace SCRM.Services
         {
             var userId = userPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userName = userPrincipal?.Identity?.Name;
+            var roles = userPrincipal?.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList() ?? new List<string>();
 
             if (string.IsNullOrEmpty(userId)) userId = userName; // Fallback
 
             var isAdmin = userPrincipal?.IsInRole("SuperAdmin") == true || userPrincipal?.IsInRole("Admin") == true;
-            if (isAdmin) return true;
+            
+            if (isAdmin) 
+            {
+                // _logger.Information("ValidateDeviceOwnership: User {UserId} is Admin/SuperAdmin. Allowed.", userId);
+                return true;
+            }
 
             var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
-            if (connectionInfo == null) return false;
+            if (connectionInfo == null) 
+            {
+                _logger.Warning("ValidateDeviceOwnership: Connection {ConnectionId} not found.", connectionId);
+                return false;
+            }
 
             if (long.TryParse(connectionInfo.UserId, out long accountId))
             {
@@ -288,9 +298,16 @@ namespace SCRM.Services
                           (w, c) => c.OwnerId)
                     .FirstOrDefaultAsync();
 
-                return ownerId == userId || ownerId == null;
+                if (ownerId == userId || ownerId == null)
+                {
+                    return true;
+                }
+                
+                _logger.Warning("ValidateDeviceOwnership: Forbidden. User {UserId} (Roles: {Roles}) does not own device connected at {ConnectionId}. DeviceOwner: {DeviceOwner}", userId, string.Join(",", roles), connectionId, ownerId);
+                return false;
             }
-
+            
+            _logger.Warning("ValidateDeviceOwnership: Failed to parse Connection UserID '{ConnUserId}' as long.", connectionInfo.UserId);
             return false;
         }
 

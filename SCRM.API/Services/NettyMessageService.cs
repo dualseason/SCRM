@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SCRM.Services.Netty;
@@ -84,6 +85,24 @@ namespace SCRM.Services
                 if (!string.IsNullOrEmpty(targetId))
                 {
                     var channel = _connectionManager.GetChannel(targetId);
+
+                    // Fallback 1: Try ID as User ID
+                    if (channel == null)
+                    {
+                        channel = _connectionManager.GetChannelByUserId(targetId);
+                    }
+
+                    // Fallback 2: Try ID as Device UUID (DeviceInfo)
+                    if (channel == null)
+                    {
+                        var allConns = await _connectionManager.GetAllConnectionsAsync();
+                        var connInfo = allConns.FirstOrDefault(c => c.DeviceInfo == targetId);
+                        if (connInfo != null)
+                        {
+                            channel = _connectionManager.GetChannel(connInfo.ConnectionId);
+                        }
+                    }
+
                     if (channel != null && channel.Active)
                     {
                         await channel.WriteAndFlushAsync(transportMessage);

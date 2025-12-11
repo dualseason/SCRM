@@ -305,7 +305,7 @@ namespace SCRM.Services
             var task = new ScreenShotTaskMessage
             {
                 Type = 0, // Default type
-                Param = "default", // Default param
+                Param = "", // Empty param for generic screenshot
                 TaskId = taskId
             };
 

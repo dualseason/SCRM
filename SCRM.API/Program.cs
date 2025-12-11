@@ -255,6 +255,27 @@ public partial class Program
         // Enable CORS
         app.UseCors("AllowAll");
 
+        // Enable Static Files for File Uploads
+        var uploadSettings = app.Configuration.GetSection("FileUploadSettings");
+        var storePath = uploadSettings["StorePath"];
+        var requestPrefix = uploadSettings["RequestUrlPrefix"] ?? "uploads";
+
+        if (!string.IsNullOrEmpty(storePath) && Path.IsPathRooted(storePath))
+        {
+            // Absolute Path (e.g. C:/Uploads)
+            if (!Directory.Exists(storePath)) Directory.CreateDirectory(storePath);
+            app.UseStaticFiles(new StaticFileOptions
+            {
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(storePath),
+                RequestPath = "/" + requestPrefix.Trim('/')
+            });
+        }
+        else
+        {
+            // Default or Relative (wwwroot)
+            app.UseStaticFiles(); 
+        }
+
         // Add Health Check middleware
         app.UseMiddleware<HealthCheckMiddleware>();
 
