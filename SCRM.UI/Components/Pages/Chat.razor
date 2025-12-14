@@ -40,7 +40,7 @@
                                     @(device.WeChatId ?? "Offline")
                                 </div>
                             </div>
-                            <RadzenButton Icon="settings_remote" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="@(args => OpenDeviceControl(device))" @onclick:stopPropagation="true" Style="margin-left: 5px;" />
+                            <RadzenButton Icon="more_vert" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Light" Click="@(args => ShowDeviceContextMenu(args, device))" @onclick:stopPropagation="true" Style="margin-left: 5px;" />
                         </div>
                     </Template>
                 </RadzenListBox>
@@ -108,18 +108,15 @@
 
             <!-- Chat History -->
             <div id="chat-scroller" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column;">
-                @if (Store.ChatHistory.TryGetValue(Store.SelectedContact.Wxid, out var messages))
+                @foreach (var msg in Store.CurrentMessages)
                 {
-                    @foreach (var msg in messages)
-                    {
-                        <div style="margin-bottom: 15px; display: flex; justify-content: @(msg.Direction == 1 ? "flex-end" : "flex-start");">
-                            <div style="max-width: 70%; padding: 10px 15px; border-radius: 8px; 
-                                        background-color: @(msg.Direction == 1 ? "#95ec69" : "#ffffff"); 
-                                        color: #000; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
-                                <div style="white-space: pre-wrap; word-break: break-word;">@msg.Content</div>
-                            </div>
+                    <div style="margin-bottom: 15px; display: flex; justify-content: @(msg.Direction == 1 ? "flex-end" : "flex-start");">
+                        <div style="max-width: 70%; padding: 10px 15px; border-radius: 8px; 
+                                    background-color: @(msg.Direction == 1 ? "#95ec69" : "#ffffff"); 
+                                    color: #000; box-shadow: 0 1px 1px rgba(0,0,0,0.05);">
+                            <div style="white-space: pre-wrap; word-break: break-word;">@msg.Content</div>
                         </div>
-                    }
+                    </div>
                 }
             </div>
 
@@ -150,6 +147,30 @@
     {
         Store.OnChange += StateHasChanged;
         await Store.InitializeAsync();
+        WeChatService.OnMessageReceived += HandleMessageReceived;
+    }
+
+    // 处理实时收到的消息事件
+    // 注意：此方法在非 UI 线程触发，必须使用 InvokeAsync 回到 UI 线程
+    private void HandleMessageReceived(ReceiveMessageDto msg)
+    {
+        InvokeAsync(() => 
+        {
+            // Only update UI if the message is from/to the currently active contact
+            if (Store.SelectedContact != null && (Store.SelectedContact.Wxid == msg.FriendId || (msg.IsSelf && Store.SelectedContact.Wxid == msg.FriendId)))
+            {
+                 // The logic in CrmStore.HandleMessageReceived already adds to CurrentMessages
+                 // We just need to trigger a re-render.
+                 
+                 // If we wanted to add manually (redundant if Store handles it, but Store only handles memory update if selected):
+                 // Store already handles this check:
+                 // if (SelectedContact != null && (msgDto.FriendId == SelectedContact.Wxid || msgDto.IsSelf)) { CurrentMessages.Add... }
+
+                // So we just need:
+                StateHasChanged();
+                // TODO: Scroll to bottom
+            }
+        });
     }
 
     void SelectDevice(object value)
@@ -223,20 +244,38 @@
         ContextMenuService.Open(args, new List<ContextMenuItem>
         {
             new ContextMenuItem { Text = "Control Panel", Value = 1, Icon = "settings_remote" },
-            // Add more items if needed
+            new ContextMenuItem { Text = "Automation Settings", Value = 2, Icon = "build" }
         }, async (e) => 
         {
             if ((int)e.Value == 1)
             {
                 await OpenDeviceControl(device);
             }
+            else if ((int)e.Value == 2)
+            {
+                if (device.WechatAccountId > 0)
+                {
+                    Navigation.NavigateTo($"/settings/{device.WechatAccountId}");
+                }
+                else
+                {
+                    NotificationService.Notify(NotificationSeverity.Warning, "Not Linked", "This device is not linked to a WeChat account properly.");
+                }
+            }
         });
     }
+
+    [Inject]
+    public NavigationManager Navigation { get; set; }
 
     async Task OpenDeviceControl(SrClient device)
     {
         await DialogService.OpenAsync<DeviceControlDialog>($"Control Panel - {device.WeChatNick}",
-               new Dictionary<string, object>() { { "ConnectionId", device.ConnectionId } },
+               new Dictionary<string, object>() { 
+                   { "ConnectionId", device.ConnectionId },
+                   { "DeviceId", device.WechatAccountId.ToString() },
+                   { "DeviceUuid", device.uuid }
+               },
                new DialogOptions() { Width = "600px", Height = "600px" });
     }
 
@@ -307,5 +346,6 @@
     public void Dispose()
     {
         Store.OnChange -= StateHasChanged;
+        WeChatService.OnMessageReceived -= HandleMessageReceived;
     }
 }

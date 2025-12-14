@@ -1,0 +1,130 @@
+@page "/settings/{AccountId:long}"
+@using SCRM.UI.Services
+@using SCRM.SHARED.Models
+@inject WeChatService WeChatService
+@inject NotificationService NotificationService
+@inject NavigationManager Navigation
+
+<RadzenContent Container="main">
+    <RadzenHeading Size="H3" Text="账号自动化设置" />
+    <RadzenCard>
+        @if (isLoading)
+        {
+            <RadzenProgressBar Mode="ProgressBarMode.Indeterminate" />
+        }
+        else
+        {
+            <div class="row">
+                <div class="col-md-6">
+                    <RadzenFieldset Text="红包助手">
+                        <div class="row align-items-center mb-3">
+                            <div class="col-md-4">
+                                <RadzenLabel Text="自动抢红包" Component="AutoAcceptLuckyMoney" />
+                            </div>
+                            <div class="col-md-8">
+                                <RadzenSwitch @bind-Value=@settings.AutoAcceptLuckyMoney Name="AutoAcceptLuckyMoney" />
+                                <RadzenText TextStyle="TextStyle.Caption" Class="mt-1">开启后将自动领取接收到的个人和群红包。</RadzenText>
+                            </div>
+                        </div>
+                    </RadzenFieldset>
+
+                    <RadzenFieldset Text="好友管理" Class="mt-4">
+                        <div class="row align-items-center mb-3">
+                            <div class="col-md-4">
+                                <RadzenLabel Text="自动通过好友请求" Component="AutoAcceptFriendRequest" />
+                            </div>
+                            <div class="col-md-8">
+                                <RadzenSwitch @bind-Value=@settings.AutoAcceptFriendRequest Name="AutoAcceptFriendRequest" />
+                            </div>
+                        </div>
+                        <div class="row align-items-center mb-3">
+                            <div class="col-md-4">
+                                <RadzenLabel Text="自动回复内容" Component="AutoReplyContent" />
+                            </div>
+                            <div class="col-md-8">
+                                <RadzenTextBox @bind-Value=@settings.AutoReplyContent Name="AutoReplyContent" Class="w-100" />
+                                <RadzenText TextStyle="TextStyle.Caption" Class="mt-1">留空则不自动回复。</RadzenText>
+                            </div>
+                        </div>
+                    </RadzenFieldset>
+                    
+                    <RadzenFieldset Text="朋友圈" Class="mt-4">
+                        <div class="row align-items-center mb-3">
+                            <div class="col-md-4">
+                                <RadzenLabel Text="自动点赞" Component="AutoLikeMoments" />
+                            </div>
+                            <div class="col-md-8">
+                                <RadzenSwitch @bind-Value=@settings.AutoLikeMoments Name="AutoLikeMoments" />
+                            </div>
+                        </div>
+                    </RadzenFieldset>
+
+                    <div class="row mt-4">
+                        <div class="col-md-12 text-right">
+                            <RadzenButton Text="保存配置" Icon="save" ButtonStyle="ButtonStyle.Primary" Click=@SaveSettings />
+                            <RadzenButton Text="返回" ButtonStyle="ButtonStyle.Light" Click=@(() => Navigation.NavigateTo("/")) Class="ml-2" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+    </RadzenCard>
+</RadzenContent>
+
+@code {
+    [Parameter]
+    public long AccountId { get; set; }
+
+    private WechatAccountSettings settings = new WechatAccountSettings();
+    private bool isLoading = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSettings();
+    }
+
+    private async Task LoadSettings()
+    {
+        isLoading = true;
+        try
+        {
+            // Ensure connection
+            if (!WeChatService.IsConnected)
+            {
+                 // Simple wait or notify
+                 NotificationService.Notify(NotificationSeverity.Warning, "连接中...", "正在连接服务器，请稍候");
+                 await Task.Delay(1000);
+            }
+            
+            settings = await WeChatService.GetAccountSettingsAsync(AccountId);
+        }
+        catch (Exception ex)
+        {
+             NotificationService.Notify(NotificationSeverity.Error, "加载失败", ex.Message);
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        try
+        {
+            bool success = await WeChatService.UpdateAccountSettingsAsync(AccountId, settings);
+            if (success)
+            {
+                NotificationService.Notify(NotificationSeverity.Success, "保存成功", "配置已更新");
+            }
+            else
+            {
+                NotificationService.Notify(NotificationSeverity.Error, "保存失败", "服务器返回错误");
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Error, "保存异常", ex.Message);
+        }
+    }
+}

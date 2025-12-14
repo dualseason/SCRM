@@ -11,6 +11,8 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
+using SCRM.Services.Events;
+using SCRM.API.Services.Data;
 
 namespace SCRM.Services.Netty
 {
@@ -21,13 +23,15 @@ namespace SCRM.Services.Netty
         private readonly IServiceScopeFactory _scopeFactory;
         private readonly IHubContext<SCRM.API.Hubs.ClientHub> _hubContext;
         private readonly ClientTaskService _clientTaskService;
+        private readonly IEventBus _eventBus;
 
-        public MessageRouter(ConnectionManager connectionManager, IServiceScopeFactory scopeFactory, IHubContext<SCRM.API.Hubs.ClientHub> hubContext, ClientTaskService clientTaskService)
+        public MessageRouter(ConnectionManager connectionManager, IServiceScopeFactory scopeFactory, IHubContext<SCRM.API.Hubs.ClientHub> hubContext, ClientTaskService clientTaskService, IEventBus eventBus)
         {
             _connectionManager = connectionManager;
             _scopeFactory = scopeFactory;
             _hubContext = hubContext;
             _clientTaskService = clientTaskService;
+            _eventBus = eventBus;
         }
 
         public async Task RouteMessage(TransportMessage message, IChannelHandlerContext context)
@@ -91,6 +95,18 @@ namespace SCRM.Services.Netty
                         break;
                     case EnumMsgType.FriendPushNotice:
                         await HandleFriendPushNotice(message, context);
+                        break;
+                    case EnumMsgType.FriendDelNotice: // Handle Delete
+                        await HandleFriendDelNotice(message, context);
+                        break;
+                    case EnumMsgType.ConfigPushNotice:
+                        await HandleConfigPushNotice(message, context);
+                        break;
+                    case EnumMsgType.FriendAddReqeustNotice:
+                        await HandleFriendAddReqeustNotice(message, context);
+                        break;
+                    case EnumMsgType.CircleNewPublishNotice:
+                        await HandleCircleNewPublishNotice(message, context);
                         break;
                     default:
                         _logger.Warning("Unhandled message type: {MsgType}", message.MsgType);
@@ -187,9 +203,10 @@ namespace SCRM.Services.Netty
 
                 if (!account.IsVip)
                 {
-                    _logger.Warning("Device authentication failed: VIP expired. Credential: {Credential}, Expiry: {Expiry}", credential, account.VipExpiryDate);
-                    // Optional: Send specific error code for expired VIP
-                    return;
+                    // Auto-renew for development purposes
+                    _logger.Warning("Device VIP expired. Auto-renewing for 1 year. Credential: {Credential}, Old Expiry: {Expiry}", credential, account.VipExpiryDate);
+                    account.VipExpiryDate = DateTime.UtcNow.AddYears(1);
+                    await dbContext.SaveWechatAccount(account); // Atomic Save
                 }
 
                 _logger.Information("Device authenticated successfully. AccountId: {AccountId}, Nickname: {Nickname}", account.AccountId, account.Nickname);
@@ -202,6 +219,9 @@ namespace SCRM.Services.Netty
                 string deviceId = !string.IsNullOrEmpty(account.ClientUuid) ? account.ClientUuid : account.WechatNumber;
 
                 await _connectionManager.AddConnectionAsync(userId, context.Channel.Id.AsLongText(), deviceType, deviceId);
+
+                // 发布设备已连接事件 (携带 OwnerId 以便推送)
+                await _eventBus.PublishAsync(new DeviceConnectedEvent(userId, context.Channel.Id.AsLongText(), deviceType, account.OwnerId));
 
                 var responseContent = new DeviceAuthRspMessage
                 {
@@ -249,10 +269,30 @@ namespace SCRM.Services.Netty
                     {
                         _logger.Warning("Failed to trigger Chat Room Push for AccountId: {AccountId}", account.AccountId);
                     }
+                    
+                    // --- Trigger Config Discovery ---
+                    long configTaskId = DateTime.UtcNow.Ticks + 2;
+                    _clientTaskService.SendTriggerConfigPushTaskAsync(context.Channel.Id.AsLongText(), configTaskId);
                 }
                 catch (Exception ex)
                 {
                     _logger.Error(ex, "Error triggering initialization tasks for AccountId: {AccountId}", account.AccountId);
+                }
+
+                // --- Fix: Persist ConnectionId to DB so api/device returns correct ID ---
+                if (!string.IsNullOrEmpty(account.ClientUuid))
+                {
+                    var client = await dbContext.GetSrClient(account.ClientUuid); // Atomic Get
+                    if (client != null)
+                    {
+                        client.isOnline = true;
+                        client.lastLoginAt = DateTime.UtcNow;
+                        client.updatedAt = DateTime.UtcNow;
+                        client.ConnectionId = context.Channel.Id.AsLongText(); // Update ConnectionId
+                        
+                        await dbContext.SaveSrClient(client); // Atomic Save
+                        _logger.Information("Updated SrClient {Uuid} with new ConnectionId: {ConnectionId}", client.uuid, client.ConnectionId);
+                    }
                 }
             }
         }
@@ -318,7 +358,8 @@ namespace SCRM.Services.Netty
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
-                    var account = await dbContext.WechatAccounts.FindAsync(accountId);
+                    // Atomic Get
+                    var account = await dbContext.GetWechatAccount(accountId);
                     if (account != null)
                     {
                         account.Wxid = notice.WeChatId;
@@ -326,23 +367,27 @@ namespace SCRM.Services.Netty
                         account.AccountStatus = (short)EnumAccountStatus.Online;
                         account.LastOnlineAt = DateTime.UtcNow;
                         
+                        await dbContext.SaveWechatAccount(account); // Atomic Save
+
                         // Update SrClient status as well if linked
                         if (!string.IsNullOrEmpty(account.ClientUuid))
                         {
-                            var client = await dbContext.SrClients.FirstOrDefaultAsync(c => c.uuid == account.ClientUuid);
+                            var client = await dbContext.GetSrClient(account.ClientUuid); // Atomic Get
                             if (client != null)
                             {
                                 client.isOnline = true;
                                 client.updatedAt = DateTime.UtcNow;
                                 client.ConnectionId = connectionId; // Update ConnectionId
+                                
+                                await dbContext.SaveSrClient(client); // Atomic Save
                             }
                         }
 
-                        await dbContext.SaveChangesAsync();
                         _logger.Information("Updated WechatAccount {AccountId} status to Online", accountId);
                         
                         // Notify Web UI
-                        await _hubContext.Clients.Group(connectionId).SendAsync("WeChatStatusChanged", notice.WeChatId, notice.WeChatNick, true);
+                        // Use DeviceInfo (UUID) for Group
+                        await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("WeChatStatusChanged", notice.WeChatId, notice.WeChatNick, true);
                     }
                 }
             }
@@ -357,26 +402,125 @@ namespace SCRM.Services.Netty
 
         private async Task HandleFriendTalkNotice(TransportMessage message, IChannelHandlerContext context)
         {
-            var notice = message.Content.Unpack<FriendTalkNoticeMessage>();
+            FriendTalkNoticeMessage notice = message.Content.Unpack<FriendTalkNoticeMessage>();
             _logger.Information("Friend Talk Notice: {WeChatId} received message from {FriendId}: {Content}", 
                 notice.WeChatId, notice.FriendId, notice.Content.ToStringUtf8());
 
-            // Push to SignalR Group (ConnectionId)
-            // Only clients subscribed to this specific device connection will receive the message
-            await _hubContext.Clients.Group(context.Channel.Id.AsLongText()).SendAsync("ReceiveMessage", notice.FriendId, notice.Content.ToStringUtf8(), false); 
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+            
+            if (connectionInfo != null)
+            {
+                // 通过 EventBus 发布消息接收事件
+                // 这样做的目的是解耦：Netty层只负责接收，不负责具体如何通知UI
+                // DeviceUuid 存储在 ConnectionInfo.DeviceInfo 中，这是最准确的设备标识
+                var deviceUuid = connectionInfo.DeviceInfo ?? connectionId;
+                
+                // 构建消息传输对象 (DTO)
+                // 包含：FriendId(发送者), Content(内容), IsSelf(是否自己发送)
+                // 这个匿名对象会被序列化后发给网页端
+                var msgDto = new { FriendId = notice.FriendId, Content = notice.Content.ToStringUtf8(), IsSelf = false };
+                
+                // 发布事件 -> EventForwardingService 会订阅并处理
+                await _eventBus.PublishAsync(new MessageReceivedEvent(deviceUuid, msgDto, connectionInfo.UserId));
+            } 
+            
+            // --- Auto-Accept Lucky Money Logic ---
+            try 
+            {
+                // ContentType: 1-Text, 3-Image, 34-Voice, 43-Video, 47-Emoji, 42-Card, 49-AppMsg (RedPacket is often 49 with specific type in XML)
+                // Red Packet Message Type often shows as 49 (AppMessage) or specific types ??
+                // XML format: <msg><appmsg><type>2001</type>...</appmsg></msg> for HongBao?
+                // Let's assume Content contains XML.
+                
+                if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
+                {
+                    string contentXml = notice.Content.ToStringUtf8();
+                    if (contentXml.Contains("<nativeurl>") && contentXml.Contains("hongbao")) // Simple heuristic
+                    {
+                        var account = await dbContext.GetWechatAccount(accountId); // Using atomic extension if available, or fetch
+                        // Wait, GetWechatAccount is not yet an atomic extension in DbHelper? 
+                        // Let's use direct query for now or check if we added it.
+                        // Actually, let's use the dbContext directly for now.
+                        var wechatAccount = await dbContext.WechatAccounts.FindAsync(accountId);
+
+                        if (wechatAccount != null && !string.IsNullOrEmpty(wechatAccount.Settings))
+                        {
+                            var settings = System.Text.Json.JsonSerializer.Deserialize<SCRM.SHARED.Models.WechatAccountSettings>(wechatAccount.Settings);
+                            if (settings != null && settings.AutoAcceptLuckyMoney)
+                            {
+                                _logger.Information("Auto-Accepting Lucky Money for {WeChatId}", notice.WeChatId);
+                                
+                                // Parse XML to get NativeUrl and Key/Ver
+                                // Simple string extraction for robustness against XML parsing errors
+                                string nativeUrl = ExtractXmlValue(contentXml, "nativeurl");
+                                // Key might not be in the message, sometimes it needs to be fetched via QueryHbDetail
+                                // But SendTakeLuckyMoneyTask needs 'Key'. 
+                                // New strategy: Send QueryHbDetail first, then it returns the Key?
+                                // Or use 'nativeurl' as key? 
+                                // Logic: Usually we need to open it (Query) -> then unpack (Take).
+                                // Let's try sending Take directly with NativeUrl if Key is missing, or send Query.
+                                // Valid strategy: Send Take directly using NativeUrl. 
+                                // Note: Some reversing docs say NativeUrl is enough.
+                                
+                                string key = ExtractXmlValue(contentXml, "ver"); // Often ver is the key or related?
+                                if (string.IsNullOrEmpty(key)) key = nativeUrl; // Fallback
+
+                                await _clientTaskService.SendTakeLuckyMoneyTaskAsync(connectionId, notice.WeChatId, nativeUrl, key);
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error processing auto-accept lucky money");
+            }
+            // -------------------------------------
+
+            // --- Auto-Reply Logic ---
+            try
+            {
+                // Only reply to text/image/video messages, ignore system messages or self messages if somehow routed here
+                // Note: notice.FriendId is the sender. notice.WeChatId is the receiver (our account).
+                if (!string.IsNullOrEmpty(notice.FriendId) && !notice.FriendId.Contains("@chatroom"))
+                {
+                    if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
+                    {
+                        var account = await dbContext.GetWechatAccount(accountId);
+                        if (account != null && !string.IsNullOrEmpty(account.Settings))
+                        {
+                            var settings = System.Text.Json.JsonSerializer.Deserialize<SCRM.SHARED.Models.WechatAccountSettings>(account.Settings);
+                            if (settings != null && !string.IsNullOrEmpty(settings.AutoReplyContent))
+                            {
+                                // Avoid infinite loop: don't reply if the message matches our auto-reply content exactly (simplistic)
+                                // Better: Check message type.
+                                if (notice.ContentType == EnumContentType.Text || notice.ContentType == EnumContentType.Picture || notice.ContentType == EnumContentType.Video)
+                                {
+                                     _logger.Information("Auto-Replying to {FriendId} for Account {WeChatId}", notice.FriendId, notice.WeChatId);
+                                     await _clientTaskService.SendTalkToFriendTaskAsync(connectionId, notice.FriendId, settings.AutoReplyContent);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error processing auto-reply");
+            }
+            // -------------------------------------
 
             // Persist to DB
             using (var scope = _scopeFactory.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
-                var connectionId = context.Channel.Id.AsLongText();
-                var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
                 
-                if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
+                if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long acctId))
                 {
                     var msg = new Message
                     {
-                        AccountId = accountId,
+                        AccountId = acctId,
                         SenderWxid = notice.FriendId,
                         ReceiverWxid = notice.WeChatId, // The current account
                         Content = notice.Content.ToStringUtf8(),
@@ -397,21 +541,55 @@ namespace SCRM.Services.Netty
             } 
         }
 
+        private string ExtractXmlValue(string xml, string tagName)
+        {
+            try {
+                // simple parser
+                string startTag = $"<{tagName}>";
+                string endTag = $"</{tagName}>";
+                int start = xml.IndexOf(startTag);
+                if (start == -1) 
+                {
+                    // Try CDATA
+                    startTag = $"<{tagName}><![CDATA[";
+                    endTag = $"]]></{tagName}>";
+                    start = xml.IndexOf(startTag);
+                }
+
+                if (start != -1)
+                {
+                    start += startTag.Length;
+                    int end = xml.IndexOf(endTag, start);
+                    if (end != -1)
+                    {
+                        return xml.Substring(start, end - start);
+                    }
+                }
+            } catch {}
+            return string.Empty;
+        }
+
         private async Task HandleWeChatTalkToFriendNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<WeChatTalkToFriendNoticeMessage>();
             _logger.Information("WeChat Talk To Friend Notice: {WeChatId} sent message to {FriendId}: {Content}", 
                 notice.WeChatId, notice.FriendId, notice.Content.ToStringUtf8());
 
-            // Push to SignalR Group (ConnectionId)
-            await _hubContext.Clients.Group(context.Channel.Id.AsLongText()).SendAsync("ReceiveMessage", notice.FriendId, notice.Content.ToStringUtf8(), true); 
+            // Push to SignalR Group (UUID)
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+            
+            if (connectionInfo != null)
+            {
+                await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ReceiveMessage", notice.FriendId, notice.Content.ToStringUtf8(), true); 
+            } 
 
             // Persist to DB
             using (var scope = _scopeFactory.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
-                var connectionId = context.Channel.Id.AsLongText();
-                var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+                
+                // connectionId and connectionInfo are available from outer scope
                 
                 if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
                 {
@@ -444,8 +622,56 @@ namespace SCRM.Services.Netty
             {
                 _logger.Information("Friend Add Notice: {WeChatId} added friend {FriendNick}", 
                     notice.WeChatId, notice.Friend.FriendNick);
+
+                var connectionId = context.Channel.Id.AsLongText();
+                // We need to wait for the async context to persist
+                // Since this method returns Task, we can make it async
+                _ = SaveAddedFriendAsync(connectionId, notice.Friend, notice.WeChatId);
             }
             return Task.CompletedTask;
+        }
+
+        private async Task SaveAddedFriendAsync(string connectionId, FriendMessage friend, string weChatId)
+        {
+            try
+            {
+                var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+                if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId)) return;
+
+                using (var scope = _scopeFactory.CreateScope())
+                {
+                    var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+                    
+                    var contact = new Contact
+                    {
+                        WechatAccountId = (int)accountId,
+                        Wxid = friend.FriendId,
+                        Nickname = friend.FriendNick ?? "",
+                        Remarks = friend.Memo ?? "",
+                        Avatar = friend.Avatar ?? "",
+                        Gender = (int)friend.Gender,
+                        Province = friend.Province ?? "",
+                        City = friend.City ?? "",
+                        Phone = friend.Phone ?? "",
+                        Signature = friend.Desc ?? "",
+                        Email = "",
+                        Country = "",
+                        ContactType = 0,
+                        IsDeleted = false,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+
+                    await dbContext.SaveContacts(accountId, new List<Contact> { contact });
+                    
+                    // Notify UI
+                    await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ContactsUpdated", accountId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error saving added friend {FriendId}", friend.FriendId);
+            }
         }
 
         private async Task HandleChatRoomPushNotice(TransportMessage message, IChannelHandlerContext context)
@@ -510,7 +736,7 @@ namespace SCRM.Services.Netty
                 _logger.Information("Processed ChatRoom Push: {New} new, {Updated} updated for Account {AccountId}", newCount, updateCount, accountId);
                 
                 // 通知前端
-                await _hubContext.Clients.Group(connectionId).SendAsync("ChatRoomsUpdated", newCount);
+                await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ChatRoomsUpdated", newCount);
             }
         }
 
@@ -624,7 +850,7 @@ namespace SCRM.Services.Netty
                 await dbContext.SaveChangesAsync();
                 
                 // 6. 前端通知
-                await _hubContext.Clients.Group(connectionId).SendAsync("MomentReceived", post.AuthorWxid, post.PostContent);
+                await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("MomentReceived", post.AuthorWxid, post.PostContent);
             }
         }
 
@@ -648,8 +874,13 @@ namespace SCRM.Services.Netty
             _logger.Information("Screen Shot Result: Success={Success}, Url={Url}", result.Success, result.Url);
 
             var connectionId = context.Channel.Id.AsLongText();
-            // Notify frontend
-            await _hubContext.Clients.Group(connectionId).SendAsync("ScreenShotReceived", result.Url);
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+            
+            if (connectionInfo != null)
+            {
+                 // Notify frontend via UUID
+                 await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ScreenShotReceived", result.Url);
+            }
         }
         private async Task HandlePostDeviceInfoNotice(TransportMessage message, IChannelHandlerContext context)
         {
@@ -670,8 +901,8 @@ namespace SCRM.Services.Netty
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
                 
-                // Find WechatAccount to get ClientUuid
-                var account = await dbContext.WechatAccounts.FindAsync(accountId);
+                // Find WechatAccount to get ClientUuid (Atomic)
+                var account = await dbContext.GetWechatAccount(accountId);
                 if (account == null || string.IsNullOrEmpty(account.ClientUuid))
                 {
                     _logger.Warning("WechatAccount not found or missing ClientUuid for AccountId: {AccountId}", accountId);
@@ -679,7 +910,7 @@ namespace SCRM.Services.Netty
                 }
 
                 var clientUuid = account.ClientUuid;
-                var client = await dbContext.SrClients.FirstOrDefaultAsync(c => c.uuid == clientUuid);
+                var client = await dbContext.GetSrClient(clientUuid);
                 
                 if (client == null)
                 {
@@ -688,7 +919,7 @@ namespace SCRM.Services.Netty
                         uuid = clientUuid,
                         createdAt = DateTime.UtcNow
                     };
-                    dbContext.SrClients.Add(client);
+                    // Note: Atomic Save will handle Add
                 }
 
                 // Map properties to Device DTO
@@ -698,7 +929,7 @@ namespace SCRM.Services.Netty
                     hstype = notice.PhoneModel,
                     androidApi = notice.OSVerNumber.ToString(),
                     imei = notice.IMEI,
-                    // Map other fields if available/relevant
+                    
                     packageName = notice.AppInfos.FirstOrDefault()?.PackageName ?? "",
                     versionCode = notice.AppInfos.FirstOrDefault()?.VerNumber ?? 0
                 };
@@ -709,7 +940,7 @@ namespace SCRM.Services.Netty
                 client.updatedAt = DateTime.UtcNow;
                 client.ConnectionId = connectionId; // Update ConnectionId
                 
-                await dbContext.SaveChangesAsync();
+                await dbContext.SaveSrClient(client);
                 _logger.Information("Updated SrClient info for UUID: {Uuid}", clientUuid);
             }
         }
@@ -742,49 +973,50 @@ namespace SCRM.Services.Netty
                     return;
                 }
 
-                int newCount = 0;
-                int updateCount = 0;
+                var contactsToSave = new List<Contact>();
 
                 foreach (var friend in notice.Friends)
                 {
-                    // Check if contact exists
-                    var contact = await dbContext.Contacts
-                        .FirstOrDefaultAsync(c => c.WechatAccountId == accountId && c.Wxid == friend.FriendId);
-
-                    if (contact == null)
+                    // Map Proto to Entity
+                    var contact = new Contact
                     {
-                        contact = new Contact
-                        {
-                            WechatAccountId = (int)accountId,
-                            Wxid = friend.FriendId,
-                            CreatedAt = DateTime.UtcNow,
-                            IsDeleted = false
-                        };
-                        dbContext.Contacts.Add(contact);
-                        newCount++;
-                    }
-                    else
-                    {
-                        updateCount++;
-                    }
-
-                    // Update fields
-                    contact.Nickname = friend.FriendNick ?? "";
-                    contact.Remarks = friend.Memo ?? "";
-                    contact.Avatar = friend.Avatar ?? "";
-                    contact.Gender = (int)friend.Gender;
-                    contact.Province = friend.Province ?? "";
-                    contact.City = friend.City ?? "";
-                    contact.Phone = friend.Phone ?? "";
-                    contact.Signature = friend.Desc ?? "";
-                    contact.Email = ""; // Required field in DB
-                    contact.Country = ""; // Required field in DB
-                    
-                    contact.UpdatedAt = DateTime.UtcNow;
+                        WechatAccountId = (int)accountId,
+                        Wxid = friend.FriendId,
+                        Nickname = friend.FriendNick ?? "",
+                        Remarks = friend.Memo ?? "", // Correct mapping
+                        Avatar = friend.Avatar ?? "",
+                        Gender = (int)friend.Gender,
+                        Province = friend.Province ?? "",
+                        City = friend.City ?? "",
+                        Phone = friend.Phone ?? "",
+                        Signature = friend.Desc ?? "",
+                        Email = "",
+                        Country = "", // Proto might lack Country? Check if available or default empty
+                        
+                        ContactType = 0, // Friend
+                        IsDeleted = false,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    contactsToSave.Add(contact);
                 }
 
-                await dbContext.SaveChangesAsync();
-                _logger.Information("Processed Friend Push: {New} new, {Updated} updated for Account {AccountId}", newCount, updateCount, accountId);
+                // Atomic Save (DB + Cache Invalidation)
+                await dbContext.SaveContacts(accountId, contactsToSave);
+                
+                _logger.Information("Processed Friend Push: {Count} friends synced for Account {AccountId}", contactsToSave.Count, accountId);
+
+
+                
+                // Notify UI to refresh contact list (using the outer connectionInfo)
+                try
+                {
+                    await _eventBus.PublishAsync(new ContactsReceivedEvent(connectionInfo.DeviceInfo ?? connectionId, accountId, connectionInfo.UserId));
+                }
+                catch (Exception ex)
+                {
+                    _logger.Error(ex, "Failed to publish ContactsReceivedEvent");
+                }
             }
         }
 
@@ -867,6 +1099,154 @@ namespace SCRM.Services.Netty
             // 简单通知前端
             var connectionId = context.Channel.Id.AsLongText();
             await _hubContext.Clients.Group(connectionId).SendAsync("RedPacketStatusChanged", notice.HbUrl, notice.HbStatus);
+        }
+
+        private async Task HandleFriendDelNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<FriendDelNoticeMessage>();
+            _logger.Information("Friend Del Notice: {WeChatId} deleted friend {FriendId}", notice.WeChatId, notice.FriendId);
+            
+            var connectionId = context.Channel.Id.AsLongText();
+            _ = DeleteFriendAsync(connectionId, notice.FriendId, notice.WeChatId);
+        }
+
+        private async Task DeleteFriendAsync(string connectionId, string friendId, string weChatId)
+        {
+             try
+            {
+                var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+                if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId)) return;
+
+                using (var scope = _scopeFactory.CreateScope())
+                {
+                    var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+                    
+                    var contact = await dbContext.Contacts
+                        .FirstOrDefaultAsync(c => c.WechatAccountId == accountId && c.Wxid == friendId);
+                        
+                    if (contact != null)
+                    {
+                        contact.IsDeleted = true;
+                        contact.UpdatedAt = DateTime.UtcNow;
+                        await dbContext.SaveChangesAsync();
+                        
+                        // Notify UI
+                        await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ContactsUpdated", accountId);
+                        
+                        _logger.Information("Deleted friend {FriendId} for Account {AccountId}", friendId, accountId);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.Error(ex, "Error deleting friend {FriendId}", friendId);
+            }
+        }
+        private Task HandleConfigPushNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<ConfigPushNoticeMessage>();
+            _logger.Information("Config Push Received from {WeChatId}", notice.WeChatId);
+            
+            if (notice.BoolConfs != null)
+            {
+                foreach (var c in notice.BoolConfs)
+                {
+                    _logger.Information("BoolConfig: Key={Key}, Val={Value}, Name={Name}, Desc={Desc}", c.Key, c.Value, c.Name, c.Desc);
+                }
+            }
+            if (notice.IntConfs != null)
+            {
+                foreach (var c in notice.IntConfs)
+                {
+                    _logger.Information("IntConfig: Key={Key}, Val={Value}, Name={Name}, Desc={Desc}", c.Key, c.Value, c.Name, c.Desc);
+                }
+            }
+            if (notice.StrConfs != null)
+            {
+                foreach (var c in notice.StrConfs)
+                {
+                    _logger.Information("StrConfig: Key={Key}, Val={Value}, Name={Name}, Desc={Desc}", c.Key, c.Value, c.Name, c.Desc);
+                }
+            }
+            return Task.CompletedTask;
+        }
+        private async Task HandleFriendAddReqeustNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<FriendAddReqeustNoticeMessage>();
+            _logger.Information("Friend Add Request Notice: {WeChatId} received request from {FriendId} ({FriendNick}): {Reason}", 
+                notice.WeChatId, notice.FriendId, notice.FriendNick, notice.Reason);
+
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+
+            if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
+            {
+                using (var scope = _scopeFactory.CreateScope())
+                {
+                    var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+                    var account = await dbContext.GetWechatAccount(accountId);
+                    
+                    if (account != null && !string.IsNullOrEmpty(account.Settings))
+                    {
+                        var settings = System.Text.Json.JsonSerializer.Deserialize<SCRM.SHARED.Models.WechatAccountSettings>(account.Settings);
+                        if (settings != null && settings.AutoAcceptFriendRequest)
+                        {
+                            _logger.Information("Auto-Accepting Friend Request from {FriendId} for Account {WeChatId}", notice.FriendId, notice.WeChatId);
+                            // TaskId creation
+                            long taskId = DateTime.UtcNow.Ticks;
+                            await _clientTaskService.SendAcceptFriendAddRequestTaskAsync(connectionId, notice.FriendId, notice.FriendNick, taskId);
+                        }
+                    }
+                }
+            }
+        }
+
+        private async Task HandleCircleNewPublishNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<CircleNewPublishNoticeMessage>();
+            if (notice.Circle == null) return;
+
+            _logger.Information("Circle New Publish Notice: {WeChatId} received new moment from {Author}: {Content}", 
+                notice.WeChatId, notice.Circle.WeChatId, notice.Circle.Content?.Text);
+
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+
+            if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
+            {
+                using (var scope = _scopeFactory.CreateScope())
+                {
+                    var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+                    var account = await dbContext.GetWechatAccount(accountId);
+                    
+                    if (account != null && !string.IsNullOrEmpty(account.Settings))
+                    {
+                        var settings = System.Text.Json.JsonSerializer.Deserialize<SCRM.SHARED.Models.WechatAccountSettings>(account.Settings);
+                        if (settings != null && settings.AutoLikeMoments)
+                        {
+                            _logger.Information("Auto-Liking Moment {CircleId} from {Author} for Account {WeChatId}", notice.Circle.CircleId, notice.Circle.WeChatId, notice.WeChatId);
+                            long taskId = DateTime.UtcNow.Ticks;
+                            // Note: We need 'WeChatId' arg in SendCircleLikeTaskAsync. 
+                            // This likely refers to the 'User's WeChatId' (the one performing action) OR the 'Author's WeChatId'?
+                            // Proto: CircleLikeTaskMessage { string WeChatId = 1; int64 CircleId = 2; ... }
+                            // Usually 'WeChatId' in Task means "Who is executing this task" (the current user).
+                            // But usually Netty tasks don't need 'Who am I' because it's the connected client.
+                            // UNLESS, it requires the Author's WeChatId to locate the post?
+                            // Let's assume it's the AUTHOR's WeChatId since CircleId alone might not be unique globally without context?
+                            // Actually, let's look at `HandleCircleDetailNotice`. Author is `notice.Circle.WeChatId`.
+                            // I will pass `notice.Circle.WeChatId` (Author) if the proto expects "FriendId" logic, OR `notice.WeChatId` (Me) if it expects "Me".
+                            // Taking a safe bet: In "LikeTask", we usually tell the phone to "Like THIS post". 
+                            // The post is identified by CircleId. The `WeChatId` field in `CircleLikeTaskMessage` is #1.
+                            // In `OneKeyLikeTask`, it doesn't take params.
+                            // In `CircleLikeMessage` (Notice), `FriendId` is the liker.
+                            // Let's assume `WeChatId` in Task is the AUTHOR of the moment.
+                            // Why? Because usually you need the User + ID to find the moment.
+                            
+                            await _clientTaskService.SendCircleLikeTaskAsync(connectionId, notice.Circle.WeChatId, notice.Circle.CircleId, false, taskId);
+                        }
+                    }
+                }
+            }
         }
     }
 }

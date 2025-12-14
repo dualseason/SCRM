@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 
 using SCRM.Services.Data;
-using SCRM.API.Models.Entities;
+using SCRM.API.Models.DTOs;
+using SCRM.Services.Events;
 using SCRM.Services;
 using SCRM.Models.Configurations;
 using SCRM.Services.Netty;
@@ -31,7 +32,11 @@ public partial class Program
         }
 
         // 初始化 Serilog（Debug & Console）
+        // 初始化 Serilog（Debug & Console）
         SCRM.Shared.Core.Utility.logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(builder.Configuration) // 读取 appsettings.json 配置
+            .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning) // 默认屏蔽微软日志
+            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning) // 屏蔽 EF Core SQL 日志
             .WriteTo.Debug(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
             .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
             .CreateLogger();
@@ -137,11 +142,20 @@ public partial class Program
                 {
                     var accessToken = context.Request.Query["access_token"];
                     var path = context.HttpContext.Request.Path;
+                    
+                    // Console.WriteLine($"[Auth] Processing Request: {path}, TokenQuery: {accessToken}");
+
                     if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
                     {
                         context.Token = accessToken;
+                        // Console.WriteLine("[Auth] Token extracted from QueryString for SignalR.");
                     }
                     return Task.CompletedTask;
+                },
+                OnAuthenticationFailed = context =>
+                {
+                   // Console.WriteLine($"[Auth] Authentication Failed: {context.Exception.Message}");
+                   return Task.CompletedTask;
                 }
             };
         });
@@ -163,11 +177,14 @@ public partial class Program
 
         // Netty & C&C Services
         builder.Services.AddSingleton<ConnectionManager>();
+        builder.Services.AddSingleton<IEventBus, InMemoryEventBus>();
         builder.Services.AddSingleton<MessageRouter>();
         builder.Services.AddSingleton<NettyServer>();
         builder.Services.AddSingleton<NettyMessageService>();
         builder.Services.AddSingleton<ClientTaskService>();
-        builder.Services.AddHostedService<NettyMessageService>(provider => provider.GetRequiredService<NettyMessageService>());        // Add CORS
+
+        builder.Services.AddHostedService<NettyMessageService>(provider => provider.GetRequiredService<NettyMessageService>());        
+        builder.Services.AddHostedService<EventForwardingService>(); // Forward events to SignalR
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAll", builder =>
@@ -183,6 +200,7 @@ public partial class Program
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
+        /*
         builder.Services.AddSwaggerGen(c =>
         {
             c.SwaggerDoc("v1", new Microsoft.OpenApi.Models.OpenApiInfo
@@ -235,20 +253,20 @@ public partial class Program
             if (File.Exists(xmlFile))
                 c.IncludeXmlComments(xmlFile);
         });
+        */
 
         var app = builder.Build();
 
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
-            app.UseSwagger();
-            app.UseSwaggerUI();
+            // app.UseSwagger();
+            // app.UseSwaggerUI();
             
-            // Redirect root to Swagger UI
+            // Redirect root to Swagger UI -- DISABLED
             app.MapGet("/", async context =>
             {
-                context.Response.Redirect("/swagger");
-                await Task.CompletedTask;
+                await context.Response.WriteAsync("SCRM API Running");
             });
         }
 

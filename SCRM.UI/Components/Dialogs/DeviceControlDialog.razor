@@ -34,20 +34,72 @@
 
 @code {
     [Parameter] public string ConnectionId { get; set; }
+    [Parameter] public string DeviceId { get; set; } // AccountId
+    [Parameter] public string DeviceUuid { get; set; } // UUID for SignalR Group
     
     string screenshotUrl;
     bool isTakingScreenshot;
 
     protected override async Task OnInitializedAsync()
     {
-        await WeChatService.JoinGroupAsync(ConnectionId);
+        try 
+        {
+            if (WeChatService.IsConnected)
+            {
+                // Use stable Device UUID group
+                if (!string.IsNullOrEmpty(DeviceUuid))
+                {
+                    await WeChatService.JoinGroupAsync(DeviceUuid);
+                }
+                else if (!string.IsNullOrEmpty(ConnectionId))
+                {
+                    // Fallback
+                    await WeChatService.JoinGroupAsync(ConnectionId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "SignalR Warning", "Could not subscribe to device updates: " + ex.Message);
+            Console.WriteLine("JoinGroup Error: " + ex);
+        }
         WeChatService.OnScreenShotReceived += HandleScreenshot;
+        WeChatService.OnDeviceStatusChanged += HandleDeviceStatusChanged;
     }
 
     public async ValueTask DisposeAsync()
     {
         WeChatService.OnScreenShotReceived -= HandleScreenshot;
-        await WeChatService.LeaveGroupAsync(ConnectionId);
+        WeChatService.OnDeviceStatusChanged -= HandleDeviceStatusChanged;
+        
+        // Leave the correct group
+        if (!string.IsNullOrEmpty(DeviceUuid))
+        {
+            await WeChatService.LeaveGroupAsync(DeviceUuid);
+        }
+        else
+        {
+            await WeChatService.LeaveGroupAsync(ConnectionId);
+        }
+    }
+
+    private async void HandleDeviceStatusChanged(string deviceId, string newConnectionId, bool isOnline)
+    {
+        // 如果这个更新是针对我们正在控制的这台设备的
+        if (deviceId == DeviceId && isOnline && !string.IsNullOrEmpty(newConnectionId) && newConnectionId != ConnectionId)
+        {
+            Console.WriteLine($"Device Reconnected！ Updating ConnectionId: {ConnectionId} -> {newConnectionId}");
+            
+            // 只需要更新 ConnectionId 变量，以便发送指令时使用
+            // 无需退群/加群，因为我们现在加入的是 UUID 稳定群组
+            ConnectionId = newConnectionId;
+
+            // 通知用户
+            await InvokeAsync(() => {
+                NotificationService.Notify(NotificationSeverity.Info, "Recovered", "Device reconnected. Session updated.");
+                StateHasChanged();
+            });
+        }
     }
 
     async Task RequestScreenshot()
@@ -57,7 +109,8 @@
         
         // Timeout Logic
         var timeoutMs = 15000; // 15 seconds
-        var task = WeChatService.RequestScreenShotAsync(ConnectionId);
+        // Use DeviceUuid for stable command targeting
+        var task = WeChatService.RequestScreenShotAsync(DeviceUuid);
         
         if (await Task.WhenAny(task, Task.Delay(timeoutMs)) == task)
         {
@@ -68,11 +121,6 @@
                 isTakingScreenshot = false;
                 NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send screenshot request.");
             }
-            // If success, wait for event (spinner is cleared in HandleScreenshot)
-            // But we should also have a failsafe if event never comes?
-            // Actually, RequestScreenShotAsync only returns *if the command was sent*.
-            // The image comes back via SignalR event later.
-            // So we need a second timeout for the *image reception*.
             
             // Let's implement a secondary wait for the image
              _ = Task.Run(async () => 
@@ -112,7 +160,7 @@
         var confirmed = await DialogService.Confirm($"Are you sure you want to {actionName}?", "Confirm Action", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
         if (confirmed == true)
         {
-            var success = await WeChatService.ExecutePhoneActionAsync(ConnectionId, action);
+            var success = await WeChatService.ExecutePhoneActionAsync(DeviceUuid, action);
             if (success)
             {
                 NotificationService.Notify(NotificationSeverity.Success, "Sent", $"{actionName} command sent.");

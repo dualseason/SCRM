@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
 using SCRM.Services.Data;
+using SCRM.Services;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,11 +14,13 @@ namespace SCRM.Controllers.Auth
     [Route("api/device")]
     public class DeviceController : ControllerBase
     {
+        private readonly AuthService _authService;
         private readonly ApplicationDbContext _context;
         private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
 
-        public DeviceController(ApplicationDbContext context)
+        public DeviceController(AuthService authService, ApplicationDbContext context)
         {
+            _authService = authService;
             _context = context;
         }
 
@@ -57,14 +60,7 @@ namespace SCRM.Controllers.Auth
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name;
             var isAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
 
-            var allClients = await _context.GetAllSrClients();
-
-            if (!isAdmin && !string.IsNullOrEmpty(userId))
-            {
-               return allClients.Where(c => c.OwnerId == userId || c.OwnerId == null).ToList();
-            }
-
-            return allClients;
+            return await _authService.GetDevicesForUserAsync(userId, isAdmin);
         }
 
         [HttpGet("{id}")]
@@ -74,16 +70,11 @@ namespace SCRM.Controllers.Auth
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name;
             var isAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
 
-            var client = await _context.GetSrClient(id);
+            var client = await _authService.GetDeviceAsync(id, userId, isAdmin);
 
             if (client == null)
             {
                 return NotFound();
-            }
-
-            if (!isAdmin && client.OwnerId != null && client.OwnerId != userId)
-            {
-                return Forbid();
             }
 
             return client;

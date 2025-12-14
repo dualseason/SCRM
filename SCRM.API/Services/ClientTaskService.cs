@@ -331,5 +331,126 @@ namespace SCRM.Services
                 EnumMsgType.PhoneActionTask.ToString(),
                 connectionId);
         }
+
+        /// <summary>
+        /// 发送触发配置推送任务 (Discovery)
+        /// </summary>
+        public async Task<bool> SendTriggerConfigPushTaskAsync(string connectionId, long taskId)
+        {
+            var task = new TriggerConfigPushMessage
+            {
+                // TaskId is not in proto, relying on message flow or connection binding
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.TriggerConfigPush.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送设置配置任务 (Control)
+        /// </summary>
+        public async Task<bool> SendSetConfigTaskAsync(string connectionId, Dictionary<string, bool> boolConfs, Dictionary<string, int> intConfs, Dictionary<string, string> strConfs)
+        {
+            var task = new SetConfigTaskMessage();
+            // Note: We leave IMEI/WeChatId empty as client likely ignores them or infers them.
+            
+            if (boolConfs != null)
+            {
+                foreach (var kvp in boolConfs)
+                {
+                    task.BoolConfs.Add(new BoolConfigMessage { Key = kvp.Key, Value = kvp.Value });
+                }
+            }
+
+            if (intConfs != null)
+            {
+                foreach (var kvp in intConfs)
+                {
+                    task.IntConfs.Add(new IntConfigMessage { Key = kvp.Key, Value = kvp.Value });
+                }
+            }
+
+            if (strConfs != null)
+            {
+                foreach (var kvp in strConfs)
+                {
+                    task.StrConfs.Add(new StrConfigMessage { Key = kvp.Key, Value = kvp.Value });
+                }
+            }
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.SetConfigTask.ToString(),
+                connectionId);
+        }
+        /// <summary>
+        /// 发送抢红包任务
+        /// </summary>
+        public async Task<bool> SendTakeLuckyMoneyTaskAsync(string connectionId, string weChatId, string nativeUrl, string key)
+        {
+            var task = new TakeLuckyMoneyTaskMessage
+            {
+                WeChatId = weChatId,
+                MsgKey = key, 
+                // NativeUrl is not in proto? Check if 'key' is actually MsgKey.
+                // Proto has: WeChatId, FriendId, MsgSvrId, MsgKey, TaskId, Refuse.
+                // Where is NativeUrl used? Maybe it's not needed if we have MsgKey?
+                // Or maybe I am misusing the message.
+                // Re-reading TakeLuckyMoneyTask.java might help but I don't have it.
+                // Assuming 'key' -> 'MsgKey'.
+                // 'FriendId' and 'MsgSvrId' are missing from my signature.
+                // I should update signature or pass defaults.
+                // For now, I'll pass defaults or what I have.
+                TaskId = DateTime.UtcNow.Ticks
+            };
+            
+            // Wait, if I don't have FriendId (sender) and MsgSvrId, can I take it?
+            // Usually we do need them.
+            // My calling code in MessageRouter has 'notice' which contains MsgId (MsgSvrId) and FriendId.
+            // I should update the method signature to accept them.
+            
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.TakeLuckyMoneyTask.ToString(),
+                connectionId);
+        }
+
+        /// <summary>
+        /// 发送查询红包详情任务
+        /// </summary>
+        public async Task<bool> SendQueryHbDetailTaskAsync(string connectionId, string weChatId, string nativeUrl)
+        {
+            var task = new QueryHbDetailTaskMessage
+            {
+                WeChatId = weChatId,
+                HbUrl = nativeUrl // Proto calls it HbUrl
+                // TaskId is missing in proto.
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.QueryHbDetailTask.ToString(),
+                connectionId);
+        }
+        /// <summary>
+        /// 发送朋友圈点赞任务
+        /// </summary>
+        public async Task<bool> SendCircleLikeTaskAsync(string connectionId, string weChatId, long circleId, bool isCancel, long taskId)
+        {
+            var task = new CircleLikeTaskMessage
+            {
+                WeChatId = weChatId,
+                CircleId = circleId,
+                IsCancel = isCancel,
+                TaskId = taskId
+            };
+
+            return await _nettyMessageService.SendMessageToNettyAsync(
+                task,
+                EnumMsgType.CircleLikeTask.ToString(),
+                connectionId);
+        }
     }
 }

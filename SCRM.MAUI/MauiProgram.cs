@@ -39,6 +39,44 @@ namespace SCRM.MAUI
                 builder.Services.AddScoped<WeChatService>();
                 builder.Services.AddScoped<CrmStore>();
 
+                // Register IndexedDB
+                builder.Services.AddIndexedDB(dbStore =>
+                {
+                    dbStore.DbName = "SCRM_Client_DB";
+                    dbStore.Version = 1;
+
+                    // Contact Store
+                    dbStore.Stores.Add(new StoreSchema
+                    {
+                        Name = "Contacts",
+                        PrimaryKey = new IndexSpec { Name = "id", KeyPath = "id", Auto = false },
+                        Indexes = new List<IndexSpec>
+                        {
+                            new IndexSpec { Name = "wxid", KeyPath = "wxid", Auto = false },
+                            new IndexSpec { Name = "wechatAccountId", KeyPath = "wechatAccountId", Auto = false }
+                        }
+                    });
+
+                    // Message Store
+                    dbStore.Stores.Add(new StoreSchema
+                    {
+                        Name = "Messages",
+                        PrimaryKey = new IndexSpec { Name = "messageId", KeyPath = "messageId", Auto = false },
+                        Indexes = new List<IndexSpec>
+                        {
+                            new IndexSpec { Name = "conversationId", KeyPath = "conversationId", Auto = false },
+                            new IndexSpec { Name = "accountId", KeyPath = "accountId", Auto = false },
+                            new IndexSpec { Name = "senderWxid", KeyPath = "senderWxid", Auto = false },
+                            new IndexSpec { Name = "receiverWxid", KeyPath = "receiverWxid", Auto = false }
+                        }
+                    });
+                });
+
+                builder.Services.AddMemoryCache(); // Ensure MemoryCache is available
+                builder.Services.AddMemoryCache(); // Ensure MemoryCache is available
+                builder.Services.AddScoped<SCRM.UI.Services.Data.ClientDbContext>();
+                builder.Services.AddScoped<SCRM.UI.Services.Data.IClientDbContext>(sp => sp.GetRequiredService<SCRM.UI.Services.Data.ClientDbContext>());
+
                 return builder.Build();
             }
             catch (Exception ex)

@@ -313,6 +313,100 @@ namespace SCRM.Services
 
         public ClaimsPrincipal? ValidateTransportToken(string token) => ValidateToken(token);
 
+        #region Device Management (Consolidated)
+
+        public async Task<List<SrClient>> GetDevicesForUserAsync(string userId, bool isAdmin)
+        {
+            IQueryable<SrClient> query = _context.SrClients;
+
+            if (!isAdmin && !string.IsNullOrEmpty(userId))
+            {
+                query = query.Where(c => c.OwnerId == userId || c.OwnerId == null);
+            }
+
+            // Join with WechatAccounts to populate enrichments
+            var clientData = await query
+                .GroupJoin(_context.WechatAccounts.Where(w => !w.IsDeleted),
+                    client => client.uuid,
+                    account => account.ClientUuid,
+                    (client, accounts) => new { Client = client, Accounts = accounts })
+                .SelectMany(
+                    x => x.Accounts.DefaultIfEmpty(),
+                    (x, account) => new { x.Client, Account = account })
+                .ToListAsync();
+
+            var result = new List<SrClient>();
+
+            foreach (var item in clientData)
+            {
+                var client = item.Client;
+                var account = item.Account;
+
+                if (account != null)
+                {
+                    client.WeChatId = account.Wxid;
+                    client.WeChatNick = account.Nickname;
+                    client.WechatAccountId = account.AccountId;
+
+                    var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(client.uuid);
+                    if (!string.IsNullOrEmpty(connectionId))
+                    {
+                        client.ConnectionId = connectionId;
+                        client.isOnline = true;
+                    }
+                    else
+                    {
+                        client.ConnectionId = null;
+                        client.isOnline = false;
+                    }
+                }
+
+                if (!result.Any(r => r.uuid == client.uuid))
+                {
+                    result.Add(client);
+                }
+            }
+
+            return result;
+        }
+
+        public async Task<SrClient?> GetDeviceAsync(string deviceUuid, string userId, bool isAdmin)
+        {
+            var client = await _context.SrClients.FirstOrDefaultAsync(c => c.uuid == deviceUuid);
+            if (client == null) return null;
+
+            if (!isAdmin && client.OwnerId != null && client.OwnerId != userId)
+            {
+                // Forbidden
+                return null;
+            }
+
+            // Enrich
+            var account = await _context.WechatAccounts.FirstOrDefaultAsync(w => w.ClientUuid == deviceUuid && !w.IsDeleted);
+            if (account != null)
+            {
+                client.WeChatId = account.Wxid;
+                client.WeChatNick = account.Nickname;
+                client.WechatAccountId = account.AccountId;
+
+                var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
+                if (!string.IsNullOrEmpty(connectionId))
+                {
+                    client.ConnectionId = connectionId;
+                    client.isOnline = true;
+                }
+                else
+                {
+                    client.ConnectionId = null;
+                    client.isOnline = false;
+                }
+            }
+
+            return client;
+        }
+
+        #endregion
+
         #endregion
 
         #region Permission & Role Cache Logic (From PermissionService)

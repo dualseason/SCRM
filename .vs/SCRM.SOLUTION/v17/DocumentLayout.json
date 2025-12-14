@@ -3,36 +3,64 @@
   "WorkspaceRootPath": "E:\\fan\\work\\code\\vs\\SCRM\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\nettymessageservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\nettymessageservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\clienttaskservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\clienttaskservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\hubs\\clienthub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\hubs\\clienthub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\netty\\messagerouter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\netty\\messagerouter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.ui\\services\\wechatservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\services\\wechatservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.ui\\components\\dialogs\\devicecontroldialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
-      "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\components\\dialogs\\devicecontroldialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
+      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.ui\\components\\pages\\chat.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
       "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\components\\pages\\chat.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
+      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\data\\applicationdbcontext.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\data\\dbhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\data\\dbhelper.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.ui\\services\\wechatservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\services\\wechatservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
       "AbsoluteMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.ui\\services\\crmstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\services\\crmstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\netty\\messagerouter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\netty\\messagerouter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\events\\eventforwardingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\events\\eventforwardingservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{1D844E0F-4445-43EC-89C7-FA5B80EE809B}|SCRM.WEB\\SCRM.WEB.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{1D844E0F-4445-43EC-89C7-FA5B80EE809B}|SCRM.WEB\\SCRM.WEB.csproj|solutionrelative:scrm.web\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\events\\eventbus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\events\\eventbus.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4273004-9C1D-47C8-9993-9F3C6D189839}|SCRM.SHARED\\SCRM.SHARED.shproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.shared\\models\\entities\\srclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4273004-9C1D-47C8-9993-9F3C6D189839}|SCRM.SHARED\\SCRM.SHARED.shproj|solutionrelative:scrm.shared\\models\\entities\\srclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\nettymessageservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\nettymessageservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\hubs\\clienthub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\hubs\\clienthub.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.ui\\components\\dialogs\\devicecontroldialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}",
+      "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\components\\dialogs\\devicecontroldialog.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\data\\seeddata.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -59,20 +87,8 @@
       "RelativeMoniker": "D:0:0:{A7A5BEAC-B68D-434B-B4D5-5305A530B794}|SCRM.UI\\SCRM.UI.csproj|solutionrelative:scrm.ui\\components\\pages\\login.razor||{40D31677-CBC0-4297-A9EF-89D907823A98}"
     },
     {
-      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\data\\globlecache.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\data\\globlecache.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\services\\data\\applicationdbcontextextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|solutionrelative:scrm.api\\services\\data\\applicationdbcontextextensions.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{E4273004-9C1D-47C8-9993-9F3C6D189839}|SCRM.SHARED\\SCRM.SHARED.shproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.shared\\models\\entities\\wechataccount.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
       "RelativeMoniker": "D:0:0:{E4273004-9C1D-47C8-9993-9F3C6D189839}|SCRM.SHARED\\SCRM.SHARED.shproj|solutionrelative:scrm.shared\\models\\entities\\wechataccount.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
-      "AbsoluteMoniker": "D:0:0:{E4273004-9C1D-47C8-9993-9F3C6D189839}|SCRM.SHARED\\SCRM.SHARED.shproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.shared\\models\\entities\\srclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{E4273004-9C1D-47C8-9993-9F3C6D189839}|SCRM.SHARED\\SCRM.SHARED.shproj|solutionrelative:scrm.shared\\models\\entities\\srclient.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{92A87391-7505-4B81-9988-7564761007E4}|SCRM.API\\SCRM.API.csproj|e:\\fan\\work\\code\\vs\\scrm\\scrm.api\\core\\repository\\baserepository.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -94,76 +110,47 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 0,
+          "SelectedChildIndex": 8,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 0,
-              "Title": "NettyMessageService.cs",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\NettyMessageService.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Services\\NettyMessageService.cs",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\NettyMessageService.cs",
-              "RelativeToolTip": "SCRM.API\\Services\\NettyMessageService.cs",
-              "ViewState": "AgIAAEEAAAAAAAAAAAAAwFsAAABSAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T11:22:43.152Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 3,
-              "Title": "WeChatService.cs",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Services\\WeChatService.cs",
-              "RelativeDocumentMoniker": "SCRM.UI\\Services\\WeChatService.cs",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Services\\WeChatService.cs",
-              "RelativeToolTip": "SCRM.UI\\Services\\WeChatService.cs",
-              "ViewState": "AgIAALgAAAAAAAAAAAAiwNsAAABQAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T08:44:00.009Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 4,
+              "DocumentIndex": 14,
               "Title": "DeviceControlDialog.razor",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Dialogs\\DeviceControlDialog.razor",
               "RelativeDocumentMoniker": "SCRM.UI\\Components\\Dialogs\\DeviceControlDialog.razor",
               "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Dialogs\\DeviceControlDialog.razor",
               "RelativeToolTip": "SCRM.UI\\Components\\Dialogs\\DeviceControlDialog.razor",
-              "ViewState": "AgIAABMAAAAAAAAAAADwvzsAAAA3AAAAAAAAAA==",
+              "ViewState": "AgIAABMAAAAAAAAAAADwv3AAAABEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-12-09T11:21:29.223Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-09T11:21:29.223Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 6,
+              "DocumentIndex": 7,
               "Title": "CrmStore.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Services\\CrmStore.cs",
               "RelativeDocumentMoniker": "SCRM.UI\\Services\\CrmStore.cs",
               "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Services\\CrmStore.cs",
               "RelativeToolTip": "SCRM.UI\\Services\\CrmStore.cs",
-              "ViewState": "AgIAAJEAAAAAAAAAAAAAAK4AAAAWAAAAAAAAAA==",
+              "ViewState": "AgIAAMwBAAAAAAAAAAAkwNoBAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T08:44:46.516Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-09T08:44:46.516Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 2,
+              "DocumentIndex": 13,
               "Title": "ClientHub.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Hubs\\ClientHub.cs",
               "RelativeDocumentMoniker": "SCRM.API\\Hubs\\ClientHub.cs",
               "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Hubs\\ClientHub.cs",
               "RelativeToolTip": "SCRM.API\\Hubs\\ClientHub.cs",
-              "ViewState": "AgIAALIAAAAAAAAAAIAwwNMAAABEAAAAAAAAAA==",
+              "ViewState": "AgIAAKQAAAAAAAAAAIAwwM0AAABEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-09T08:37:45.711Z",
-              "EditorCaption": ""
+              "WhenOpened": "2025-12-09T08:37:45.711Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 9,
+              "DocumentIndex": 16,
               "Title": "AuthService.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\AuthService.cs",
               "RelativeDocumentMoniker": "SCRM.API\\Services\\AuthService.cs",
@@ -175,7 +162,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 11,
+              "DocumentIndex": 18,
               "Title": "launchSettings.json",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Properties\\launchSettings.json",
               "RelativeDocumentMoniker": "SCRM.API\\Properties\\launchSettings.json",
@@ -187,7 +174,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 12,
+              "DocumentIndex": 19,
               "Title": "SCRM.API",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\SCRM.API.csproj",
               "RelativeDocumentMoniker": "SCRM.API\\SCRM.API.csproj",
@@ -198,7 +185,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 10,
+              "DocumentIndex": 17,
               "Title": "appsettings.json",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\appsettings.json",
               "RelativeDocumentMoniker": "SCRM.API\\appsettings.json",
@@ -210,31 +197,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 14,
-              "Title": "GlobleCache.cs",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\GlobleCache.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Services\\Data\\GlobleCache.cs",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\GlobleCache.cs",
-              "RelativeToolTip": "SCRM.API\\Services\\Data\\GlobleCache.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAADwvxcAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-07T21:58:29.594Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 15,
-              "Title": "ApplicationDbContextExtensions.cs",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\ApplicationDbContextExtensions.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Services\\Data\\ApplicationDbContextExtensions.cs",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\ApplicationDbContextExtensions.cs",
-              "RelativeToolTip": "SCRM.API\\Services\\Data\\ApplicationDbContextExtensions.cs",
-              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-07T21:58:24.168Z"
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 16,
+              "DocumentIndex": 21,
               "Title": "WechatAccount.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.SHARED\\Models\\Entities\\WechatAccount.cs",
               "RelativeDocumentMoniker": "SCRM.SHARED\\Models\\Entities\\WechatAccount.cs",
@@ -246,31 +209,92 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 17,
+              "DocumentIndex": 0,
+              "Title": "ClientTaskService.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\ClientTaskService.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\ClientTaskService.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\ClientTaskService.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\ClientTaskService.cs",
+              "ViewState": "AgIAADEBAAAAAAAAAAAhwFQBAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-06T08:10:50.968Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "WeChatService.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Services\\WeChatService.cs",
+              "RelativeDocumentMoniker": "SCRM.UI\\Services\\WeChatService.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Services\\WeChatService.cs",
+              "RelativeToolTip": "SCRM.UI\\Services\\WeChatService.cs",
+              "ViewState": "AgIAAHIAAAAAAAAAAAAYwJ0AAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-09T08:44:00.009Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "EventForwardingService.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Events\\EventForwardingService.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\Events\\EventForwardingService.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Events\\EventForwardingService.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\Events\\EventForwardingService.cs",
+              "ViewState": "AgIAABwAAAAAAAAAAAASwE4AAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-11T14:01:15.462Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 10,
+              "Title": "EventBus.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Events\\EventBus.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\Events\\EventBus.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Events\\EventBus.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\Events\\EventBus.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAQwA4AAAAhAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-11T14:01:16.398Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "Program.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Program.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Program.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Program.cs",
+              "RelativeToolTip": "SCRM.API\\Program.cs",
+              "ViewState": "AgIAAB0BAAAAAAAAAAAjwEEBAABIAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-11T23:08:12.482Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 11,
               "Title": "SrClient.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.SHARED\\Models\\Entities\\SrClient.cs",
               "RelativeDocumentMoniker": "SCRM.SHARED\\Models\\Entities\\SrClient.cs",
               "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.SHARED\\Models\\Entities\\SrClient.cs",
               "RelativeToolTip": "SCRM.SHARED\\Models\\Entities\\SrClient.cs",
-              "ViewState": "AgIAAAYAAAAAAAAAAADwvxMAAAAnAAAAAAAAAA==",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-07T21:56:27.618Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 7,
+              "DocumentIndex": 1,
               "Title": "MessageRouter.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Netty\\MessageRouter.cs",
               "RelativeDocumentMoniker": "SCRM.API\\Services\\Netty\\MessageRouter.cs",
               "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Netty\\MessageRouter.cs",
               "RelativeToolTip": "SCRM.API\\Services\\Netty\\MessageRouter.cs",
-              "ViewState": "AgIAAPECAAAAAAAAAAAhwCcDAAAoAAAAAAAAAA==",
+              "ViewState": "AgIAAP4AAAAAAAAAAAAhwCUBAABqAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2025-12-07T19:58:51.417Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 18,
+              "DocumentIndex": 22,
               "Title": "BaseRepository.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Core\\Repository\\BaseRepository.cs",
               "RelativeDocumentMoniker": "SCRM.API\\Core\\Repository\\BaseRepository.cs",
@@ -282,7 +306,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 19,
+              "DocumentIndex": 23,
               "Title": "BaseApiController.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Core\\Controllers\\BaseApiController.cs",
               "RelativeDocumentMoniker": "SCRM.API\\Core\\Controllers\\BaseApiController.cs",
@@ -294,20 +318,67 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 1,
-              "Title": "ClientTaskService.cs",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\ClientTaskService.cs",
-              "RelativeDocumentMoniker": "SCRM.API\\Services\\ClientTaskService.cs",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\ClientTaskService.cs",
-              "RelativeToolTip": "SCRM.API\\Services\\ClientTaskService.cs",
-              "ViewState": "AgIAABYBAAAAAAAAAAAAwDcBAABFAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2025-12-06T08:10:50.968Z",
-              "EditorCaption": ""
+              "DocumentIndex": 3,
+              "Title": "Chat.razor",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Chat.razor",
+              "RelativeDocumentMoniker": "SCRM.UI\\Components\\Pages\\Chat.razor",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Chat.razor",
+              "RelativeToolTip": "SCRM.UI\\Components\\Pages\\Chat.razor",
+              "ViewState": "AgIAAEsAAAAAAAAAAAAywHgAAAASAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
+              "WhenOpened": "2025-12-07T11:55:45.085Z"
             },
             {
               "$type": "Document",
-              "DocumentIndex": 8,
+              "DocumentIndex": 9,
+              "Title": "Program.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.WEB\\Program.cs",
+              "RelativeDocumentMoniker": "SCRM.WEB\\Program.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.WEB\\Program.cs",
+              "RelativeToolTip": "SCRM.WEB\\Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAABoAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-12T01:35:12.084Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "DbHelper.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\DbHelper.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\Data\\DbHelper.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\DbHelper.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\Data\\DbHelper.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-13T17:57:06.706Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "ApplicationDbContext.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\Data\\ApplicationDbContext.cs",
+              "ViewState": "AgIAADcAAAAAAAAAAAA7wE0AAABSAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-13T17:57:26.433Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 12,
+              "Title": "NettyMessageService.cs",
+              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\NettyMessageService.cs",
+              "RelativeDocumentMoniker": "SCRM.API\\Services\\NettyMessageService.cs",
+              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Services\\NettyMessageService.cs",
+              "RelativeToolTip": "SCRM.API\\Services\\NettyMessageService.cs",
+              "ViewState": "AgIAAEEAAAAAAAAAAAAAwFsAAABSAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-12-09T11:22:43.152Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 15,
               "Title": "SeedData.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Data\\SeedData.cs",
               "RelativeDocumentMoniker": "SCRM.API\\Data\\SeedData.cs",
@@ -319,20 +390,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 5,
-              "Title": "Chat.razor",
-              "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Chat.razor",
-              "RelativeDocumentMoniker": "SCRM.UI\\Components\\Pages\\Chat.razor",
-              "ToolTip": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Chat.razor",
-              "RelativeToolTip": "SCRM.UI\\Components\\Pages\\Chat.razor",
-              "ViewState": "AgIAALsAAAAAAAAAAAAAAC0AAAAgAAAAAAAAAA==",
-              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000759|",
-              "WhenOpened": "2025-12-07T11:55:45.085Z",
-              "EditorCaption": ""
-            },
-            {
-              "$type": "Document",
-              "DocumentIndex": 13,
+              "DocumentIndex": 20,
               "Title": "Login.razor",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.UI\\Components\\Pages\\Login.razor",
               "RelativeDocumentMoniker": "SCRM.UI\\Components\\Pages\\Login.razor",
@@ -344,7 +402,7 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 20,
+              "DocumentIndex": 24,
               "Title": "AuthController.cs",
               "DocumentMoniker": "E:\\fan\\work\\code\\vs\\SCRM\\SCRM.API\\Controllers\\Auth\\AuthController.cs",
               "RelativeDocumentMoniker": "SCRM.API\\Controllers\\Auth\\AuthController.cs",

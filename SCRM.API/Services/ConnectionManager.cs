@@ -16,6 +16,8 @@ namespace SCRM.Services
         private readonly ConcurrentDictionary<string, UserConnectionInfo> _connections = new ConcurrentDictionary<string, UserConnectionInfo>();
         private readonly ConcurrentDictionary<string, HashSet<string>> _userConnections = new ConcurrentDictionary<string, HashSet<string>>();
         private readonly ConcurrentDictionary<string, HashSet<string>> _deviceTypeConnections = new ConcurrentDictionary<string, HashSet<string>>();
+        // Add index for DeviceUuid -> ConnectionId (Assuming 1-to-1 active connection per device UUID)
+        private readonly ConcurrentDictionary<string, string> _deviceUuidConnections = new ConcurrentDictionary<string, string>();
         private readonly ConcurrentDictionary<string, IChannel> _activeChannels = new ConcurrentDictionary<string, IChannel>();
 
         public ConnectionManager(ILogger<ConnectionManager> logger)
@@ -31,6 +33,7 @@ namespace SCRM.Services
                 ConnectionId = connectionId,
                 DeviceType = deviceType,
                 DeviceInfo = deviceInfo,
+                DeviceUuid = deviceInfo, // In MessageRouter, we pass UUID as deviceInfo
                 ConnectedAt = DateTime.UtcNow,
                 LastActivityAt = DateTime.UtcNow
             };
@@ -50,6 +53,12 @@ namespace SCRM.Services
             lock (deviceConns)
             {
                 deviceConns.Add(connectionId);
+            }
+
+            // 添加到设备UUID映射
+            if (!string.IsNullOrEmpty(deviceInfo))
+            {
+                _deviceUuidConnections.AddOrUpdate(deviceInfo, connectionId, (key, oldVal) => connectionId);
             }
 
             _logger.LogInformation("连接已添加 - 用户ID: {UserId}, 连接ID: {ConnectionId}, 设备类型: {DeviceType}",
@@ -85,6 +94,16 @@ namespace SCRM.Services
                         {
                             _deviceTypeConnections.TryRemove(connectionInfo.DeviceType, out _);
                         }
+                    }
+                }
+
+                // 从设备UUID映射中移除
+                if (!string.IsNullOrEmpty(connectionInfo.DeviceUuid))
+                {
+                    // Only remove if it points to THIS connectionId (handle race conditions)
+                    if (_deviceUuidConnections.TryGetValue(connectionInfo.DeviceUuid, out var currentConnId) && currentConnId == connectionId)
+                    {
+                        _deviceUuidConnections.TryRemove(connectionInfo.DeviceUuid, out _);
                     }
                 }
 
@@ -165,6 +184,15 @@ namespace SCRM.Services
         {
             _connections.TryGetValue(connectionId, out var connection);
             return Task.FromResult(connection);
+        }
+
+        public Task<string?> GetConnectionIdByDeviceUuidAsync(string deviceUuid)
+        {
+            if (_deviceUuidConnections.TryGetValue(deviceUuid, out var connectionId))
+            {
+                return Task.FromResult<string?>(connectionId);
+            }
+            return Task.FromResult<string?>(null);
         }
 
         public Task<bool> UpdateConnectionActivityAsync(string connectionId)

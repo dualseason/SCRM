@@ -8,7 +8,7 @@ namespace SCRM.API.Models.Entities
     /// 微信账号信息表
     /// </summary>
     [Table("wechat_accounts")]
-    public class WechatAccount
+    public class WechatAccount : ICacheable<WechatAccount>
     {
         /// <summary>账号ID</summary>
         [Key]
@@ -118,5 +118,36 @@ namespace SCRM.API.Models.Entities
         {
             get { return VipExpiryDate.HasValue && VipExpiryDate.Value > DateTime.UtcNow; }
         }
+
+        public string GetId() => AccountId.ToString();
+
+        public WechatAccount CopyFrom(WechatAccount other)
+        {
+            this.OwnerId = other.OwnerId;
+            this.Wxid = other.Wxid;
+            this.WechatNumber = other.WechatNumber;
+            this.ClientUuid = other.ClientUuid;
+            this.Nickname = other.Nickname;
+            this.MobilePhone = other.MobilePhone;
+            this.Gender = other.Gender;
+            this.AvatarUrl = other.AvatarUrl;
+            this.Signature = other.Signature;
+            this.QrCodeUrl = other.QrCodeUrl;
+            this.Region = other.Region;
+            this.AccountStatus = other.AccountStatus;
+            this.LastOnlineAt = other.LastOnlineAt;
+            this.IsDeleted = other.IsDeleted;
+            this.UpdatedAt = DateTime.UtcNow;
+            this.DeletedAt = other.DeletedAt;
+            this.VipExpiryDate = other.VipExpiryDate;
+            this.Settings = other.Settings;
+            return this;
+        }
+
+        /// <summary>
+        /// 扩展设置（JSON格式，存储AutoAcceptLuckyMoney等配置）
+        /// </summary>
+        [Column("settings")]
+        public string? Settings { get; set; }
     }
 }

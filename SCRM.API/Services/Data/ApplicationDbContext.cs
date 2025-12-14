@@ -21,7 +21,6 @@ namespace SCRM.Services.Data
         public DbSet<RolePermission> RolePermissions { get; set; }
 
         // ==================== 一、设备与账号管理 ====================
-        public DbSet<Device> Devices { get; set; }
         public DbSet<DeviceAuthorization> DeviceAuthorizations { get; set; }
         public DbSet<DeviceHeartbeat> DeviceHeartbeats { get; set; }
         public DbSet<DeviceVersionLog> DeviceVersionLogs { get; set; }
@@ -183,16 +182,6 @@ namespace SCRM.Services.Data
                 entity.HasKey(e => e.AccountId);
                 entity.HasIndex(e => e.Wxid).IsUnique();
                 entity.HasIndex(e => e.AccountStatus);
-                entity.HasIndex(e => e.IsDeleted);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-            });
-
-            // 配置 Device
-            modelBuilder.Entity<Device>(entity =>
-            {
-                entity.ToTable("devices");
-                entity.HasKey(e => e.DeviceId);
                 entity.HasIndex(e => e.IsDeleted);
                 entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
