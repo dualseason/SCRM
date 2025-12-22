@@ -31,6 +31,8 @@ namespace SCRM.API.Models.Entities
         [ForeignKey("OwnerId")]
         public virtual ApplicationUser? Owner { get; set; }
 
+
+
         /// <summary>
         /// SignalR Connection ID (Persisted for targeting)
         /// </summary>
@@ -41,6 +43,12 @@ namespace SCRM.API.Models.Entities
 
         [NotMapped]
         public string? WeChatNick { get; set; }
+
+        [NotMapped]
+        public string? WeChatAvatar { get; set; }
+
+        [NotMapped]
+        public string? WechatNumber { get; set; }
 
         [NotMapped]
         public long? WechatAccountId { get; set; }

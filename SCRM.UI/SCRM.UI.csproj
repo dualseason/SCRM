@@ -4,6 +4,9 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <DisableStaticWebAssetsCompression>true</DisableStaticWebAssetsCompression>
+    <EnableCompressedStaticWebAssets>false</EnableCompressedStaticWebAssets>
+    <ErrorOnDuplicatePublishAssets>false</ErrorOnDuplicatePublishAssets>
   </PropertyGroup>
 
 
@@ -12,6 +15,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="AntDesign" Version="1.5.0" />
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="Google.Protobuf" Version="3.33.1" />
     <PackageReference Include="Grpc.Tools" Version="2.76.0">
@@ -20,11 +24,18 @@
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.11" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="10.0.0" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="9.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Identity.Stores" Version="9.0.0" />
     <PackageReference Include="Radzen.Blazor" Version="8.3.5" />
     <PackageReference Include="TG.Blazor.IndexedDB" Version="1.5.0-preview" />
   </ItemGroup>
 
   <Import Project="..\SCRM.SHARED\SCRM.SHARED.projitems" Label="Shared" />
+
+  <Target Name="SuppressDiscoverPrecompressedAssets" BeforeTargets="DiscoverPrecompressedAssets">
+    <ItemGroup>
+      <_PrecompressedStaticWebAsset Remove="@(_PrecompressedStaticWebAsset)" />
+    </ItemGroup>
+  </Target>
 </Project>

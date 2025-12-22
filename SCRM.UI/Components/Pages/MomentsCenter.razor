@@ -1,0 +1,79 @@
+@page "/moments"
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Components.Shared
+@using AntDesign
+@inject CrmStore Store
+@inject NavigationManager NavManager
+@implements IDisposable
+
+<PageTitle>Moments Center</PageTitle>
+
+<style>
+    .moments-layout { height: 100vh; overflow: hidden; }
+    .device-sider { background: #2e2e2e; }
+    .feed-content { background: #f0f2f5; padding: 20px; overflow-y: auto; height: 100vh; }
+    .feed-container { max-width: 600px; margin: 0 auto; }
+</style>
+
+<Layout Class="moments-layout">
+    <Sider Width="80" Class="device-sider" Theme="SiderTheme.Dark">
+        <DeviceList OnDeviceSelected="OnDeviceSelected" />
+    </Sider>
+
+    <Content Class="feed-content">
+        <div class="feed-container">
+            @if (Store.SelectedDevice == null)
+            {
+                 <Empty Description="@("Select a Device to view Moments")" />
+            }
+            else
+            {
+                <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+                    <Title Level="4">@Store.SelectedDevice.WeChatNick's Moments</Title>
+                    <Button Type="@AntDesign.ButtonType.Primary" OnClick="SyncMoments">Sync Moments</Button>
+                </div>
+
+                @if (Store.CurrentMoments.Count == 0)
+                {
+                    <Empty Description="@("No moments loaded")" />
+                }
+                else
+                {
+                    @foreach (var moment in Store.CurrentMoments)
+                    {
+                         <MomentsFeedItem Moment="@moment" />
+                    }
+                }
+            }
+        </div>
+    </Content>
+</Layout>
+
+@code {
+    protected override void OnInitialized()
+    {
+        Store.OnChange += HandleStoreChange;
+    }
+    
+    public void Dispose()
+    {
+        Store.OnChange -= HandleStoreChange;
+    }
+
+    private void HandleStoreChange()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnDeviceSelected(SrClient device)
+    {
+        await Store.SelectDeviceAsync(device);
+        await Store.LoadMomentsAsync();
+    }
+
+    private async Task SyncMoments()
+    {
+        await Store.RequestMomentsSyncAsync();
+    }
+}

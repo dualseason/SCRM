@@ -1,0 +1,94 @@
+@page "/contacts"
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models
+@using SCRM.SHARED.Models.Dtos
+@using AntDesign
+@inject CrmStore Store
+@inject NavigationManager NavManager
+@inject INotificationService NoticeService
+@implements IDisposable
+
+<PageTitle>Contacts</PageTitle>
+
+@if(Store.SelectedDevice == null) {
+    <Result Status="@AntDesign.ResultStatus.Error" Title="No Device Selected" SubTitle="Please select a device first.">
+        <Extra>
+            <Button Type="@AntDesign.ButtonType.Primary" OnClick="@(()=>NavManager.NavigateTo("/devices"))">Go to Devices</Button>
+        </Extra>
+    </Result>
+} else {
+    <Card Title="@($"Contacts for {Store.SelectedDevice.WeChatNick}")">
+         <div style="margin-bottom: 16px;">
+             <Button OnClick="Sync" Loading="@_loading">Sync Contacts</Button>
+         </div>
+         
+         <Table DataSource="@Store.Contacts" RowKey="x => x.Wxid" PageSize="10">
+             <Column @bind-Field="@context.Avatar" Title="Avatar">
+                 <Avatar Src="@context.Avatar" Icon="user" />
+             </Column>
+             <Column @bind-Field="@context.Nickname" Title="Nickname" Sortable />
+             <Column @bind-Field="@context.Remarks" Title="Remark" />
+             <Column @bind-Field="@context.Wxid" Title="Wxid" />
+             <ActionColumn Title="Action">
+                 <Button Type="@AntDesign.ButtonType.Primary" OnClick="()=>Chat(context)">Chat</Button>
+                 <Popconfirm Title="Are you sure delete this friend?" OnConfirm="()=>Delete(context)">
+                     <Button Danger>Delete</Button>
+                 </Popconfirm>
+             </ActionColumn>
+         </Table>
+    </Card>
+}
+
+@code {
+    bool _loading = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+         Store.OnChange += StateHasChanged;
+         Store.OnNotification += HandleNotification;
+         // Ensure contacts are loaded if device is selected
+         if(Store.SelectedDevice != null && !Store.Contacts.Any()) {
+             _loading = true;
+             await Store.SelectDeviceAsync(Store.SelectedDevice);
+             _loading = false;
+         }
+    }
+    
+    public void Dispose()
+    {
+        Store.OnChange -= StateHasChanged;
+        Store.OnNotification -= HandleNotification;
+    }
+    
+    private async Task Sync()
+    {
+        _loading = true;
+        await Store.SyncContactsAsync();
+        // Loading state will persist until result returns if we tracked it in Store
+        // Here we just wait for the RPC invocation
+        _loading = false;
+    }
+
+    private void Chat(Contact c)
+    {
+        _ = Store.SelectContactAsync(c);
+        NavManager.NavigateTo("/chat");
+    }
+
+    private void Delete(Contact c)
+    {
+        _ = Store.SelectContactAsync(c); // Set current for "DeleteCurrentContactAsync"
+        _ = Store.DeleteCurrentContactAsync();
+    }
+    
+    private void HandleNotification(string msg, bool success)
+    {
+        NoticeService.Open(new NotificationConfig()
+        {
+            Message = success ? "Success" : "Error",
+            Description = msg,
+            NotificationType = success ? AntDesign.NotificationType.Success : AntDesign.NotificationType.Error
+        });
+    }
+}

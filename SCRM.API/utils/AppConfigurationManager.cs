@@ -17,7 +17,9 @@ namespace SCRM.Shared.Core
         // Temporary logger for configuration loading phase
         public static readonly Logger logger = new LoggerConfiguration()
             .WriteTo.Debug(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
-            .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Console(
+                outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}",
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning)
             .CreateLogger();
 
         public static string GetAppDataPath()

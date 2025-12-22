@@ -1,0 +1,302 @@
+@page "/im"
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models
+@using SCRM.SHARED.Models.Dtos
+@using AntDesign
+@inject CrmStore Store
+@inject NavigationManager NavManager
+@inject INotificationService NoticeService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<PageTitle>SCRM Unified IM</PageTitle>
+
+<style>
+    .layout-container { height: 100%; border: none; }
+    .device-sider { background: #2e2e2e; text-align: center; padding-top: 10px; overflow-y: auto; border-right: 1px solid #141414; }
+    .contact-sider { background: #fdfdfd; border-right: 1px solid #e8e8e8; overflow-y: auto; }
+    .chat-content { background: #fff; display: flex; flex-direction: column; overflow: hidden; height: 100%; }
+    
+    .device-item { cursor: pointer; padding: 10px 0; opacity: 0.6; transition: 0.3s; }
+    .device-item:hover { opacity: 1; }
+    .device-item.active { opacity: 1; border-left: 3px solid #1890ff; background: rgba(255,255,255,0.1); }
+    
+    .contact-item { cursor: pointer; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; transition: 0.2s; display: flex; align-items: center; }
+    .contact-item:hover { background: #f5f5f5; }
+    .contact-item.active { background: #e6f7ff; }
+    
+    .chat-header { padding: 0 24px; border-bottom: 1px solid #f0f0f0; background: #fff; height: 64px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 24px; background: #f0f2f5; }
+    .chat-input { padding: 16px 24px; background: #fff; border-top: 1px solid #f0f0f0; flex-shrink: 0; }
+    
+    .msg-row { margin-bottom: 20px; display: flex; width: 100%; }
+    .msg-row.self { justify-content: flex-end; }
+    .msg-bubble { max-width: 65%; padding: 10px 16px; border-radius: 4px; position: relative; word-wrap: break-word; font-size: 14px; line-height: 1.6; }
+    .msg-row.other .msg-bubble { background: #fff; border: 1px solid #e8e8e8; border-top-left-radius: 0; }
+    .msg-row.self .msg-bubble { background: #95ec69; border: 1px solid #7cd958; border-top-right-radius: 0; }
+    
+    .msg-pending { opacity: 0.6; }
+    .msg-status-icon { font-size: 12px; margin-left: 8px; color: #faad14; }
+
+    /* Ant Design Layout Fixes */
+    .ant-layout { height: 100%; }
+</style>
+
+<Layout Class="layout-container">
+    <!-- 1. Left Sider: Devices -->
+    <Sider Width="80" Class="device-sider" Theme="SiderTheme.Dark">
+        <SCRM.UI.Components.Shared.DeviceList OnDeviceSelected="OnDeviceSelectedInternal" />
+    </Sider>
+
+    <!-- 2. Middle Sider: Contacts -->
+    <Sider Width="250" Class="contact-sider" Theme="SiderTheme.Light">
+        <div style="padding: 10px; border-bottom: 1px solid #d9d9d9;">
+            <Search Placeholder="Search Contacts..." OnSearch="OnSearchContact" EnterButton="@true" />
+        </div>
+        
+        @if (Store.SelectedDevice == null)
+        {
+            <Empty Description="@("Select a Device")" Simple />
+        }
+        else if (Store.Contacts.Count == 0)
+        {
+            <Empty Description="@("Select a Device")" Simple>
+                <Button Type="@AntDesign.ButtonType.Dashed" OnClick="SyncContacts">Sync Contacts</Button>
+            </Empty>
+        }
+        else
+        {
+            <div style="overflow-y: auto; height: calc(100% - 52px);">
+                @foreach (var contact in _filteredContacts)
+                {
+                    <div class="contact-item @(Store.SelectedContact?.Wxid == contact.Wxid ? "active" : "")" 
+                         @onclick="@(() => SelectContact(contact))">
+                        <Avatar Src="@contact.Avatar" Icon="user" />
+                        <div style="margin-left: 10px; overflow: hidden;">
+                            <div style="font-weight: 500; font-size: 14px;">@(string.IsNullOrEmpty(contact.Remarks) ? contact.Nickname : contact.Remarks)</div>
+                            <div style="font-size: 12px; color: #888;">@contact.Nickname</div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </Sider>
+
+    <!-- 3. Right Content: Chat & Features -->
+    <Content Class="chat-content">
+        @if (Store.SelectedContact == null)
+        {
+             @if (Store.SelectedDevice != null)
+             {
+                 <!-- Device Dashboard View when no contact selected -->
+                 <div style="padding: 50px; text-align: center;">
+                     <h1>@Store.SelectedDevice.WeChatNick</h1>
+                     <p>Status: @(Store.SelectedDevice.isOnline ? "Online" : "Offline")</p>
+                     <Space>
+                        <Button Type="@AntDesign.ButtonType.Primary" OnClick="CaptureScreen">Capture Screen</Button>
+                        <Button OnClick="GoToMoments">Moments</Button>
+                     </Space>
+                     
+                     @if (!string.IsNullOrEmpty(Store.LastScreenShotUrl))
+                     {
+                         <div style="margin-top: 20px; border: 1px solid #eee; padding: 10px; border-radius: 8px;">
+                             <Image Src="@Store.LastScreenShotUrl" Width="300" />
+                         </div>
+                     }
+                 </div>
+             }
+             else
+             {
+                 <Empty Description="@("Select a Device and Contact to start chatting")" />
+             }
+        }
+        else
+        {
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <span style="font-size: 16px; font-weight: 600;">
+                    @(string.IsNullOrEmpty(Store.SelectedContact.Remarks) ? Store.SelectedContact.Nickname : Store.SelectedContact.Remarks)
+                </span>
+                <Space>
+                    <Popconfirm Title="Are you sure delete this friend?" OnConfirm="DeleteFriend" OkText="Yes" CancelText="No">
+                        <Button Danger Type="@AntDesign.ButtonType.Text" Icon="delete" />
+                    </Popconfirm>
+                </Space>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chat-box">
+                @foreach (var msg in Store.CurrentMessages)
+                {
+                    <div class="msg-row @(msg.Direction == 1 ? "self" : "other") @(msg.SendStatus == 1 ? "msg-pending" : "")">
+                        @if(msg.Direction != 1) {
+                            <Avatar Src="@Store.SelectedContact.Avatar" Icon="user" Style="margin-right: 10px;" />
+                        }
+                        
+                        <div class="msg-bubble">
+                            @msg.Content
+                            @if (msg.SendStatus == 1)
+                            {
+                                <Icon Type="sync" Spin Class="msg-status-icon" />
+                            }
+                        </div>
+                        
+                        @if(msg.Direction == 1) {
+                             <Avatar Src="@Store.SelectedDevice.WeChatAvatar" Icon="user" Style="margin-left: 10px; background-color: #87d068;" />
+                        }
+                    </div>
+                }
+                <div id="scroll-anchor"></div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input">
+                <TextArea @bind-Value="_msgContent" Rows="4" Bordered="false" Placeholder="Type a message..." 
+                          OnKeyPress="HandleKeyPress" />
+                <div style="text-align: right; margin-top: 10px;">
+                    <Button Type="@AntDesign.ButtonType.Primary" OnClick="Send" Loading="@_sending">Send</Button>
+                </div>
+            </div>
+        }
+    </Content>
+</Layout>
+
+@code {
+    private string _msgContent = "";
+    private string _searchText = "";
+    private bool _sending = false;
+    private List<Contact> _filteredContacts => string.IsNullOrWhiteSpace(_searchText) 
+        ? Store.Contacts 
+        : Store.Contacts.Where(c => (c.Nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) 
+                                 || (c.Remarks?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += HandleStoreChange;
+        Store.OnNotification += HandleStoreNotification;
+        
+        await Store.InitializeAsync();
+        
+        // Auto-select first device if available
+        if (Store.SelectedDevice == null && Store.Devices.Count > 0)
+        {
+            await SelectDevice(Store.Devices.First());
+        }
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleStoreChange;
+        Store.OnNotification -= HandleStoreNotification;
+    }
+    
+    private void HandleStoreChange()
+    {
+        InvokeAsync(async () => {
+            StateHasChanged();
+            await ScrollToBottom();
+        });
+    }
+    
+    private void HandleStoreNotification(string msg, bool success)
+    {
+        InvokeAsync(() => HandleNotification(msg, success));
+    }
+
+    private async Task OnDeviceSelectedInternal(SrClient device)
+    {
+        await SelectDevice(device);
+    }
+
+    private async Task SelectDevice(SrClient device)
+    {
+        await Store.SelectDeviceAsync(device);
+    }
+
+    private async Task SelectContact(Contact contact)
+    {
+        await Store.SelectContactAsync(contact);
+        // todo: scroll to bottom
+    }
+
+    private async Task RefreshDevices()
+    {
+        await Store.LoadDevicesAsync();
+        NoticeService.Open(new NotificationConfig { Message = "Refreshed", NotificationType = NotificationType.Success });
+    }
+
+    private async Task SyncContacts()
+    {
+        if (Store.SelectedDevice == null) return;
+        await Store.SyncContactsAsync();
+        NoticeService.Open(new NotificationConfig { Message = "Sync Command Sent", NotificationType = NotificationType.Info });
+    }
+
+    private void OnSearchContact()
+    {
+        StateHasChanged();
+    }
+    
+    private void GoToMoments()
+    {
+        NavManager.NavigateTo("/moments");
+    }
+
+    private async Task CaptureScreen()
+    {
+        if (Store.SelectedDevice == null) return;
+        await Store.RequestScreenShotAsync(Store.SelectedDevice.uuid);
+        NoticeService.Open(new NotificationConfig { Message = "Screenshot Requested", NotificationType = NotificationType.Info });
+    }
+
+    private async Task Send()
+    {
+        if (string.IsNullOrWhiteSpace(_msgContent) || Store.SelectedDevice == null || Store.SelectedContact == null) return;
+        
+        _sending = true;
+        var result = await Store.SendMessageAsync(_msgContent);
+        if (result)
+        {
+            _msgContent = "";
+        }
+        else
+        {
+            NoticeService.Open(new NotificationConfig { Message = "Failed to send", NotificationType = NotificationType.Error });
+        }
+        _sending = false;
+    }
+    
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.CtrlKey && e.Key == "Enter")
+        {
+            await Send();
+        }
+    }
+
+    private async Task DeleteFriend()
+    {
+        // ... (Reuse logic logic from Contacts)
+         if (Store.SelectedDevice == null || Store.SelectedContact == null) return;
+         await Store.DeleteFriendAsync(Store.SelectedContact.Wxid);
+         NoticeService.Open(new NotificationConfig { Message = "Delete Command Sent", NotificationType = NotificationType.Success });
+    }
+
+    private void HandleNotification(string msg, bool success)
+    {
+         _ = NoticeService.Open(new NotificationConfig 
+         { 
+             Message = success ? "Success" : "Error", 
+             Description = msg, 
+             NotificationType = success ? NotificationType.Success : NotificationType.Error 
+          });
+    }
+
+    private async Task ScrollToBottom()
+    {
+        try {
+            await JS.InvokeVoidAsync("eval", "const el = document.getElementById('chat-box'); if(el) el.scrollTop = el.scrollHeight;");
+        } catch {}
+    }
+}

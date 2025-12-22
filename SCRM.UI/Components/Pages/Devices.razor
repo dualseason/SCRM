@@ -1,0 +1,79 @@
+@page "/devices"
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models
+@using SCRM.SHARED.Models.Dtos
+@using AntDesign
+@inject CrmStore Store
+@inject INotificationService NoticeService
+@implements IDisposable
+
+<PageTitle>Device Management</PageTitle>
+
+<Card Title="Connected Devices">
+    <Table DataSource="@Store.Devices" RowKey="x => x.uuid" TItem="SrClient">
+        <Column @bind-Field="@context.uuid" Title="UUID" />
+        <Column @bind-Field="@context.WeChatNick" Title="WeChat Nick" />
+        <Column @bind-Field="@context.isOnline" Title="Status">
+            <Tag Color="@(context.isOnline ? "green" : "red")">
+                @(context.isOnline ? "Online" : "Offline")
+            </Tag>
+        </Column>
+        <Column @bind-Field="@context.lastLoginAt" Title="Last Seen" Format="yyyy-MM-dd HH:mm:ss" />
+        <ActionColumn Title="Action">
+            <Button Type="@AntDesign.ButtonType.Primary" OnClick="()=>SelectDevice(context)">Select</Button>
+        </ActionColumn>
+    </Table>
+</Card>
+
+@if(Store.SelectedDevice != null) {
+  <Card Title="@($"Control: {Store.SelectedDevice.WeChatNick ?? "Unknown"}")" Style="margin-top: 20px;">
+       <Space>
+           <SpaceItem>
+               <Button Type="@AntDesign.ButtonType.Primary" OnClick="Store.RequestScreenShotAsync">Capture Screen</Button>
+           </SpaceItem>
+           <SpaceItem>
+               <Button OnClick="Store.SyncContactsAsync">Sync Contacts</Button>
+           </SpaceItem>
+       </Space>
+       
+       <Divider />
+       
+       @if(!string.IsNullOrEmpty(Store.LastScreenShotUrl)) {
+           <div style="margin-top:10px;">
+               <p>Last Screenshot:</p>
+               <Image Src="@Store.LastScreenShotUrl" Width="300" />
+           </div>
+       }
+  </Card>
+}
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += async () => await InvokeAsync(StateHasChanged);
+        Store.OnNotification += async (msg, success) => await InvokeAsync(() => HandleNotification(msg, success));
+        await Store.InitializeAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= StateHasChanged;
+        Store.OnNotification -= HandleNotification;
+    }
+
+    private void SelectDevice(SrClient dev)
+    {
+        _ = Store.SelectDeviceAsync(dev);
+    }
+    
+    private void HandleNotification(string msg, bool success)
+    {
+        NoticeService.Open(new NotificationConfig()
+        {
+            Message = success ? "Success" : "Error",
+            Description = msg,
+            NotificationType = success ? AntDesign.NotificationType.Success : AntDesign.NotificationType.Error
+        });
+    }
+}

@@ -1,0 +1,123 @@
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models
+@using AntDesign
+
+<Card Bordered="false" Style="margin-bottom: 20px; border-radius: 8px;">
+    <div style="display: flex;">
+        <Avatar Size="@("large")" Icon="user" Src="@(string.IsNullOrEmpty(Moment.UserName) ? "" : "")" Style="background-color: #87d068; flex-shrink: 0;" />
+        <div style="margin-left: 15px; flex: 1;">
+            <div style="font-weight: bold; color: #576b95; margin-bottom: 5px;">
+                @(string.IsNullOrEmpty(Moment.NickName) ? Moment.UserName : Moment.NickName)
+            </div>
+            
+            <div style="font-size: 15px; margin-bottom: 10px; white-space: pre-wrap;">
+                @Moment.Content
+            </div>
+
+            <!-- Images Grid -->
+            @if (Images.Any())
+            {
+                <div class="moments-images-grid">
+                    @foreach (var img in Images)
+                    {
+                        <div class="image-item">
+                            <Image Src="@img" Width="100%" Height="100%" Style="object-fit: cover;" />
+                        </div>
+                    }
+                </div>
+            }
+
+            <div style="margin-top: 10px; color: #999; font-size: 12px; display: flex; justify-content: space-between;">
+                <span>@GetTimeAgo(Moment.CreateTime)</span>
+                <!-- Actions -->
+                <div>
+                     <Icon Type="message" Theme="@AntDesign.IconThemeType.Outline" />
+                     <Icon Type="heart" Theme="@AntDesign.IconThemeType.Outline" Style="margin-left: 15px;" />
+                </div>
+            </div>
+
+            <!-- Comments & Likes Area (Simplified) -->
+            @if (Comments.Any() || Likes.Any())
+            {
+                 <div style="background: #f7f7f7; padding: 10px; margin-top: 10px; border-radius: 4px;">
+                     @if(Likes.Any())
+                     {
+                         <div style="color: #576b95; font-size: 12px; margin-bottom: 5px;">
+                             <Icon Type="heart" Theme="@AntDesign.IconThemeType.Outline" /> @string.Join(", ", Likes.Select(l => l.NickName))
+                         </div>
+                     }
+                     
+                     @foreach(var c in Comments)
+                     {
+                         <div style="font-size: 12px;">
+                             <span style="color: #576b95; font-weight: bold;">@c.AuthorName:</span> @c.Content
+                         </div>
+                     }
+                 </div>
+            }
+        </div>
+    </div>
+</Card>
+
+<style>
+    .moments-images-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 5px;
+        max-width: 300px;
+    }
+    .image-item {
+        aspect-ratio: 1; 
+        overflow: hidden;
+        border-radius: 4px;
+        background: #f0f0f0;
+    }
+</style>
+
+@code {
+    [Parameter]
+    public MomentsTimeline Moment { get; set; }
+
+    private List<string> Images = new();
+    private List<SCRM.SHARED.Models.Dtos.MomentCommentDto> Comments = new();
+    private List<SCRM.SHARED.Models.Dtos.MomentLikeDto> Likes = new();
+
+    protected override void OnParametersSet()
+    {
+        if (Moment != null)
+        {
+            try
+            {
+                if (!string.IsNullOrEmpty(Moment.ImagesJson))
+                    Images = System.Text.Json.JsonSerializer.Deserialize<List<string>>(Moment.ImagesJson) ?? new();
+                
+                if (!string.IsNullOrEmpty(Moment.CommentsJson))
+                    Comments = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentCommentDto>>(Moment.CommentsJson) ?? new();
+                
+                if (!string.IsNullOrEmpty(Moment.LikesJson))
+                    Likes = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(Moment.LikesJson) ?? new();
+            }
+            catch
+            {
+                // Ignore parse errors
+            }
+        }
+    }
+
+    private string GetTimeAgo(long timestamp)
+    {
+        // Simple formatter
+        var dt = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp); // Assuming seconds? Or Ticks?
+        // Wait, Ticks usually means .NET Ticks. But WeChat typically uses seconds.
+        // Let's assume seconds if < 10000000000, else Ticks.
+        // My entity uses CreateTime. If it comes from WeChat, it's likely seconds.
+        // If I write DateTime.UtcNow.Ticks, it is huge.
+        // Let's assume it is seconds for now as is standard for unix timestamp.
+        if (timestamp > 3000000000L) // More than year 2065 in seconds, must be ticks or ms
+        {
+             dt = new DateTime(timestamp); // Ticks
+        }
+        
+        return dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+    }
+}

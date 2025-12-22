@@ -1,8 +1,11 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
 /// 联系人表
 /// </summary>
+[Index(nameof(WechatAccountId), nameof(Wxid), IsUnique = true)]
 public class Contact
 {
     public int Id { get; set; }
@@ -18,6 +21,9 @@ public class Contact
     public string Country { get; set; }
     public string Province { get; set; }
     public string City { get; set; }
+    public string Description { get; set; }
+    public string Source { get; set; }
+    public string LabelIds { get; set; }
     public int ContactType { get; set; }
     public int IsFriend { get; set; }
     public int IsBlocked { get; set; }

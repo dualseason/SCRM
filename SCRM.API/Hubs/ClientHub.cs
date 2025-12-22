@@ -5,6 +5,7 @@ using System.Linq;
 
 using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
+using SCRM.SHARED.Models.Dtos;
 using SCRM.Services;
 using SCRM.Services.Data;
 using SCRM.API.Services.Data;
@@ -159,7 +160,8 @@ namespace SCRM.API.Hubs
         {
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
-             return await _clientTaskService.SendChatRoomActionTaskAsync(connectionId, chatRoomId, (EnumChatRoomAction)action, content, intValue, DateTime.UtcNow.Ticks);
+             var result = await _clientTaskService.SendChatRoomActionTaskAsync(connectionId, chatRoomId, (EnumChatRoomAction)action, content, intValue, DateTime.UtcNow.Ticks);
+             return result.Success;
         }
 
         /// <summary>
@@ -173,7 +175,8 @@ namespace SCRM.API.Hubs
         {
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
-             return await _clientTaskService.SendAgreeJoinChatRoomTaskAsync(connectionId, talker, msgSvrId, content, DateTime.UtcNow.Ticks);
+             var result = await _clientTaskService.SendAgreeJoinChatRoomTaskAsync(connectionId, talker, msgSvrId, content, DateTime.UtcNow.Ticks);
+             return result.Success;
         }
         /// <summary>
         /// 删除好友
@@ -184,7 +187,8 @@ namespace SCRM.API.Hubs
         {
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
-             return await _clientTaskService.SendDeleteFriendTaskAsync(connectionId, friendId, DateTime.UtcNow.Ticks);
+             var result = await _clientTaskService.SendDeleteFriendTaskAsync(connectionId, friendId, DateTime.UtcNow.Ticks);
+             return result.Success;
         }
 
         /// <summary>
@@ -197,7 +201,8 @@ namespace SCRM.API.Hubs
         {
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
-             return await _clientTaskService.SendAcceptFriendAddRequestTaskAsync(connectionId, friendId, friendNick, DateTime.UtcNow.Ticks);
+             var result = await _clientTaskService.SendAcceptFriendAddRequestTaskAsync(connectionId, friendId, friendNick, DateTime.UtcNow.Ticks);
+             return result.Success;
         }
         /// <summary>
         /// 请求手机截屏
@@ -207,7 +212,8 @@ namespace SCRM.API.Hubs
         {
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
-             return await _clientTaskService.SendScreenShotTaskAsync(connectionId, DateTime.UtcNow.Ticks);
+             var result = await _clientTaskService.SendScreenShotTaskAsync(connectionId, DateTime.UtcNow.Ticks);
+             return result.Success;
         }
 
         /// <summary>
@@ -219,7 +225,8 @@ namespace SCRM.API.Hubs
         {
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
-             return await _clientTaskService.SendPhoneActionTaskAsync(connectionId, (EnumPhoneAction)action, DateTime.UtcNow.Ticks);
+             var result = await _clientTaskService.SendPhoneActionTaskAsync(connectionId, (EnumPhoneAction)action, DateTime.UtcNow.Ticks);
+             return result.Success;
         }
         /// <summary>
         /// 获取账号配置
@@ -257,6 +264,45 @@ namespace SCRM.API.Hubs
             // Using standard SaveChangesAsync as the entity is tracked by the context.
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        /// <summary>
+        /// 发送朋友圈
+        /// </summary>
+        public async Task<TaskResult> PostMoment(string deviceUuid, string content, List<string> imageUrls)
+        {
+             var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
+             if (string.IsNullOrEmpty(connectionId)) return TaskResult.Fail("Device offline");
+             
+             // Generate TaskId
+             var taskId = DateTime.UtcNow.Ticks;
+             return await _clientTaskService.SendPostSNSNewsTaskAsync(connectionId, content, imageUrls, taskId);
+        }
+        public async Task<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>> GetMomentsTimeline(string deviceUuid)
+        {
+            // 1. Find Account
+            var account = await _context.WechatAccounts.FirstOrDefaultAsync(u => u.ClientUuid == deviceUuid && !u.IsDeleted);
+            if (account == null) return Enumerable.Empty<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>();
+
+            // 2. Query Moments
+            var list = await _context.MomentsTimelines
+                .Where(m => m.OwnerWxid == account.Wxid)
+                .OrderByDescending(m => m.CreateTime)
+                .Take(20)
+                .ToListAsync();
+
+            // 3. Map to DTOs
+            return list.Select(m => new SCRM.SHARED.Models.Dtos.MomentsTimelineDto
+            {
+                SnsId = m.SnsId,
+                UserName = m.UserName,
+                NickName = m.NickName,
+                Content = m.Content,
+                CreateTime = m.CreateTime,
+                Images = !string.IsNullOrEmpty(m.ImagesJson) ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(m.ImagesJson) : new List<string>(),
+                Comments = !string.IsNullOrEmpty(m.CommentsJson) ? System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentCommentDto>>(m.CommentsJson) : new List<SCRM.SHARED.Models.Dtos.MomentCommentDto>(),
+                Likes = !string.IsNullOrEmpty(m.LikesJson) ? System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(m.LikesJson) : new List<SCRM.SHARED.Models.Dtos.MomentLikeDto>()
+            });
         }
     }
 }

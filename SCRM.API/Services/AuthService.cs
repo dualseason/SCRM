@@ -22,7 +22,7 @@ namespace SCRM.Services
 {
     public class AuthService
     {
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+        private readonly Microsoft.Extensions.Logging.ILogger<AuthService> _logger;
 
         private readonly ApplicationDbContext _context;
         private readonly JwtSettings _jwtSettings;
@@ -35,13 +35,15 @@ namespace SCRM.Services
             IOptions<JwtSettings> jwtSettings,
             IMemoryCache cache,
             UserManager<ApplicationUser> userManager,
-            ConnectionManager connectionManager)
+            ConnectionManager connectionManager,
+            Microsoft.Extensions.Logging.ILogger<AuthService> logger)
         {
             _context = context;
             _jwtSettings = jwtSettings.Value;
             _cache = cache;
             _userManager = userManager;
             _connectionManager = connectionManager;
+            _logger = logger;
         }
 
         #region JWT Logic
@@ -153,7 +155,7 @@ namespace SCRM.Services
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_jwtSettings.RefreshTokenExpiryDays)
             };
             _cache.Set(cacheKey, refreshToken, cacheOptions);
-            _logger.Information("Generated refresh token for user {UserId}", userId);
+            _logger.LogInformation("Generated refresh token for user {UserId}", userId);
             return refreshToken;
         }
 
@@ -169,7 +171,7 @@ namespace SCRM.Services
 
             if (!isValid)
             {
-                _logger.Warning("Invalid refresh token for user {UserId}", userId);
+                _logger.LogWarning("Invalid refresh token for user {UserId}", userId);
             }
 
             return isValid;
@@ -199,7 +201,7 @@ namespace SCRM.Services
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Token validation failed");
+                _logger.LogError(ex, "Token validation failed");
                 return null;
             }
         }
@@ -210,7 +212,7 @@ namespace SCRM.Services
             {
                 var cacheKey = $"refresh_token_{userId}";
                 _cache.Remove(cacheKey);
-                _logger.Information("Revoked refresh token for user {UserId}", userId);
+                _logger.LogInformation("Revoked refresh token for user {UserId}", userId);
             }
         }
 
@@ -277,14 +279,14 @@ namespace SCRM.Services
             
             if (isAdmin) 
             {
-                // _logger.Information("ValidateDeviceOwnership: User {UserId} is Admin/SuperAdmin. Allowed.", userId);
+                // _logger.LogInformation("ValidateDeviceOwnership: User {UserId} is Admin/SuperAdmin. Allowed.", userId);
                 return true;
             }
 
             var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
             if (connectionInfo == null) 
             {
-                _logger.Warning("ValidateDeviceOwnership: Connection {ConnectionId} not found.", connectionId);
+                _logger.LogWarning("ValidateDeviceOwnership: Connection {ConnectionId} not found.", connectionId);
                 return false;
             }
 
@@ -303,11 +305,11 @@ namespace SCRM.Services
                     return true;
                 }
                 
-                _logger.Warning("ValidateDeviceOwnership: Forbidden. User {UserId} (Roles: {Roles}) does not own device connected at {ConnectionId}. DeviceOwner: {DeviceOwner}", userId, string.Join(",", roles), connectionId, ownerId);
+                _logger.LogWarning("ValidateDeviceOwnership: Forbidden. User {UserId} (Roles: {Roles}) does not own device connected at {ConnectionId}. DeviceOwner: {DeviceOwner}", userId, string.Join(",", roles), connectionId, ownerId);
                 return false;
             }
             
-            _logger.Warning("ValidateDeviceOwnership: Failed to parse Connection UserID '{ConnUserId}' as long.", connectionInfo.UserId);
+            _logger.LogWarning("ValidateDeviceOwnership: Failed to parse Connection UserID '{ConnUserId}' as long.", connectionInfo.UserId);
             return false;
         }
 
@@ -526,7 +528,7 @@ namespace SCRM.Services
             _cache.Remove($"user_permissions_{userId}");
             _cache.Remove($"user_roles_{userId}");
             _cache.Remove($"user_permission_info_{userId}");
-            _logger.Debug("Cleared permission cache for user {UserId}", userId);
+            _logger.LogDebug("Cleared permission cache for user {UserId}", userId);
         }
 
         public void ClearAllCache()

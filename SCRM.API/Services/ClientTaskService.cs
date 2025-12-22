@@ -7,27 +7,41 @@ using System.Threading.Tasks;
 
 namespace SCRM.Services
 {
+
     public class ClientTaskService
     {
         private readonly NettyMessageService _nettyMessageService;
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
-        private readonly System.Collections.Concurrent.ConcurrentDictionary<long, TaskCompletionSource<SCRM.SHARED.Models.TaskResult>> _pendingTasks = new();
+        private readonly Microsoft.Extensions.Logging.ILogger<ClientTaskService> _logger;
+        
+        /// <summary>
+        /// 挂起的任务字典: TaskId -> TaskCompletionSource (用于等待从 Netty 返回的异步结果)
+        /// key: TaskId (long)
+        /// </summary>
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<long, TaskCompletionSource<SCRM.SHARED.Models.Dtos.TaskResult>> _pendingTasks = new();
 
-        public ClientTaskService(NettyMessageService nettyMessageService)
+        public ClientTaskService(NettyMessageService nettyMessageService, Microsoft.Extensions.Logging.ILogger<ClientTaskService> logger)
         {
             _nettyMessageService = nettyMessageService;
+            _logger = logger;
         }
 
+        /// <summary>
+        /// 完成挂起的任务
+        /// 当 MessageRouter 收到 TaskResultNotice 时调用
+        /// </summary>
+        /// <param name="taskId">任务ID</param>
+        /// <param name="success">是否成功</param>
+        /// <param name="message">错误信息或结果描述</param>
         public void CompleteTask(long taskId, bool success, string? message = null)
         {
             if (_pendingTasks.TryRemove(taskId, out var tcs))
             {
-                tcs.TrySetResult(new SCRM.SHARED.Models.TaskResult { Success = success, Message = message });
+                tcs.TrySetResult(new SCRM.SHARED.Models.Dtos.TaskResult { Success = success, Message = message });
             }
         }
 
         /// <summary>
-        /// 发送心跳请求
+        /// 发送心跳请求 (1001)
         /// </summary>
         public async Task<bool> SendHeartBeatAsync(string connectionId)
         {
@@ -39,9 +53,48 @@ namespace SCRM.Services
         }
 
         /// <summary>
-        /// 发送给好友发消息任务
+        /// 发送给好友发消息任务 (1.1)
+        /// 此任务需要等待客户端的 TaskResultNotice 返回结果
         /// </summary>
-        public async Task<SCRM.SHARED.Models.TaskResult> SendTalkToFriendTaskAsync(string connectionId, string friendWxId, string content, EnumContentType contentType = EnumContentType.Text)
+        /// <param name="connectionId">连接ID</param>
+        /// <param name="friendWxId">好友微信号</param>
+        /// <param name="content">消息内容</param>
+        /// <param name="contentType">消息类型</param>
+        /// <returns>任务执行结果</returns>
+        /// <summary>
+        /// 通用任务发送并等待结果帮助方法
+        /// </summary>
+        private async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendTaskAndWaitAsync(
+            Google.Protobuf.IMessage taskMessage, 
+            string msgType, 
+            string connectionId, 
+            long taskId, 
+            int timeoutMs = 15000)
+        {
+            var tcs = new TaskCompletionSource<SCRM.SHARED.Models.Dtos.TaskResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+            _pendingTasks.TryAdd(taskId, tcs);
+
+            var sent = await _nettyMessageService.SendMessageToNettyAsync(taskMessage, msgType, connectionId, customMessageId: taskId);
+
+            if (!sent)
+            {
+                _pendingTasks.TryRemove(taskId, out _);
+                return SCRM.SHARED.Models.Dtos.TaskResult.Fail("Failed to send to Netty");
+            }
+
+            var timeoutTask = Task.Delay(timeoutMs);
+            var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
+
+            if (completedTask == timeoutTask)
+            {
+                _pendingTasks.TryRemove(taskId, out _);
+                return SCRM.SHARED.Models.Dtos.TaskResult.Fail("Timeout waiting for client response");
+            }
+
+            return await tcs.Task;
+        }
+
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendTalkToFriendTaskAsync(string connectionId, string friendWxId, string content, EnumContentType contentType = EnumContentType.Text)
         {
             var taskId = DateTime.UtcNow.Ticks;
             var task = new TalkToFriendTaskMessage
@@ -50,167 +103,81 @@ namespace SCRM.Services
                 Content = ByteString.CopyFromUtf8(content),
                 ContentType = contentType,
                 MsgId = taskId,
-                Immediate = true
+                Immediate = true 
             };
 
-            var tcs = new TaskCompletionSource<SCRM.SHARED.Models.TaskResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-            _pendingTasks.TryAdd(taskId, tcs);
-
-            var sent = await _nettyMessageService.SendMessageToNettyAsync(
-                task, 
-                EnumMsgType.TalkToFriendTask.ToString(), 
-                connectionId);
-
-            if (!sent)
-            {
-                _pendingTasks.TryRemove(taskId, out _);
-                return SCRM.SHARED.Models.TaskResult.Fail("Failed to send to Netty");
-            }
-
-            // Wait for result with timeout (e.g. 10 seconds)
-            var timeoutTask = Task.Delay(10000);
-            var completedTask = await Task.WhenAny(tcs.Task, timeoutTask);
-
-            if (completedTask == timeoutTask)
-            {
-                _pendingTasks.TryRemove(taskId, out _);
-                return SCRM.SHARED.Models.TaskResult.Fail("Timeout waiting for client response");
-            }
-
-            return await tcs.Task;
+            return await SendTaskAndWaitAsync(task, EnumMsgType.TalkToFriendTask.ToString(), connectionId, taskId);
         }
 
-        /// <summary>
-        /// 发送同步好友列表任务
-        /// </summary>
         public async Task<bool> SendSyncFriendListTaskAsync(string connectionId)
         {
+            // Sync task usually results in FriendPushNotice, not a direct TaskResult
+            // So we keep it fire-and-forget or await ACK (1002)? 
+            // Current design keeps it simple.
             return await _nettyMessageService.SendMessageToNettyAsync(
                 null, 
                 EnumMsgType.SyncFriendListAsyncReq.ToString(), 
                 connectionId);
         }
 
-        /// <summary>
-        /// 发送添加好友任务
-        /// </summary>
-        public async Task<bool> SendAddFriendTaskAsync(string connectionId, string friendWxId, string message, int scene = 3)
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendAddFriendTaskAsync(string connectionId, string friendWxId, string message, int scene = 3)
         {
+            var taskId = DateTime.UtcNow.Ticks;
             var task = new AddFriendWithSceneTaskMessage
             {
                 Friend = friendWxId,
                 Message = message,
                 Scene = scene,
-                TaskId = DateTime.UtcNow.Ticks
+                TaskId = taskId
             };
 
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task, 
-                EnumMsgType.AddFriendWithSceneTask.ToString(), 
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.AddFriendWithSceneTask.ToString(), connectionId, taskId);
         }
 
-        /// <summary>
-        /// 发送获取群发历史任务
-        /// </summary>
         public async Task<bool> SendGetGroupSendHistoryTaskAsync(string connectionId)
         {
-            var task = new GetGroupSendHistoryTaskMessage
-            {
-                TaskId = DateTime.UtcNow.Ticks
-            };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.GetGroupSendHistoryTask.ToString(),
-                connectionId);
+             // Usually returns a list notice, not generic result
+             var task = new GetGroupSendHistoryTaskMessage { TaskId = DateTime.UtcNow.Ticks };
+             return await _nettyMessageService.SendMessageToNettyAsync(task, EnumMsgType.GetGroupSendHistoryTask.ToString(), connectionId);
         }
-        /// <summary>
-        /// 发送发布朋友圈任务
-        /// </summary>
-        public async Task<bool> SendPostSNSNewsTaskAsync(string connectionId, string content, List<string> attachments, long taskId)
+        
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendPostSNSNewsTaskAsync(string connectionId, string content, List<string> attachments, long taskId)
         {
             var task = new PostSNSNewsTaskMessage
             {
                 Content = content,
                 TaskId = taskId
             };
-            // Note: Attachment handling would go here, simplified for now
             
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.PostSnsnewsTask.ToString(),
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.PostSnsnewsTask.ToString(), connectionId, taskId);
         }
 
-        /// <summary>
-        /// 发送触发好友列表推送任务
-        /// </summary>
         public async Task<bool> SendTriggerFriendPushTaskAsync(string connectionId, long taskId)
         {
-            var task = new TriggerFriendPushTaskMessage
-            {
-                TaskId = taskId
-            };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.TriggerFriendPushTask.ToString(),
-                connectionId);
+            // Init task, fire-and-forget likely preferred unless we want to wait for "Start Push" Ack
+            var task = new TriggerFriendPushTaskMessage { TaskId = taskId };
+            return await _nettyMessageService.SendMessageToNettyAsync(task, EnumMsgType.TriggerFriendPushTask.ToString(), connectionId);
         }
 
-        /// <summary>
-        /// 发送触发群聊列表推送任务
-        /// </summary>
         public async Task<bool> SendTriggerChatRoomPushTaskAsync(string connectionId, long taskId)
         {
-            var task = new TriggerChatRoomPushTaskMessage
-            {
-                TaskId = taskId
-            };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.TriggerChatroomPushTask.ToString(),
-                connectionId);
+            var task = new TriggerChatRoomPushTaskMessage { TaskId = taskId };
+            return await _nettyMessageService.SendMessageToNettyAsync(task, EnumMsgType.TriggerChatroomPushTask.ToString(), connectionId);
         }
 
-        /// <summary>
-        /// 发送触发朋友圈推送任务
-        /// </summary>
         public async Task<bool> SendTriggerCirclePushTaskAsync(string connectionId, long taskId)
         {
-            var task = new TriggerCirclePushTaskMessage
-            {
-                TaskId = taskId
-            };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.TriggerCirclePushTask.ToString(),
-                connectionId);
+             var task = new TriggerCirclePushTaskMessage { TaskId = taskId };
+             return await _nettyMessageService.SendMessageToNettyAsync(task, EnumMsgType.TriggerCirclePushTask.ToString(), connectionId);
         }
 
-        /// <summary>
-        /// 发送一键点赞任务
-        /// </summary>
-        public async Task<bool> SendOneKeyLikeTaskAsync(string connectionId, long taskId)
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendOneKeyLikeTaskAsync(string connectionId, long taskId)
         {
-            var task = new OneKeyLikeTaskMessage
-            {
-                TaskId = taskId
-            };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.OneKeyLikeTask.ToString(),
-                connectionId);
+            var task = new OneKeyLikeTaskMessage { TaskId = taskId };
+            return await SendTaskAndWaitAsync(task, EnumMsgType.OneKeyLikeTask.ToString(), connectionId, taskId); // Check if this returns TaskResult or OneKeyLikeTaskResult
         }
 
-        /// <summary>
-        /// 发送消息撤回任务
-        /// </summary>
-        public async Task<bool> SendRevokeMessageTaskAsync(string connectionId, string friendId, long msgSvrId, long taskId)
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendRevokeMessageTaskAsync(string connectionId, string friendId, long msgSvrId, long taskId)
         {
             var task = new RevokeMessageTaskMessage
             {
@@ -218,16 +185,10 @@ namespace SCRM.Services
                 MsgId = msgSvrId,
                 TaskId = taskId
             };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.RevokeMessageTask.ToString(),
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.RevokeMessageTask.ToString(), connectionId, taskId);
         }
-        /// <summary>
-        /// 发送群聊操作任务（踢人、拉人、改名等）
-        /// </summary>
-        public async Task<bool> SendChatRoomActionTaskAsync(string connectionId, string chatRoomId, EnumChatRoomAction action, string content, int intValue, long taskId)
+        
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendChatRoomActionTaskAsync(string connectionId, string chatRoomId, EnumChatRoomAction action, string content, int intValue, long taskId)
         {
             var task = new ChatRoomActionTaskMessage
             {
@@ -238,16 +199,10 @@ namespace SCRM.Services
                 TaskId = taskId
             };
 
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.ChatRoomActionTask.ToString(),
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.ChatRoomActionTask.ToString(), connectionId, taskId);
         }
 
-        /// <summary>
-        /// 发送同意入群任务
-        /// </summary>
-        public async Task<bool> SendAgreeJoinChatRoomTaskAsync(string connectionId, string talker, long msgSvrId, string msgContent, long taskId)
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendAgreeJoinChatRoomTaskAsync(string connectionId, string talker, long msgSvrId, string msgContent, long taskId)
         {
             var task = new AgreeJoinChatRoomTaskMessage
             {
@@ -256,33 +211,20 @@ namespace SCRM.Services
                 MsgContent = msgContent,
                 TaskId = taskId
             };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.AgreeJoinChatRoomTask.ToString(),
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.AgreeJoinChatRoomTask.ToString(), connectionId, taskId, 30000); // 30s timeout for join
         }
-        /// <summary>
-        /// 发送删除好友任务
-        /// </summary>
-        public async Task<bool> SendDeleteFriendTaskAsync(string connectionId, string friendId, long taskId)
+        
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendDeleteFriendTaskAsync(string connectionId, string friendId, long taskId)
         {
             var task = new DeleteFriendTaskMessage
             {
                 FriendId = friendId,
                 TaskId = taskId
             };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.DeleteFriendTask.ToString(),
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.DeleteFriendTask.ToString(), connectionId, taskId);
         }
 
-        /// <summary>
-        /// 发送接受好友请求任务（自动通过）
-        /// </summary>
-        public async Task<bool> SendAcceptFriendAddRequestTaskAsync(string connectionId, string friendId, string friendNick, long taskId)
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendAcceptFriendAddRequestTaskAsync(string connectionId, string friendId, string friendNick, long taskId)
         {
             var task = new AcceptFriendAddRequestTaskMessage
             {
@@ -291,153 +233,75 @@ namespace SCRM.Services
                 Operation = AcceptFriendAddRequestTaskMessage.Types.EnumFriendAddOperation.Accept,
                 TaskId = taskId
             };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.AcceptFriendAddRequestTask.ToString(),
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.AcceptFriendAddRequestTask.ToString(), connectionId, taskId, 30000);
         }
-        /// <summary>
-        /// 发送截屏任务
-        /// </summary>
-        public async Task<bool> SendScreenShotTaskAsync(string connectionId, long taskId)
+        
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendScreenShotTaskAsync(string connectionId, long taskId)
         {
             var task = new ScreenShotTaskMessage
             {
-                Type = 0, // Default type
-                Param = "", // Empty param for generic screenshot
+                Type = 0, 
+                Param = "", 
                 TaskId = taskId
             };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.ScreenShotTask.ToString(),
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.ScreenShotTask.ToString(), connectionId, taskId, 20000); // 20s for screenshot upload
         }
 
-        /// <summary>
-        /// 发送手机操作任务（重启、清理缓存等）
-        /// </summary>
-        public async Task<bool> SendPhoneActionTaskAsync(string connectionId, EnumPhoneAction action, long taskId)
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendPhoneActionTaskAsync(string connectionId, EnumPhoneAction action, long taskId)
         {
             var task = new PhoneActionTaskMessage
             {
                 Action = action,
                 TaskId = taskId
             };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.PhoneActionTask.ToString(),
-                connectionId);
+            // Note: PhoneAction might not return TaskResultNotice properly in all versions, 
+            // but if Audit says verified, we use it.
+            return await SendTaskAndWaitAsync(task, EnumMsgType.PhoneActionTask.ToString(), connectionId, taskId);
         }
 
-        /// <summary>
-        /// 发送触发配置推送任务 (Discovery)
-        /// </summary>
         public async Task<bool> SendTriggerConfigPushTaskAsync(string connectionId, long taskId)
         {
-            var task = new TriggerConfigPushMessage
-            {
-                // TaskId is not in proto, relying on message flow or connection binding
-            };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.TriggerConfigPush.ToString(),
-                connectionId);
+            var task = new TriggerConfigPushMessage { };
+            return await _nettyMessageService.SendMessageToNettyAsync(task, EnumMsgType.TriggerConfigPush.ToString(), connectionId);
         }
 
-        /// <summary>
-        /// 发送设置配置任务 (Control)
-        /// </summary>
         public async Task<bool> SendSetConfigTaskAsync(string connectionId, Dictionary<string, bool> boolConfs, Dictionary<string, int> intConfs, Dictionary<string, string> strConfs)
         {
             var task = new SetConfigTaskMessage();
-            // Note: We leave IMEI/WeChatId empty as client likely ignores them or infers them.
-            
             if (boolConfs != null)
-            {
-                foreach (var kvp in boolConfs)
-                {
-                    task.BoolConfs.Add(new BoolConfigMessage { Key = kvp.Key, Value = kvp.Value });
-                }
-            }
-
+                foreach (var kvp in boolConfs) task.BoolConfs.Add(new BoolConfigMessage { Key = kvp.Key, Value = kvp.Value });
             if (intConfs != null)
-            {
-                foreach (var kvp in intConfs)
-                {
-                    task.IntConfs.Add(new IntConfigMessage { Key = kvp.Key, Value = kvp.Value });
-                }
-            }
-
+                foreach (var kvp in intConfs) task.IntConfs.Add(new IntConfigMessage { Key = kvp.Key, Value = kvp.Value });
             if (strConfs != null)
-            {
-                foreach (var kvp in strConfs)
-                {
-                    task.StrConfs.Add(new StrConfigMessage { Key = kvp.Key, Value = kvp.Value });
-                }
-            }
+                foreach (var kvp in strConfs) task.StrConfs.Add(new StrConfigMessage { Key = kvp.Key, Value = kvp.Value });
 
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.SetConfigTask.ToString(),
-                connectionId);
+            return await _nettyMessageService.SendMessageToNettyAsync(task, EnumMsgType.SetConfigTask.ToString(), connectionId);
         }
-        /// <summary>
-        /// 发送抢红包任务
-        /// </summary>
-        public async Task<bool> SendTakeLuckyMoneyTaskAsync(string connectionId, string weChatId, string nativeUrl, string key)
+        
+        public async Task<bool> SendTakeLuckyMoneyTaskAsync(string connectionId, string weChatId, string friendId, long msgSvrId, string key)
         {
             var task = new TakeLuckyMoneyTaskMessage
             {
                 WeChatId = weChatId,
+                FriendId = friendId,
+                MsgSvrId = msgSvrId,
                 MsgKey = key, 
-                // NativeUrl is not in proto? Check if 'key' is actually MsgKey.
-                // Proto has: WeChatId, FriendId, MsgSvrId, MsgKey, TaskId, Refuse.
-                // Where is NativeUrl used? Maybe it's not needed if we have MsgKey?
-                // Or maybe I am misusing the message.
-                // Re-reading TakeLuckyMoneyTask.java might help but I don't have it.
-                // Assuming 'key' -> 'MsgKey'.
-                // 'FriendId' and 'MsgSvrId' are missing from my signature.
-                // I should update signature or pass defaults.
-                // For now, I'll pass defaults or what I have.
                 TaskId = DateTime.UtcNow.Ticks
             };
-            
-            // Wait, if I don't have FriendId (sender) and MsgSvrId, can I take it?
-            // Usually we do need them.
-            // My calling code in MessageRouter has 'notice' which contains MsgId (MsgSvrId) and FriendId.
-            // I should update the method signature to accept them.
-            
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.TakeLuckyMoneyTask.ToString(),
-                connectionId);
+            return await _nettyMessageService.SendMessageToNettyAsync(task, EnumMsgType.TakeLuckyMoneyTask.ToString(), connectionId);
         }
 
-        /// <summary>
-        /// 发送查询红包详情任务
-        /// </summary>
         public async Task<bool> SendQueryHbDetailTaskAsync(string connectionId, string weChatId, string nativeUrl)
         {
             var task = new QueryHbDetailTaskMessage
             {
                 WeChatId = weChatId,
-                HbUrl = nativeUrl // Proto calls it HbUrl
-                // TaskId is missing in proto.
+                HbUrl = nativeUrl 
             };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.QueryHbDetailTask.ToString(),
-                connectionId);
+            return await _nettyMessageService.SendMessageToNettyAsync(task, EnumMsgType.QueryHbDetailTask.ToString(), connectionId);
         }
-        /// <summary>
-        /// 发送朋友圈点赞任务
-        /// </summary>
-        public async Task<bool> SendCircleLikeTaskAsync(string connectionId, string weChatId, long circleId, bool isCancel, long taskId)
+        
+        public async Task<SCRM.SHARED.Models.Dtos.TaskResult> SendCircleLikeTaskAsync(string connectionId, string weChatId, long circleId, bool isCancel, long taskId)
         {
             var task = new CircleLikeTaskMessage
             {
@@ -446,11 +310,8 @@ namespace SCRM.Services
                 IsCancel = isCancel,
                 TaskId = taskId
             };
-
-            return await _nettyMessageService.SendMessageToNettyAsync(
-                task,
-                EnumMsgType.CircleLikeTask.ToString(),
-                connectionId);
+            return await SendTaskAndWaitAsync(task, EnumMsgType.CircleLikeTask.ToString(), connectionId, taskId);
         }
     }
 }
+

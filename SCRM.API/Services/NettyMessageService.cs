@@ -8,22 +8,32 @@ using System.Threading.Tasks;
 using SCRM.SHARED.Proto;
 using Google.Protobuf.WellKnownTypes;
 
+
 namespace SCRM.Services
 {
+    /// <summary>
+    /// Netty 消息服务
+    /// 提供对 Netty 服务器的生命周期管理和消息发送功能
+    /// </summary>
     public class NettyMessageService : INettyService, IHostedService
     {
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+        private readonly Microsoft.Extensions.Logging.ILogger<NettyMessageService> _logger;
         private readonly NettyServer _nettyServer;
         private readonly ConnectionManager _connectionManager;
 
         public NettyMessageService(
             NettyServer nettyServer,
-            ConnectionManager connectionManager)
+            ConnectionManager connectionManager,
+            Microsoft.Extensions.Logging.ILogger<NettyMessageService> logger)
         {
             _nettyServer = nettyServer;
             _connectionManager = connectionManager;
+            _logger = logger;
         }
 
+        /// <summary>
+        /// 启动 Netty 服务器
+        /// </summary>
         public async Task StartAsync()
         {
             try
@@ -31,16 +41,19 @@ namespace SCRM.Services
                 if (!_nettyServer.IsRunning)
                 {
                     await _nettyServer.StartAsync();
-                    _logger.Information("Netty message service started successfully");
+                    _logger.LogInformation("Netty message service started successfully");
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to start Netty message service");
+                _logger.LogError(ex, "Failed to start Netty message service");
                 throw;
             }
         }
 
+        /// <summary>
+        /// 停止 Netty 服务器
+        /// </summary>
         public async Task StopAsync()
         {
             try
@@ -48,29 +61,35 @@ namespace SCRM.Services
                 if (_nettyServer.IsRunning)
                 {
                     await _nettyServer.StopAsync();
-                    _logger.Information("Netty message service stopped successfully");
+                    _logger.LogInformation("Netty message service stopped successfully");
                 }
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Failed to stop Netty message service");
+                _logger.LogError(ex, "Failed to stop Netty message service");
             }
         }
 
-        public async Task<bool> SendMessageToNettyAsync(object? message, string messageType = "", string targetId = "", string targetType = "", string topic = "", string tag = "")
+        /// <summary>
+        /// 发送消息到 Netty 客户端
+        /// </summary>
+        /// <param name="message">消息内容 (Protobuf 对象，可选)</param>
+        /// <param name="messageType">消息类型 (EnumMsgType)</param>
+        /// <param name="targetId">目标ID (ConnectionId / UserId / UUID)</param>
+        /// <param name="customMessageId">自定义消息ID (用于Trace/ACK)</param>
+        public async Task<bool> SendMessageToNettyAsync(object? message, string messageType = "", string targetId = "", string targetType = "", string topic = "", string tag = "", long? customMessageId = null)
         {
             try
             {
                 if (!_nettyServer.IsRunning)
                 {
-                    _logger.Warning("Netty server is not running");
+                    _logger.LogWarning("Netty server is not running");
                     return false;
                 }
 
-                // 构造 TransportMessage
                 var transportMessage = new TransportMessage
                 {
-                    Id = DateTime.UtcNow.Ticks, // 简单生成ID
+                    Id = customMessageId ?? DateTime.UtcNow.Ticks, // 使用自定义ID或生成新ID
                     AccessToken = "", // 需要时填充
                     MsgType = System.Enum.TryParse<EnumMsgType>(messageType, out var typeEnum) ? typeEnum : EnumMsgType.UnknownMsg,
                     RefMessageId = 0
@@ -86,13 +105,13 @@ namespace SCRM.Services
                 {
                     var channel = _connectionManager.GetChannel(targetId);
 
-                    // Fallback 1: Try ID as User ID
+                    // 策略 1: 尝试将 ID 作为 UserId 查找
                     if (channel == null)
                     {
                         channel = _connectionManager.GetChannelByUserId(targetId);
                     }
 
-                    // Fallback 2: Try ID as Device UUID (DeviceInfo)
+                    // 策略 2: 尝试将 ID 作为 Device UUID (DeviceInfo) 查找
                     if (channel == null)
                     {
                         var allConns = await _connectionManager.GetAllConnectionsAsync();
@@ -106,17 +125,17 @@ namespace SCRM.Services
                     if (channel != null && channel.Active)
                     {
                         await channel.WriteAndFlushAsync(transportMessage);
-                        _logger.Information("Message sent to client: {ClientId}", targetId);
+                        _logger.LogInformation("向{ClientId}客户端发送{MsgType}指令", targetId, messageType);
                         return true;
                     }
                     else
                     {
-                         _logger.Warning("Client not found or inactive: {ClientId}", targetId);
+                         _logger.LogWarning("Client not found or inactive: {ClientId}", targetId);
                          return false;
                     }
                 }
 
-                // 广播给所有连接 (示例逻辑，实际可能需要更精细的广播)
+                // 广播给所有连接 (示例逻辑，默认仅在 targetId 为空时触发，慎用)
                 var connections = await _connectionManager.GetAllConnectionsAsync();
                 foreach (var conn in connections)
                 {
@@ -127,16 +146,19 @@ namespace SCRM.Services
                     }
                 }
                 
-                _logger.Information("Broadcast message sent");
+                _logger.LogInformation("Broadcast message sent");
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error sending message via Netty");
+                _logger.LogError(ex, "Error sending message via Netty");
                 return false;
             }
         }
 
+        /// <summary>
+        /// 获取当前连接的客户端数量
+        /// </summary>
         public async Task<int> GetConnectedClientsCountAsync()
         {
             var stats = _connectionManager.GetStatistics();
@@ -167,6 +189,9 @@ namespace SCRM.Services
     {
         Task StartAsync();
         Task StopAsync();
+        Task<bool> SendMessageToNettyAsync(object? message, string messageType = "", string targetId = "", string targetType = "", string topic = "", string tag = "", long? customMessageId = null);
+        Task<int> GetConnectedClientsCountAsync();
+        Task<bool> IsNettyServerRunningAsync();
         bool IsRunning { get; }
         int Port { get; }
     }

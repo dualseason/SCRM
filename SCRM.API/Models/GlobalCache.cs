@@ -4,9 +4,9 @@ using System.Text.Json.Serialization;
 using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
 
-namespace SCRM.API.Services.Data
+namespace SCRM.API.Models
 {
-    public class GlobleVar
+    public class GlobalCache
     {
         // 应用程序用户缓存
         public static ConcurrentDictionary<string, ApplicationUser> applicationUsers { get; set; } = new();
@@ -16,8 +16,6 @@ namespace SCRM.API.Services.Data
 
         // 微信账号缓存 (WechatAccount) - Key: AccountId
         public static ConcurrentDictionary<long, WechatAccount> wechatAccounts { get; set; } = new();
-
-
 
         /// <summary>
         /// 全局统一的 JSON 序列化选项 (CamelCase + CaseInsensitive)

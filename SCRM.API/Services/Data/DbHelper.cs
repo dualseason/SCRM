@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using SCRM.SHARED.Models;
 using EFCore.BulkExtensions;
 using SCRM.API.Models.Entities;
+using SCRM.API.Models;
 
 namespace SCRM.API.Services.Data
 {
@@ -51,7 +52,7 @@ namespace SCRM.API.Services.Data
                 await context.SaveChangesAsync();
                 
                 // 4. 更新缓存
-                // dbItem 现在是最新的。更新 GlobleVar。
+                // dbItem 现在是最新的。更新 GlobalCache。
                 // 仅当缓存中已存在时更新，或者总是 AddOrUpdate？
                 cache.AddOrUpdate(id, dbItem, (k, old) => old.CopyFrom(dbItem));
                 
@@ -219,16 +220,16 @@ namespace SCRM.API.Services.Data
 
         public static async Task<ApplicationUser?> GetApplicationUser(this DbContext context, string uuid)
         {
-            if (GlobleVar.applicationUsers.TryGetValue(uuid, out var cached)) return cached;
+            if (GlobalCache.applicationUsers.TryGetValue(uuid, out var cached)) return cached;
 
             return await AsyncLockManager.ExecuteWithLockAsync($"ApplicationUser_{uuid}", async () =>
             {
-                if (GlobleVar.applicationUsers.TryGetValue(uuid, out var item)) return item;
+                if (GlobalCache.applicationUsers.TryGetValue(uuid, out var item)) return item;
 
                 var dbItem = await context.Set<ApplicationUser>().FindAsync(uuid);
                 if (dbItem != null)
                 {
-                    GlobleVar.applicationUsers.TryAdd(uuid, dbItem);
+                    GlobalCache.applicationUsers.TryAdd(uuid, dbItem);
                 }
                 return dbItem;
             });
@@ -236,32 +237,32 @@ namespace SCRM.API.Services.Data
 
         public static async Task<ApplicationUser?> SaveApplicationUser(this DbContext context, ApplicationUser user)
         {
-            if (!GlobleVar.applicationUsers.ContainsKey(user.Id))
+            if (!GlobalCache.applicationUsers.ContainsKey(user.Id))
             {
-                return await context.AddAtomicGeneric(user, GlobleVar.applicationUsers);
+                return await context.AddAtomicGeneric(user, GlobalCache.applicationUsers);
             }
-            return await context.UpdateAtomicGeneric(user.Id, GlobleVar.applicationUsers, c => c.CopyFrom(user));
+            return await context.UpdateAtomicGeneric(user.Id, GlobalCache.applicationUsers, c => c.CopyFrom(user));
         }
 
         public static async Task DeleteApplicationUser(this DbContext context, ApplicationUser user)
         {
-            await context.DeleteAtomicGeneric(user.Id, GlobleVar.applicationUsers);
+            await context.DeleteAtomicGeneric(user.Id, GlobalCache.applicationUsers);
         }
 
         // ==================== SrClient ====================
 
         public static async Task<SrClient?> GetSrClient(this DbContext context, string uuid)
         {
-            if (GlobleVar.srClients.TryGetValue(uuid, out var cached)) return cached;
+            if (GlobalCache.srClients.TryGetValue(uuid, out var cached)) return cached;
 
             return await AsyncLockManager.ExecuteWithLockAsync($"SrClient_{uuid}", async () =>
             {
-                if (GlobleVar.srClients.TryGetValue(uuid, out var item)) return item;
+                if (GlobalCache.srClients.TryGetValue(uuid, out var item)) return item;
 
                 var dbItem = await context.Set<SrClient>().FindAsync(uuid);
                 if (dbItem != null)
                 {
-                    GlobleVar.srClients.TryAdd(uuid, dbItem);
+                    GlobalCache.srClients.TryAdd(uuid, dbItem);
                 }
                 return dbItem;
             });
@@ -269,32 +270,32 @@ namespace SCRM.API.Services.Data
 
         public static async Task<SrClient?> SaveSrClient(this DbContext context, SrClient client)
         {
-            if (!GlobleVar.srClients.ContainsKey(client.uuid))
+            if (!GlobalCache.srClients.ContainsKey(client.uuid))
             {
-                return await context.AddAtomicGeneric(client, GlobleVar.srClients);
+                return await context.AddAtomicGeneric(client, GlobalCache.srClients);
             }
-            return await context.UpdateAtomicGeneric(client.uuid, GlobleVar.srClients, c => c.CopyFrom(client));
+            return await context.UpdateAtomicGeneric(client.uuid, GlobalCache.srClients, c => c.CopyFrom(client));
         }
 
         public static async Task DeleteSrClient(this DbContext context, SrClient client)
         {
-            await context.DeleteAtomicGeneric(client.uuid, GlobleVar.srClients);
+            await context.DeleteAtomicGeneric(client.uuid, GlobalCache.srClients);
         }
 
         // ==================== WechatAccount ====================
 
         public static async Task<WechatAccount?> GetWechatAccount(this DbContext context, long accountId)
         {
-            if (GlobleVar.wechatAccounts.TryGetValue(accountId, out var cached)) return cached;
+            if (GlobalCache.wechatAccounts.TryGetValue(accountId, out var cached)) return cached;
 
             return await AsyncLockManager.ExecuteWithLockAsync($"WechatAccount_{accountId}", async () =>
             {
-                if (GlobleVar.wechatAccounts.TryGetValue(accountId, out var item)) return item;
+                if (GlobalCache.wechatAccounts.TryGetValue(accountId, out var item)) return item;
 
                 var dbItem = await context.Set<WechatAccount>().FindAsync(accountId);
                 if (dbItem != null)
                 {
-                    GlobleVar.wechatAccounts.TryAdd(accountId, dbItem);
+                    GlobalCache.wechatAccounts.TryAdd(accountId, dbItem);
                 }
                 return dbItem;
             });
@@ -303,16 +304,16 @@ namespace SCRM.API.Services.Data
         public static async Task<WechatAccount?> SaveWechatAccount(this DbContext context, WechatAccount account)
         {
             // Note: WechatAccount Key is long
-            if (!GlobleVar.wechatAccounts.ContainsKey(account.AccountId))
+            if (!GlobalCache.wechatAccounts.ContainsKey(account.AccountId))
             {
-                return await context.AddAtomicGeneric(account, account.AccountId, GlobleVar.wechatAccounts);
+                return await context.AddAtomicGeneric(account, account.AccountId, GlobalCache.wechatAccounts);
             }
-            return await context.UpdateAtomicGeneric(account.AccountId, GlobleVar.wechatAccounts, c => c.CopyFrom(account));
+            return await context.UpdateAtomicGeneric(account.AccountId, GlobalCache.wechatAccounts, c => c.CopyFrom(account));
         }
 
         public static async Task DeleteWechatAccount(this DbContext context, WechatAccount account)
         {
-            await context.DeleteAtomicGeneric(account.AccountId, GlobleVar.wechatAccounts);
+            await context.DeleteAtomicGeneric(account.AccountId, GlobalCache.wechatAccounts);
         }
         // ==================== Contacts ====================
 
@@ -338,10 +339,67 @@ namespace SCRM.API.Services.Data
             var bulkConfig = new BulkConfig 
             { 
                 UpdateByProperties = new List<string> { nameof(Contact.WechatAccountId), nameof(Contact.Wxid) },
-                SetOutputIdentity = true // Keep mapped IDs if needed, but mainly we want UPSERT
+                SetOutputIdentity = true,
+                BatchSize = 1000
             };
             
-            await context.BulkInsertOrUpdateAsync(contacts, bulkConfig);
+            try 
+            {
+                await context.BulkInsertOrUpdateAsync(contacts, bulkConfig);
+            }
+            catch (Exception ex)
+            {
+                // FALLBACK STRATEGY: 
+                // If Bulk Extensions fail (e.g. Postgres 55000 index error), fall back to standard EF Core.
+                // This is slower but guarantees the connection won't drop due to DB errors.
+                Console.WriteLine($"[WARNING] BulkInsertOrUpdateAsync failed: {ex.Message}. Falling back to standard EF Core.");
+
+                var strategy = context.Database.CreateExecutionStrategy();
+                await strategy.ExecuteAsync(async () =>
+                {
+                    using var transaction = await context.Database.BeginTransactionAsync();
+                    try 
+                    {
+                        foreach (var contact in contacts)
+                        {
+                            var existing = await context.Set<Contact>()
+                                .FirstOrDefaultAsync(c => c.WechatAccountId == contact.WechatAccountId && c.Wxid == contact.Wxid);
+
+                            if (existing != null)
+                            {
+                                // Update existing
+                                existing.Avatar = contact.Avatar;
+                                existing.Nickname = contact.Nickname;
+                                existing.Remarks = contact.Remarks;
+                                existing.Description = contact.Description;
+                                existing.Gender = contact.Gender;
+                                existing.Province = contact.Province;
+                                existing.City = contact.City;
+                                existing.Phone = contact.Phone;
+                                existing.Signature = contact.Signature;
+                                existing.Source = contact.Source;
+                                existing.LabelIds = contact.LabelIds;
+                                existing.ContactType = contact.ContactType;
+                                existing.UpdatedAt = DateTime.UtcNow;
+                                context.Entry(existing).State = EntityState.Modified;
+                            }
+                            else
+                            {
+                                // Insert new
+                                await context.Set<Contact>().AddAsync(contact);
+                            }
+                        }
+                        await context.SaveChangesAsync();
+                        await transaction.CommitAsync();
+                    }
+                    catch (Exception fallbackEx)
+                    {
+                        await transaction.RollbackAsync();
+                        // If standard EF also fails, then rethrow (fatal DB error)
+                        throw new Exception($"SaveContacts Fallback also failed: {fallbackEx.Message}", fallbackEx);
+                    }
+                });
+            }
         }
     }
 }

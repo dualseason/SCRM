@@ -24,6 +24,8 @@ namespace SCRM.API.Models.Entities
         [ForeignKey("OwnerId")]
         public virtual ApplicationUser? Owner { get; set; }
 
+
+
         /// <summary>微信WXID</summary>
         [Required]
         [Column("wxid")]

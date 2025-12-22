@@ -2,15 +2,16 @@
 @using Radzen.Blazor
 @using Microsoft.AspNetCore.Components.Authorization
 
-<RadzenPanelMenu>
+<RadzenPanelMenu Style="height: 100%;">
     <AuthorizeView>
         <Authorized>
-            <RadzenPanelMenuItem Text="Home" Path="" Icon="home" />
-            <RadzenPanelMenuItem Text="Chat" Path="chat" Icon="chat" />
-
+            <RadzenPanelMenuItem Text="首页" Path="" Icon="home" />
+            <RadzenPanelMenuItem Text="IM 中心" Path="im" Icon="chat" />
+            <RadzenPanelMenuItem Text="朋友圈" Path="moments" Icon="camera" />
         </Authorized>
+        <NotAuthorized>
+            <RadzenPanelMenuItem Text="请先登录" Path="login" Icon="login" />
+        </NotAuthorized>
     </AuthorizeView>
 </RadzenPanelMenu>
-
-@code {
-}
+ 

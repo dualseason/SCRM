@@ -10,7 +10,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Protobuf Include="$(MSBuildThisFileDirectory)proto\**\*.proto" GrpcServices="None" />
-    <None Include="$(MSBuildThisFileDirectory)proto\**\*.proto" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Entities\*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Dtos\*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\*.cs" />

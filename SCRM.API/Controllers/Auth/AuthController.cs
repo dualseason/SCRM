@@ -19,7 +19,7 @@ namespace SCRM.Controllers.Auth
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+        private readonly Microsoft.Extensions.Logging.ILogger<AuthController> _logger;
 
         private readonly ApplicationDbContext _context;
         private readonly AuthService _authService;
@@ -30,12 +30,14 @@ namespace SCRM.Controllers.Auth
             ApplicationDbContext context,
             AuthService authService,
             UserManager<ApplicationUser> userManager,
-            Microsoft.Extensions.Options.IOptions<NettySettings> nettySettings)
+            Microsoft.Extensions.Options.IOptions<NettySettings> nettySettings,
+            Microsoft.Extensions.Logging.ILogger<AuthController> logger)
         {
             _context = context;
             _authService = authService;
             _userManager = userManager;
             _nettySettings = nettySettings.Value;
+            _logger = logger;
         }
 
         [HttpPost("login")]
@@ -60,12 +62,12 @@ namespace SCRM.Controllers.Auth
                 tokenResponse.TcpHost = _nettySettings.Host;
                 tokenResponse.TcpPort = _nettySettings.Port;
 
-                _logger.Information("User {UserName} logged in successfully", request.UserName);
+                _logger.LogInformation("User {UserName} logged in successfully", request.UserName);
                 return Ok(new { Success = true, Data = tokenResponse });
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error during login for user {UserName}", request.UserName);
+                _logger.LogError(ex, "Error during login for user {UserName}", request.UserName);
                 return StatusCode(500, new { Message = "登录过程中发生错误" });
             }
         }
@@ -91,15 +93,15 @@ namespace SCRM.Controllers.Auth
                 {
                     // Try legacy user
                     if (long.TryParse(request.UserId, out var legacyUserId))
-                    {
+                        {
                         var legacyUser = await _context.LegacyWechatUsers.FirstOrDefaultAsync(u => u.Id == legacyUserId && u.IsActive);
                         if (legacyUser != null)
                         {
-                             var legacyTokenResponse = await _authService.GenerateTokenResponseAsync(legacyUser);
-                             // Populate TCP Configuration
-                             legacyTokenResponse.TcpHost = _nettySettings.Host;
-                             legacyTokenResponse.TcpPort = _nettySettings.Port;
-                             return Ok(new { Success = true, Data = legacyTokenResponse });
+                                var legacyTokenResponse = await _authService.GenerateTokenResponseAsync(legacyUser);
+                                // Populate TCP Configuration
+                                legacyTokenResponse.TcpHost = _nettySettings.Host;
+                                legacyTokenResponse.TcpPort = _nettySettings.Port;
+                                return Ok(new { Success = true, Data = legacyTokenResponse });
                         }
                     }
                     return Unauthorized(new { Message = "用户不存在或已被禁用" });
@@ -111,12 +113,12 @@ namespace SCRM.Controllers.Auth
                 tokenResponse.TcpHost = _nettySettings.Host;
                 tokenResponse.TcpPort = _nettySettings.Port;
 
-                _logger.Information("Token refreshed for user {UserId}", request.UserId);
+                _logger.LogInformation("Token refreshed for user {UserId}", request.UserId);
                 return Ok(new { Success = true, Data = tokenResponse });
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error during token refresh for user {UserId}", request.UserId);
+                _logger.LogError(ex, "Error during token refresh for user {UserId}", request.UserId);
                 return StatusCode(500, new { Message = "刷新令牌过程中发生错误" });
             }
         }
@@ -131,14 +133,14 @@ namespace SCRM.Controllers.Auth
                 if (userIdClaim != null)
                 {
                     _authService.RevokeRefreshTokenAsync(userIdClaim.Value);
-                    _logger.Information("User {UserId} logged out", userIdClaim.Value);
+                    _logger.LogInformation("User {UserId} logged out", userIdClaim.Value);
                 }
 
                 return Ok(new { Success = true, Message = "退出登录成功" });
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error during logout");
+                _logger.LogError(ex, "Error during logout");
                 return StatusCode(500, new { Message = "退出登录过程中发生错误" });
             }
         }
@@ -158,12 +160,12 @@ namespace SCRM.Controllers.Auth
                 var user = await _userManager.FindByIdAsync(userIdClaim.Value);
                 if (user != null)
                 {
-                     return Ok(new { Success = true, Data = new {
+                        return Ok(new { Success = true, Data = new {
                         Id = user.Id,
                         UserName = user.UserName,
                         Email = user.Email,
                         // Add other properties as needed
-                     }});
+                        }});
                 }
 
                 // Legacy fallback
@@ -195,7 +197,7 @@ namespace SCRM.Controllers.Auth
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error getting user profile");
+                _logger.LogError(ex, "Error getting user profile");
                 return StatusCode(500, new { Message = "获取用户信息过程中发生错误" });
             }
         }
@@ -203,16 +205,12 @@ namespace SCRM.Controllers.Auth
 
     public class LoginRequest
     {
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
-
         public string UserName { get; set; } = string.Empty;
         public string Password { get; set; } = string.Empty;
     }
 
     public class RefreshTokenRequest
     {
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
-
         public string UserId { get; set; } = string.Empty;
         public string RefreshToken { get; set; } = string.Empty;
     }

@@ -2,8 +2,12 @@ using Xunit;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using SCRM.Core.Netty;
 using SCRM.Services;
+using SCRM.Services.Netty;
+using Moq;
+using Microsoft.AspNetCore.SignalR;
+using SCRM.API.Hubs;
+using SCRM.Services.Events;
 using System.Threading.Tasks;
 using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
@@ -36,11 +40,12 @@ namespace SCRM.TEST.Netty
             services.AddSingleton<NettyServer>();
             services.AddSingleton<NettyMessageService>();
             services.AddSingleton<ClientTaskService>();
-
-            // Initialize static logger for NettyServer
-            SCRM.Shared.Core.Utility.logger = new LoggerConfiguration()
-                .WriteTo.Console()
-                .CreateLogger();
+            
+            // Mock dependencies instead of real ones for integration test if needed, 
+            // or just add them.
+            services.AddSingleton(new Mock<IEventBus>().Object); 
+            services.AddSingleton(new Mock<IHubContext<ClientHub>>().Object); 
+            services.AddSingleton(new Mock<IServiceScopeFactory>().Object);
 
             _serviceProvider = services.BuildServiceProvider();
 

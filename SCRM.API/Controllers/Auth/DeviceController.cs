@@ -16,12 +16,13 @@ namespace SCRM.Controllers.Auth
     {
         private readonly AuthService _authService;
         private readonly ApplicationDbContext _context;
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+        private readonly Microsoft.Extensions.Logging.ILogger<DeviceController> _logger;
 
-        public DeviceController(AuthService authService, ApplicationDbContext context)
+        public DeviceController(AuthService authService, ApplicationDbContext context, Microsoft.Extensions.Logging.ILogger<DeviceController> logger)
         {
             _authService = authService;
             _context = context;
+            _logger = logger;
         }
 
         [HttpPost("generate_vip")]
@@ -44,12 +45,12 @@ namespace SCRM.Controllers.Auth
                 _context.VipKeys.Add(newKey);
                 await _context.SaveChangesAsync();
 
-                _logger.Information("Generated VIP Key: {VipKey}, Type: {Type}, Days: {Days}", vipKey, request.Type, newKey.DurationDays);
+                _logger.LogInformation("Generated VIP Key: {VipKey}, Type: {Type}, Days: {Days}", vipKey, request.Type, newKey.DurationDays);
                 return Ok(new { Success = true, VipKey = vipKey });
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error generating VIP key");
+                _logger.LogError(ex, "Error generating VIP key");
                 return StatusCode(500, new { Message = "Error generating VIP key" });
             }
         }

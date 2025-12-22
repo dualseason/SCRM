@@ -154,43 +154,6 @@ namespace SCRM.API.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
-            modelBuilder.Entity("SCRM.API.Models.Entities.AccountStatusLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ChangeReason")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("NewStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OldStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("AccountStatusLogs");
-                });
-
             modelBuilder.Entity("SCRM.API.Models.Entities.AppVersion", b =>
                 {
                     b.Property<long>("VersionId")
@@ -291,6 +254,10 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasColumnType("text");
@@ -309,6 +276,10 @@ namespace SCRM.API.Migrations
 
                     b.Property<int>("IsStarred")
                         .HasColumnType("integer");
+
+                    b.Property<string>("LabelIds")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("LastInteractionTime")
                         .HasColumnType("timestamp with time zone");
@@ -333,6 +304,10 @@ namespace SCRM.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -344,6 +319,9 @@ namespace SCRM.API.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("WechatAccountId", "Wxid")
+                        .IsUnique();
 
                     b.ToTable("Contacts");
                 });
@@ -562,329 +540,6 @@ namespace SCRM.API.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Conversations");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.Device", b =>
-                {
-                    b.Property<long>("DeviceId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("DeviceId"));
-
-                    b.Property<string>("AppVersion")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeviceBrand")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DeviceModel")
-                        .HasColumnType("text");
-
-                    b.Property<string>("DeviceName")
-                        .HasColumnType("text");
-
-                    b.Property<short>("DeviceType")
-                        .HasColumnType("smallint");
-
-                    b.Property<string>("DeviceUuid")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("OsType")
-                        .HasColumnType("text");
-
-                    b.Property<string>("OsVersion")
-                        .HasColumnType("text");
-
-                    b.Property<string>("SdkVersion")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
-
-                    b.HasKey("DeviceId");
-
-                    b.HasIndex("IsDeleted");
-
-                    b.ToTable("devices", (string)null);
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceAuthorization", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AuthTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("AuthToken")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("DeviceId1")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("ExpiryTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeviceId1");
-
-                    b.ToTable("DeviceAuthorizations");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceCommand", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("CommandData")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("CommandType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("DeviceId1")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("ExecutedTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("ExecutionResult")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("ExecutionStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("IssuedTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeviceId1");
-
-                    b.ToTable("DeviceCommands");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceHeartbeat", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<double>("BatteryLevel")
-                        .HasColumnType("double precision");
-
-                    b.Property<double>("CpuUsage")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("DeviceId1")
-                        .HasColumnType("bigint");
-
-                    b.Property<DateTime>("HeartbeatTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<double>("MemoryUsage")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("NetworkStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeviceId1");
-
-                    b.ToTable("DeviceHeartbeats");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceLocation", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<double>("Accuracy")
-                        .HasColumnType("double precision");
-
-                    b.Property<string>("Address")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("DeviceId1")
-                        .HasColumnType("bigint");
-
-                    b.Property<double>("Latitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime>("LocationTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<double>("Longitude")
-                        .HasColumnType("double precision");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeviceId1");
-
-                    b.ToTable("DeviceLocations");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceStatusLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("ChangeReason")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("DeviceId1")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("NewStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OldStatus")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeviceId1");
-
-                    b.ToTable("DeviceStatusLogs");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceVersionLog", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("DeviceId")
-                        .HasColumnType("integer");
-
-                    b.Property<long?>("DeviceId1")
-                        .HasColumnType("bigint");
-
-                    b.Property<string>("ErrorMessage")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("NewVersion")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OldVersion")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("UpgradeStatus")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("UpgradeTime")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("DeviceId1");
-
-                    b.ToTable("DeviceVersionLogs");
                 });
 
             modelBuilder.Entity("SCRM.API.Models.Entities.FriendDetectionLog", b =>
@@ -2095,6 +1750,57 @@ namespace SCRM.API.Migrations
                     b.ToTable("MomentsPosts");
                 });
 
+            modelBuilder.Entity("SCRM.API.Models.Entities.MomentsTimeline", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
+
+                    b.Property<string>("CommentsJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("CreateTime")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ImagesJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("LikesJson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("NickName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("OwnerWxid")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("ReceivedAt")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("SnsId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("UserName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MomentsTimeline");
+                });
+
             modelBuilder.Entity("SCRM.API.Models.Entities.OfficialAccount", b =>
                 {
                     b.Property<int>("Id")
@@ -2566,9 +2272,6 @@ namespace SCRM.API.Migrations
                     b.Property<int>("DeviceId")
                         .HasColumnType("integer");
 
-                    b.Property<long?>("DeviceId1")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTime>("ExpireTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -2594,8 +2297,6 @@ namespace SCRM.API.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DeviceId1");
 
                     b.ToTable("ServerRedirects");
                 });
@@ -2659,9 +2360,6 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<long?>("DeviceId")
-                        .HasColumnType("bigint");
-
                     b.Property<DateTime>("ExpiryTime")
                         .HasColumnType("timestamp with time zone");
 
@@ -2696,8 +2394,6 @@ namespace SCRM.API.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DeviceId");
 
                     b.ToTable("SystemNotifications");
                 });
@@ -2963,6 +2659,10 @@ namespace SCRM.API.Migrations
                         .HasColumnType("character varying(100)")
                         .HasColumnName("region");
 
+                    b.Property<string>("Settings")
+                        .HasColumnType("text")
+                        .HasColumnName("settings");
+
                     b.Property<string>("Signature")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -3120,48 +2820,6 @@ namespace SCRM.API.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceAuthorization", b =>
-                {
-                    b.HasOne("SCRM.API.Models.Entities.Device", null)
-                        .WithMany("DeviceAuthorizations")
-                        .HasForeignKey("DeviceId1");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceCommand", b =>
-                {
-                    b.HasOne("SCRM.API.Models.Entities.Device", null)
-                        .WithMany("DeviceCommands")
-                        .HasForeignKey("DeviceId1");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceHeartbeat", b =>
-                {
-                    b.HasOne("SCRM.API.Models.Entities.Device", null)
-                        .WithMany("DeviceHeartbeats")
-                        .HasForeignKey("DeviceId1");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceLocation", b =>
-                {
-                    b.HasOne("SCRM.API.Models.Entities.Device", null)
-                        .WithMany("DeviceLocations")
-                        .HasForeignKey("DeviceId1");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceStatusLog", b =>
-                {
-                    b.HasOne("SCRM.API.Models.Entities.Device", null)
-                        .WithMany("DeviceStatusLogs")
-                        .HasForeignKey("DeviceId1");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.DeviceVersionLog", b =>
-                {
-                    b.HasOne("SCRM.API.Models.Entities.Device", null)
-                        .WithMany("DeviceVersionLogs")
-                        .HasForeignKey("DeviceId1");
-                });
-
             modelBuilder.Entity("SCRM.API.Models.Entities.LegacyWechatUser", b =>
                 {
                     b.HasOne("SCRM.API.Models.Entities.WechatAccount", "WechatAccount")
@@ -3211,13 +2869,6 @@ namespace SCRM.API.Migrations
                     b.Navigation("Permission");
 
                     b.Navigation("Role");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.ServerRedirect", b =>
-                {
-                    b.HasOne("SCRM.API.Models.Entities.Device", null)
-                        .WithMany("ServerRedirects")
-                        .HasForeignKey("DeviceId1");
                 });
 
             modelBuilder.Entity("SCRM.API.Models.Entities.SrClient", b =>
@@ -3286,13 +2937,6 @@ namespace SCRM.API.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("SCRM.API.Models.Entities.SystemNotification", b =>
-                {
-                    b.HasOne("SCRM.API.Models.Entities.Device", null)
-                        .WithMany("SystemNotifications")
-                        .HasForeignKey("DeviceId");
-                });
-
             modelBuilder.Entity("SCRM.API.Models.Entities.UserRole", b =>
                 {
                     b.HasOne("SCRM.API.Models.Entities.WechatAccount", "Account")
@@ -3337,25 +2981,6 @@ namespace SCRM.API.Migrations
                         .HasForeignKey("OwnerId");
 
                     b.Navigation("Owner");
-                });
-
-            modelBuilder.Entity("SCRM.API.Models.Entities.Device", b =>
-                {
-                    b.Navigation("DeviceAuthorizations");
-
-                    b.Navigation("DeviceCommands");
-
-                    b.Navigation("DeviceHeartbeats");
-
-                    b.Navigation("DeviceLocations");
-
-                    b.Navigation("DeviceStatusLogs");
-
-                    b.Navigation("DeviceVersionLogs");
-
-                    b.Navigation("ServerRedirects");
-
-                    b.Navigation("SystemNotifications");
                 });
 
             modelBuilder.Entity("SCRM.API.Models.Entities.Permission", b =>

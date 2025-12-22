@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
+using SCRM.SHARED.Models;
 
 namespace SCRM.Services.Data
 {
@@ -21,13 +22,7 @@ namespace SCRM.Services.Data
         public DbSet<RolePermission> RolePermissions { get; set; }
 
         // ==================== 一、设备与账号管理 ====================
-        public DbSet<DeviceAuthorization> DeviceAuthorizations { get; set; }
-        public DbSet<DeviceHeartbeat> DeviceHeartbeats { get; set; }
-        public DbSet<DeviceVersionLog> DeviceVersionLogs { get; set; }
-        public DbSet<AccountStatusLog> AccountStatusLogs { get; set; }
-        public DbSet<DeviceCommand> DeviceCommands { get; set; }
-        public DbSet<DeviceStatusLog> DeviceStatusLogs { get; set; }
-        public DbSet<DeviceLocation> DeviceLocations { get; set; }
+
 
         // ==================== 二、好友管理 ====================
         public DbSet<Contact> Contacts { get; set; }
@@ -62,6 +57,7 @@ namespace SCRM.Services.Data
 
         // ==================== 五、朋友圈 ====================
         public DbSet<MomentsPost> MomentsPosts { get; set; }
+        public DbSet<MomentsTimeline> MomentsTimelines { get; set; }
         public DbSet<MomentsLike> MomentsLikes { get; set; }
         public DbSet<MomentsComment> MomentsComments { get; set; }
 

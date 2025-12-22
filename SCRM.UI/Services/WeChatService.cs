@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Blazored.LocalStorage;
 using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
+using SCRM.SHARED.Models.Dtos;
 
 namespace SCRM.UI.Services
 {
@@ -21,6 +22,8 @@ namespace SCRM.UI.Services
         public event Action<string>? OnScreenShotReceived;
         public event Action<string, string, bool>? OnDeviceStatusChanged; // New Event for connection updates
         public event Action<string?>? OnReconnected; // New Event for Reconnection
+        public event Action<TaskResultDto>? OnTaskResultReceived; // New Event for Task Results
+        public event Action<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>? OnMomentReceived; // New Event for Moments
 
         public WeChatService(ILocalStorageService localStorage)
         {
@@ -98,6 +101,17 @@ namespace SCRM.UI.Services
                 OnScreenShotReceived?.Invoke(url);
             });
 
+            // 监听任务结果通知
+            _hubConnection.On<TaskResultDto>("OnTaskResult", (dto) =>
+            {
+                OnTaskResultReceived?.Invoke(dto);
+            });
+
+            _hubConnection.On<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>("MomentReceived", (dto) =>
+            {
+                OnMomentReceived?.Invoke(dto);
+            });
+
             try
             {
                 await _hubConnection.StartAsync();
@@ -108,6 +122,9 @@ namespace SCRM.UI.Services
                 // Consider throwing or handling gracefully
             }
         }
+// ... (existing methods omitted for brevity in replace logic, matching indentation)
+
+
 
         public async Task JoinGroupAsync(string groupName)
         {
@@ -385,13 +402,62 @@ namespace SCRM.UI.Services
             }
             return false;
         }
+
+        /// <summary>
+        /// 调用 SignalR 获取朋友圈列表
+        /// </summary>
+        public async Task<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>> GetMomentsTimelineAsync(string connectionId)
+        {
+            if (IsConnected && _hubConnection is not null)
+            {
+                try
+                {
+                    return await _hubConnection.InvokeAsync<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>>("GetMomentsTimeline", connectionId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"SignalR Invoke Failed: {ex.Message}");
+                    return Enumerable.Empty<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>();
+                }
+            }
+            return Enumerable.Empty<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>();
+        }
+
+        /// <summary>
+        /// 调用 SignalR 发送朋友圈
+        /// </summary>
+        public async Task<TaskResult> PostMomentAsync(string connectionId, string content, List<string> imageUrls)
+        {
+            if (IsConnected && _hubConnection is not null)
+            {
+                try
+                {
+                    return await _hubConnection.InvokeAsync<TaskResult>("PostMoment", connectionId, content, imageUrls);
+                }
+                catch (Exception ex)
+                {
+                    return TaskResult.Fail($"SignalR Error: {ex.Message}");
+                }
+            }
+            return TaskResult.Fail("SignalR not connected");
+        }
     }
-    // 接收消息的数据传输对象 (DTO)
-    // 对应服务器 MessageRouter 中构建的匿名对象
+
     public class ReceiveMessageDto
     {
-        public string FriendId { get; set; } // 发送者Wxid
+        public string FriendId { get; set; } // 会话窗口ID (Wxid/@chatroom)
         public string Content { get; set; }  // 消息内容
         public bool IsSelf { get; set; }     // 是否是自己发出的
+        public long MsgSvrId { get; set; }   // 微信消息服务器ID
+        public bool IsGroup { get; set; }    // 是否群聊
+        public long TaskId { get; set; }     // 任务关联ID
+    }
+
+    public class TaskResultDto
+    {
+        public long TaskId { get; set; }
+        public bool Success { get; set; }
+        public string Message { get; set; }
+        public string DeviceUuid { get; set; }
     }
 }

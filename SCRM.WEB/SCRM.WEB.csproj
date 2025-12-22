@@ -4,15 +4,22 @@
     <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <WasmBuildNative>true</WasmBuildNative>
+    <DisableStaticWebAssetsCompression>true</DisableStaticWebAssetsCompression>
+    <EnableCompressedStaticWebAssets>false</EnableCompressedStaticWebAssets>
+    <ErrorOnDuplicatePublishAssets>false</ErrorOnDuplicatePublishAssets>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="AntDesign" Version="1.5.0" />
     <PackageReference Include="Blazored.LocalStorage" Version="4.5.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components.Authorization" Version="9.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.5" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.5" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.11" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="9.0.11" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.0" />
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.1" />
     <PackageReference Include="Radzen.Blazor" Version="8.3.5" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.2" />
     <PackageReference Include="TG.Blazor.IndexedDB" Version="1.5.0-preview" />
   </ItemGroup>
 
@@ -20,4 +27,10 @@
     <ProjectReference Include="..\SCRM.UI\SCRM.UI.csproj" />
   </ItemGroup>
 
+
+  <Target Name="SuppressDiscoverPrecompressedAssets" BeforeTargets="DiscoverPrecompressedAssets">
+    <ItemGroup>
+      <_PrecompressedStaticWebAsset Remove="@(_PrecompressedStaticWebAsset)" />
+    </ItemGroup>
+  </Target>
 </Project>

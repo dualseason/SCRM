@@ -1,11 +1,15 @@
 using Xunit;
 using FluentAssertions;
 using Moq;
-using SCRM.Core.Netty;
+using SCRM.Services.Netty;
 using SCRM.SHARED.Proto;
 using DotNetty.Transport.Channels;
 using System.Threading.Tasks;
 using SCRM.Services;
+using Microsoft.AspNetCore.SignalR;
+using SCRM.API.Hubs;
+using SCRM.SHARED.Models.Dtos;
+using SCRM.Services.Events;
 
 namespace SCRM.TEST.Netty
 {
@@ -17,13 +21,30 @@ namespace SCRM.TEST.Netty
         private readonly ConnectionManager _connectionManager;
 
         private readonly Mock<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory> _mockScopeFactory;
+        private readonly Mock<IHubContext<SCRM.API.Hubs.ClientHub>> _mockHubContext;
+        private readonly Mock<ClientTaskService> _mockClientTaskService;
+        private readonly Mock<IEventBus> _mockEventBus;
+        private readonly Mock<Microsoft.Extensions.Logging.ILogger<MessageRouter>> _mockRouterLogger;
 
         public MessageRouterTests(TestInitializer initializer) : base(initializer)
         {
             var mockLogger = new Mock<Microsoft.Extensions.Logging.ILogger<ConnectionManager>>();
             _connectionManager = new ConnectionManager(mockLogger.Object);
             _mockScopeFactory = new Mock<Microsoft.Extensions.DependencyInjection.IServiceScopeFactory>();
-            _router = new MessageRouter(_connectionManager, _mockScopeFactory.Object);
+            
+            _mockHubContext = new Mock<IHubContext<SCRM.API.Hubs.ClientHub>>();
+            _mockClientTaskService = new Mock<ClientTaskService>(null, null); // Mocking with null deps for simple test
+            _mockEventBus = new Mock<IEventBus>();
+            _mockRouterLogger = new Mock<Microsoft.Extensions.Logging.ILogger<MessageRouter>>();
+
+            _router = new MessageRouter(
+                _connectionManager, 
+                _mockScopeFactory.Object, 
+                _mockHubContext.Object, 
+                _mockClientTaskService.Object, 
+                _mockEventBus.Object, 
+                _mockRouterLogger.Object);
+
             _mockContext = new Mock<IChannelHandlerContext>();
             _mockChannel = new Mock<IChannel>();
             _mockContext.Setup(x => x.Channel).Returns(_mockChannel.Object);

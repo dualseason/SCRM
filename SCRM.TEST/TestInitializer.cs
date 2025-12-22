@@ -11,15 +11,6 @@ namespace SCRM.TEST
     {
         public Task InitializeAsync()
         {
-            // 初始化 Utility.logger 用于测试
-            if (Utility.logger == null)
-            {
-                Utility.logger = new LoggerConfiguration()
-                    .WriteTo.Console()
-                    .WriteTo.Debug()
-                    .CreateLogger();
-            }
-
             return Task.CompletedTask;
         }
 

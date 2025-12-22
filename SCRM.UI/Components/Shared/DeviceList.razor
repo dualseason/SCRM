@@ -1,0 +1,47 @@
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using AntDesign
+@inject CrmStore Store
+
+<div class="device-list-container">
+    @foreach (var device in Store.Devices)
+    {
+        <div class="device-item @(Store.SelectedDevice?.uuid == device.uuid ? "active" : "")" 
+             @onclick="@(() => SelectDevice(device))"
+             title="@device.WeChatNick">
+             <Avatar Size="@("large")" Src="@device.WeChatAvatar" Icon="mobile" Style="background-color: #87d068;" />
+             <div style="font-size: 10px; color: #fff; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 5px;">
+                 @(string.IsNullOrEmpty(device.WeChatNick) ? "Device" : device.WeChatNick)
+             </div>
+        </div>
+    }
+    <div class="device-item" @onclick="RefreshDevices" title="Refresh Devices">
+         <Icon Type="reload" Theme="@AntDesign.IconThemeType.Outline" Style="font-size: 24px; color: #fff;" />
+    </div>
+</div>
+
+<style>
+    .device-list-container { text-align: center; padding-top: 10px; overflow-y: auto; height: 100%; }
+    .device-item { cursor: pointer; padding: 10px 0; opacity: 0.6; transition: 0.3s; }
+    .device-item:hover { opacity: 1; }
+    .device-item.active { opacity: 1; border-left: 3px solid #1890ff; background: rgba(255,255,255,0.1); }
+</style>
+
+@code {
+    [Parameter]
+    public EventCallback<SrClient> OnDeviceSelected { get; set; }
+
+    private async Task SelectDevice(SrClient device)
+    {
+        await Store.SelectDeviceAsync(device);
+        if (OnDeviceSelected.HasDelegate)
+        {
+            await OnDeviceSelected.InvokeAsync(device);
+        }
+    }
+
+    private async Task RefreshDevices()
+    {
+        await Store.LoadDevicesAsync();
+    }
+}

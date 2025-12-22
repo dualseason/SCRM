@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 using SCRM.API.Hubs;
 using System.Threading;
 using System.Threading.Tasks;
+using SCRM.API.Models.Events;
 
 namespace SCRM.Services.Events
 {
@@ -62,6 +63,17 @@ namespace SCRM.Services.Events
                     // Push to SignalR group (DeviceUuid)
                     // 前端收到 "ContactsUpdated" 信号后，应该重新调用 GetContacts API
                     await _hubContext.Clients.Group(e.DeviceUuid).SendAsync("ContactsUpdated", e.AccountId, stoppingToken);
+                }
+            });
+
+            // 订阅任务结果事件 (TaskResultReceivedEvent)
+            _eventBus.Subscribe<TaskResultReceivedEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.DeviceUuid))
+                {
+                    _logger.LogInformation("转发任务结果: TaskId={TaskId}, Success={Success} -> SignalR组 {DeviceUuid}", e.TaskId, e.Success, e.DeviceUuid);
+                    // 使用匿名对象发送，确保前端能收到 TaskId
+                    await _hubContext.Clients.Group(e.DeviceUuid).SendAsync("OnTaskResult", new { TaskId = e.TaskId, Success = e.Success, Message = e.Message }, stoppingToken);
                 }
             });
 

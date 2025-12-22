@@ -1,4 +1,4 @@
-namespace SCRM.SHARED.Models
+namespace SCRM.SHARED.Models.Dtos
 {
     public class TaskResult
     {

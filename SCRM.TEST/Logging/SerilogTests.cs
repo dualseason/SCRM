@@ -22,12 +22,7 @@ namespace SCRM.TEST.Logging
                 .CreateLogger();
         }
 
-        [Fact]
-        public void Utility_Logger_ShouldNotBeNull()
-        {
-            // Assert
-            Utility.logger.Should().NotBeNull();
-        }
+
 
         [Fact]
         public void TestLogger_Information_ShouldCaptureLog()

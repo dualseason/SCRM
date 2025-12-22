@@ -1,5 +1,4 @@
 using SCRM.API.Models.Entities;
-using SCRM.SHARED.Models;
 
 namespace SCRM.UI.Services.Data
 {
@@ -7,5 +6,6 @@ namespace SCRM.UI.Services.Data
     {
         IClientDataSet<Contact> Contacts { get; }
         IClientDataSet<Message> Messages { get; }
+        IClientDataSet<MomentsTimeline> MomentsTimelines { get; }
     }
 }

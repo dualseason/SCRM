@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <DisableStaticWebAssetsCompression>true</DisableStaticWebAssetsCompression>
+    <StaticWebAssetsDisableCompression>true</StaticWebAssetsDisableCompression>
+    <EnableCompressedStaticWebAssets>false</EnableCompressedStaticWebAssets>
+  </PropertyGroup>
+
+  <!-- Final safety check: if the task still tries to run, try to empty the items it uses -->
+  <Target Name="BeforeDiscoverPrecompressedAssets" BeforeTargets="DiscoverPrecompressedAssets">
+    <ItemGroup>
+      <_StaticWebAssetsToCompress Remove="@(_StaticWebAssetsToCompress)" />
+    </ItemGroup>
+  </Target>
+</Project>

@@ -11,10 +11,12 @@ public class MemoryClientDbContext : IClientDbContext
     {
         Contacts = new MemoryDataSet<Contact>();
         Messages = new MemoryDataSet<Message>();
+        MomentsTimelines = new MemoryDataSet<SCRM.API.Models.Entities.MomentsTimeline>();
     }
 
     public IClientDataSet<Contact> Contacts { get; }
     public IClientDataSet<Message> Messages { get; }
+    public IClientDataSet<SCRM.API.Models.Entities.MomentsTimeline> MomentsTimelines { get; }
 }
 
 public class MemoryDataSet<T> : IClientDataSet<T> where T : class

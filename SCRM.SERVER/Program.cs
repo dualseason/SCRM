@@ -14,7 +14,8 @@ builder.Services.AddRazorPages();
 builder.Services.AddServerSideBlazor();
 
 // Copy services from SCRM.WEB
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri("http://localhost:42718") });
+var networkSettings = builder.Configuration.GetSection(SCRM.SHARED.Models.NetworkSettings.SectionName).Get<SCRM.SHARED.Models.NetworkSettings>() ?? new SCRM.SHARED.Models.NetworkSettings();
+builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(networkSettings.ApiBaseUrl) });
 builder.Services.AddScoped<IDeviceService, DeviceService>();
 builder.Services.AddScoped<IClientTaskService, ClientTaskService>();
 

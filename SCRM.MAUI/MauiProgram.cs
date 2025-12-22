@@ -2,6 +2,7 @@
 using Radzen;
 using SCRM.UI.Services;
 using Blazored.LocalStorage;
+using Microsoft.EntityFrameworkCore;
 
 namespace SCRM.MAUI
 {
@@ -28,9 +29,15 @@ namespace SCRM.MAUI
                 builder.Services.AddRadzenComponents();
                 
                 // Register HttpClient and DeviceService
-                // Note: For Android Emulator, use http://10.0.2.2:42718 (or whatever port API runs on)
-                // For Windows, use http://localhost:42718
-                string baseUrl = DeviceInfo.Platform == DevicePlatform.Android ? "http://10.0.2.2:42718" : "http://localhost:42718";
+                var stream = System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("SCRM.MAUI.appsettings.json");
+                var config = new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+                    .AddJsonStream(stream)
+                    .Build();
+                builder.Configuration.AddConfiguration(config);
+
+                var networkSettings = builder.Configuration.GetSection(SCRM.SHARED.Models.NetworkSettings.SectionName).Get<SCRM.SHARED.Models.NetworkSettings>() ?? new SCRM.SHARED.Models.NetworkSettings();
+                string baseUrl = networkSettings.GetEffectiveApiUrl(DeviceInfo.Platform == DevicePlatform.Android);
+
                 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(baseUrl) });
                 builder.Services.AddScoped<IDeviceService, DeviceService>();
                 builder.Services.AddScoped<IClientTaskService, ClientTaskService>();
@@ -74,7 +81,11 @@ namespace SCRM.MAUI
 
                 builder.Services.AddMemoryCache(); // Ensure MemoryCache is available
                 builder.Services.AddMemoryCache(); // Ensure MemoryCache is available
-                builder.Services.AddScoped<SCRM.UI.Services.Data.ClientDbContext>();
+                // Register EF Core SQLite
+                string dbPath = Path.Combine(FileSystem.AppDataDirectory, "client.db");
+                builder.Services.AddDbContext<SCRM.UI.Services.Data.ClientDbContext>(options =>
+                    options.UseSqlite($"Data Source={dbPath}"));
+                
                 builder.Services.AddScoped<SCRM.UI.Services.Data.IClientDbContext>(sp => sp.GetRequiredService<SCRM.UI.Services.Data.ClientDbContext>());
 
                 return builder.Build();

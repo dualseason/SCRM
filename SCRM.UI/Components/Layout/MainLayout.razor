@@ -1,69 +1,36 @@
 @inherits LayoutComponentBase
 @using Radzen
 @using Radzen.Blazor
-@using Microsoft.AspNetCore.Components.Authorization
-@using Blazored.LocalStorage
-@using SCRM.UI.Services
-@inject NavigationManager Navigation
-@inject ILocalStorageService LocalStorage
-@inject AuthenticationStateProvider AuthStateProvider
 
 <RadzenComponents />
 
-<RadzenLayout style="height: 100vh">
+<RadzenLayout Style="height: 100vh; grid-template-areas: 'rz-header rz-header' 'rz-sidebar rz-body';">
     <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0" Style="padding: 0 1rem; height: 100%;">
             <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
-            <RadzenLabel Text="SCRM" />
-            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Style="margin-left: auto; margin-right: 1rem;">
-                <AuthorizeView>
-                    <Authorized>
-                        <RadzenText TextStyle="TextStyle.Body1" Style="color: white;">@context.User.Identity?.Name</RadzenText>
-                        <RadzenButton Text="退出" Icon="logout" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.Small" Click="@Logout" />
-                    </Authorized>
-                    <NotAuthorized>
-                        <RadzenLink Path="login" Text="登录" Style="color: white;" />
-                    </NotAuthorized>
-                </AuthorizeView>
-            </RadzenStack>
+            <RadzenLabel Text="SCRM 控制中心" Style="font-size: 1.25rem; font-weight: bold; margin-left: 1rem;" />
         </RadzenStack>
     </RadzenHeader>
-    <RadzenSidebar Responsive="false" Style="width: max-content" @bind-Expanded="@sidebarExpanded">
-        <RadzenPanelMenu DisplayStyle="@(sidebarExpanded ? MenuItemDisplayStyle.IconAndText : MenuItemDisplayStyle.Icon)" ShowArrow="false">
-             <AuthorizeView>
-                <Authorized>
-                    <RadzenPanelMenuItem Text="Home" Path="" Icon="home" />
-                    <RadzenPanelMenuItem Text="Chat" Path="chat" Icon="chat" />
-
-                </Authorized>
-            </AuthorizeView>
-        </RadzenPanelMenu>
+    <RadzenSidebar @bind-Expanded="@sidebarExpanded" Style="width: 250px; z-index: 2;">
+        <NavMenu />
     </RadzenSidebar>
-    <RadzenBody>
-        <div class="rz-p-4">
+    <RadzenBody Style="height: calc(100vh - 51px); overflow: hidden;">
+        <div style="height: 100%; width: 100%;">
             @Body
         </div>
     </RadzenBody>
-    <RadzenFooter>
-        <RadzenText TextStyle="TextStyle.Body2" TextAlign="TextAlign.Center" Text="&copy; 2025 SCRM" />
-    </RadzenFooter>
 </RadzenLayout>
 
 @code {
     bool sidebarExpanded = true;
-    [Inject] WeChatService WeChatService { get; set; }
-    [Inject] HttpClient HttpClient { get; set; }
-
-    protected override async Task OnInitializedAsync()
-    {
-        var hubUrl = new Uri(HttpClient.BaseAddress!, "hubs/client").ToString();
-        await WeChatService.InitializeAsync(hubUrl);
-    }
-
-    private async Task Logout()
-    {
-        await LocalStorage.RemoveItemAsync("authToken");
-        await AuthStateProvider.GetAuthenticationStateAsync();
-        Navigation.NavigateTo("/login");
-    }
 }
+
+<style>
+    /* 修正 Radzen Layout 在部分浏览器下的溢出问题 */
+    .rz-layout {
+        overflow: hidden;
+    }
+    .rz-body {
+        padding: 0 !important;
+    }
+</style>

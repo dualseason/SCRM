@@ -1,0 +1,112 @@
+@page "/moments"
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models
+@using AntDesign
+@inject CrmStore Store
+@inject NavigationManager NavManager
+@inject INotificationService NoticeService
+@implements IDisposable
+
+<PageTitle>Moments</PageTitle>
+
+@if(Store.SelectedDevice == null) {
+    <Result Status="@AntDesign.ResultStatus.Error" Title="No Device Selected" SubTitle="Please select a device first.">
+        <Extra>
+            <Button Type="@AntDesign.ButtonType.Primary" OnClick="@(()=>NavManager.NavigateTo("/devices"))">Go to Devices</Button>
+        </Extra>
+    </Result>
+} else {
+    <Card Title="@($"Moments (Beta) - {Store.SelectedDevice.WeChatNick}")">
+        
+        <div style="margin-bottom: 20px;">
+             <Space>
+                <SpaceItem>
+                    <Button OnClick="Sync" Loading="@_syncing">Sync Timeline</Button>
+                </SpaceItem>
+             </Space>
+        </div>
+
+        <Divider Orientation="DividerOrientation.Left">Post New Moment</Divider>
+        
+        <Form Model="@_model" Layout="@FormLayout.Vertical">
+            <FormItem Label="Content">
+                <TextArea @bind-Value="@context.Content" MinRows="3" Placeholder="Say something..." />
+            </FormItem>
+            <FormItem Label="Image URL (Optional)">
+                <Input @bind-Value="@context.ImageUrl" Placeholder="https://example.com/image.jpg" />
+                <div style="margin-top:5px; color:#888; font-size:12px;">Only single image supported in this beta.</div>
+            </FormItem>
+            <FormItem>
+                <Button Type="@AntDesign.ButtonType.Primary" OnClick="Post" Loading="@_posting">Post Moment</Button>
+            </FormItem>
+        </Form>
+
+    </Card>
+}
+
+@code {
+    public class MomentFormModel {
+        public string Content { get; set; } = "";
+        public string ImageUrl { get; set; } = "";
+    }
+
+    private MomentFormModel _model = new();
+    private bool _posting = false;
+    private bool _syncing = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += async () => await InvokeAsync(StateHasChanged);
+        Store.OnNotification += async (msg, success) => await InvokeAsync(() => HandleNotification(msg, success));
+        await Store.InitializeAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= StateHasChanged;
+        Store.OnNotification -= HandleNotification;
+    }
+
+    private async Task Sync()
+    {
+        _syncing = true;
+        await Store.SyncMomentsAsync();
+        NoticeService.Open(new NotificationConfig() { Message = "Success", Description = "Sync command sent!", NotificationType = AntDesign.NotificationType.Success });
+        _syncing = false;
+    }
+
+    private async Task Post()
+    {
+        if(string.IsNullOrWhiteSpace(_model.Content) && string.IsNullOrWhiteSpace(_model.ImageUrl))
+        {
+            NoticeService.Open(new NotificationConfig() { Message = "Warning", Description = "Please enter content or image.", NotificationType = AntDesign.NotificationType.Warning });
+            return;
+        }
+
+        _posting = true;
+        var imgs = new List<string>();
+        if(!string.IsNullOrWhiteSpace(_model.ImageUrl))
+        {
+             imgs.Add(_model.ImageUrl.Trim());
+        }
+
+        var result = await Store.PostMomentAsync(_model.Content, imgs);
+        
+        if(result.Success)
+        {
+            NoticeService.Open(new NotificationConfig() { Message = "Success", Description = "Moment posted successfully!", NotificationType = AntDesign.NotificationType.Success });
+            _model = new MomentFormModel(); // Reset
+        }
+        else
+        {
+            NoticeService.Open(new NotificationConfig() { Message = "Error", Description = $"Failed: {result.Message}", NotificationType = AntDesign.NotificationType.Error });
+        }
+        _posting = false;
+    }
+
+    private void HandleNotification(string msg, bool success)
+    {
+        // Global notification handler if needed, but we handle Post result locally above.
+    }
+}

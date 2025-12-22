@@ -33,25 +33,11 @@ public partial class Program
 
         // 初始化 Serilog（Debug & Console）
         // 初始化 Serilog（Debug & Console）
-        SCRM.Shared.Core.Utility.logger = new LoggerConfiguration()
-            .ReadFrom.Configuration(builder.Configuration) // 读取 appsettings.json 配置
-            .MinimumLevel.Override("Microsoft", Serilog.Events.LogEventLevel.Warning) // 默认屏蔽微软日志
-            .MinimumLevel.Override("Microsoft.EntityFrameworkCore", Serilog.Events.LogEventLevel.Warning) // 屏蔽 EF Core SQL 日志
-            .WriteTo.Debug(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
-            .WriteTo.Console(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
-            .CreateLogger();
-
-        // EF 错误日志（仅 Warning 及以上）
-        SCRM.Shared.Core.Utility.efLogger = new LoggerConfiguration()
-            .MinimumLevel.Warning()
-            .WriteTo.Debug(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning,
-                          outputTemplate: "{Timestamp:HH:mm:ss.fff} 【EF错误】 {Message:lj}{NewLine}{Exception}")
-            .WriteTo.Console(restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning,
-                              outputTemplate: "{Timestamp:HH:mm:ss.fff} 【EF错误】 {Message:lj}{NewLine}{Exception}")
-            .CreateLogger();
-
-        // PostgreSQL 日志持久化
+        // 初始化 Serilog (统一配置)
+        // 读取配置
         var pgConnectionString = builder.Configuration.GetConnectionString("PostgresConnection");
+        
+        // PostgreSQL 列映射配置
         var columnWriters = new Dictionary<string, Serilog.Sinks.PostgreSQL.ColumnWriterBase>
         {
             {"Timestamp", new Serilog.Sinks.PostgreSQL.TimestampColumnWriter(NpgsqlTypes.NpgsqlDbType.TimestampTz)},
@@ -60,16 +46,30 @@ public partial class Program
             {"Exception", new Serilog.Sinks.PostgreSQL.ExceptionColumnWriter(NpgsqlTypes.NpgsqlDbType.Text)}
         };
 
-        SCRM.Shared.Core.Utility.loggerToDB = new LoggerConfiguration()
-            .WriteTo.PostgreSQL(pgConnectionString,
-                              tableName: "Logs",
-                              needAutoCreateTable: true,
-                              columnOptions: columnWriters)
-            .CreateLogger();
+        var loggerConfig = new LoggerConfiguration()
+            .ReadFrom.Configuration(builder.Configuration) // 读取 appsettings.json (包括 LogLevel Overrides)
+            .Enrich.FromLogContext()
+            .WriteTo.Debug(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Console(
+                outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}",
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information
+            );
 
-        // 将 Serilog 注入 ASP.NET Core 主机
-        Log.Logger = SCRM.Shared.Core.Utility.logger;
+        // 如果配置了 PostgreSQL 连接字符串，则添加 PostgreSQL Sink
+        if (!string.IsNullOrEmpty(pgConnectionString))
+        {
+             loggerConfig.WriteTo.PostgreSQL(
+                connectionString: pgConnectionString,
+                tableName: "Logs",
+                needAutoCreateTable: true,
+                columnOptions: columnWriters,
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Warning // 仅记录警告及以上到数据库，避免撑爆
+            );
+        }
 
+        Log.Logger = loggerConfig.CreateLogger();
+
+        // 绑定到 Host
         builder.Host.UseSerilog();
 
         // Add services to the container.
@@ -185,6 +185,8 @@ public partial class Program
 
         builder.Services.AddHostedService<NettyMessageService>(provider => provider.GetRequiredService<NettyMessageService>());        
         builder.Services.AddHostedService<EventForwardingService>(); // Forward events to SignalR
+        builder.Services.AddHostedService<SCRM.Services.Automation.AutomationService>(); // C&C Automation (Auto-Reply, etc.)
+        builder.Services.AddHostedService<SCRM.API.Services.Maintenance.IndexCleanupService>(); // Auto-fix zombie indexes
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAll", builder =>

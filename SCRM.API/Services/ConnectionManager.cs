@@ -8,16 +8,41 @@ using SCRM.Shared.Core;
 using SCRM.Models;
 using DotNetty.Transport.Channels;
 
+
 namespace SCRM.Services
 {
+    /// <summary>
+    /// 连接管理器
+    /// 负责全站 WebSocket/TCP 连接的生命周期管理，包括映射 
+    /// ConnectionId -> UserInfo, User -> ConnectionIds, DeviceUuid -> ConnectionId
+    /// </summary>
     public class ConnectionManager
     {
         private readonly ILogger<ConnectionManager> _logger;
+        
+        /// <summary>
+        /// 主连接字典: ConnectionId -> ConnectionInfo
+        /// </summary>
         private readonly ConcurrentDictionary<string, UserConnectionInfo> _connections = new ConcurrentDictionary<string, UserConnectionInfo>();
+        
+        /// <summary>
+        /// 用户维度索引: UserId -> Set of ConnectionIds (支持多端登录)
+        /// </summary>
         private readonly ConcurrentDictionary<string, HashSet<string>> _userConnections = new ConcurrentDictionary<string, HashSet<string>>();
+        
+        /// <summary>
+        /// 设备类型索引: DeviceType -> Set of ConnectionIds
+        /// </summary>
         private readonly ConcurrentDictionary<string, HashSet<string>> _deviceTypeConnections = new ConcurrentDictionary<string, HashSet<string>>();
-        // Add index for DeviceUuid -> ConnectionId (Assuming 1-to-1 active connection per device UUID)
+        
+        /// <summary>
+        /// 设备UUID索引: DeviceUuid -> ConnectionId (假设每个设备UUID同时只有一个活跃连接)
+        /// </summary>
         private readonly ConcurrentDictionary<string, string> _deviceUuidConnections = new ConcurrentDictionary<string, string>();
+        
+        /// <summary>
+        /// Netty Channel 实例缓存: ConnectionId -> IChannel
+        /// </summary>
         private readonly ConcurrentDictionary<string, IChannel> _activeChannels = new ConcurrentDictionary<string, IChannel>();
 
         public ConnectionManager(ILogger<ConnectionManager> logger)
@@ -25,6 +50,10 @@ namespace SCRM.Services
             _logger = logger;
         }
 
+        /// <summary>
+        /// 注册新连接
+        /// 在 DeviceAuth 或 连接初始化时调用
+        /// </summary>
         public Task AddConnectionAsync(string userId, string connectionId, string deviceType, string deviceInfo = "")
         {
             var connectionInfo = new UserConnectionInfo
@@ -67,6 +96,10 @@ namespace SCRM.Services
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// 移除连接
+        /// 在断开连接 (ChannelInactive) 时调用
+        /// </summary>
         public Task RemoveConnectionAsync(string connectionId)
         {
             if (_connections.TryRemove(connectionId, out var connectionInfo))
@@ -114,22 +147,34 @@ namespace SCRM.Services
             return Task.CompletedTask;
         }
 
+        /// <summary>
+        /// 注册 Netty 通道实例
+        /// </summary>
         public void RegisterChannel(string connectionId, IChannel channel)
         {
             _activeChannels.AddOrUpdate(connectionId, channel, (key, oldValue) => channel);
         }
 
+        /// <summary>
+        /// 移除 Netty 通道实例
+        /// </summary>
         public void RemoveChannel(string connectionId)
         {
             _activeChannels.TryRemove(connectionId, out _);
         }
 
+        /// <summary>
+        /// 获取指定连接的 Netty 通道
+        /// </summary>
         public IChannel? GetChannel(string connectionId)
         {
             _activeChannels.TryGetValue(connectionId, out var channel);
             return channel;
         }
 
+        /// <summary>
+        /// 根据 UserId 获取任意一个活跃的 Netty 通道
+        /// </summary>
         public IChannel? GetChannelByUserId(string userId)
         {
             if (_userConnections.TryGetValue(userId, out var connectionIds))
@@ -145,6 +190,9 @@ namespace SCRM.Services
             return null;
         }
 
+        /// <summary>
+        /// 获取用户的所有连接信息
+        /// </summary>
         public Task<IEnumerable<UserConnectionInfo>> GetConnectionsByUserAsync(string userId)
         {
             if (_userConnections.TryGetValue(userId, out var connectionIds))
@@ -160,6 +208,9 @@ namespace SCRM.Services
             return Task.FromResult(Enumerable.Empty<UserConnectionInfo>());
         }
 
+        /// <summary>
+        /// 获取特定设备类型的所有连接
+        /// </summary>
         public Task<IEnumerable<UserConnectionInfo>> GetConnectionsByDeviceTypeAsync(string deviceType)
         {
             if (_deviceTypeConnections.TryGetValue(deviceType, out var connectionIds))
@@ -175,17 +226,26 @@ namespace SCRM.Services
             return Task.FromResult(Enumerable.Empty<UserConnectionInfo>());
         }
 
+        /// <summary>
+        /// 获取所有活跃连接
+        /// </summary>
         public Task<IEnumerable<UserConnectionInfo>> GetAllConnectionsAsync()
         {
             return Task.FromResult(_connections.Values.AsEnumerable());
         }
 
+        /// <summary>
+        /// 根据 ConnectionId 获取连接详情
+        /// </summary>
         public Task<UserConnectionInfo?> GetConnectionAsync(string connectionId)
         {
             _connections.TryGetValue(connectionId, out var connection);
             return Task.FromResult(connection);
         }
 
+        /// <summary>
+        /// 根据设备UUID 获取 ConnectionId
+        /// </summary>
         public Task<string?> GetConnectionIdByDeviceUuidAsync(string deviceUuid)
         {
             if (_deviceUuidConnections.TryGetValue(deviceUuid, out var connectionId))
@@ -195,6 +255,9 @@ namespace SCRM.Services
             return Task.FromResult<string?>(null);
         }
 
+        /// <summary>
+        /// 更新连接的最后活动时间
+        /// </summary>
         public Task<bool> UpdateConnectionActivityAsync(string connectionId)
         {
             if (_connections.TryGetValue(connectionId, out var connection))
@@ -205,6 +268,9 @@ namespace SCRM.Services
             return Task.FromResult(false);
         }
 
+        /// <summary>
+        /// 检查连接是否已认证 (关联了 UserId)
+        /// </summary>
         public Task<bool> IsConnectionAuthenticatedAsync(string connectionId)
         {
             if (_connections.TryGetValue(connectionId, out var connection))
@@ -215,6 +281,9 @@ namespace SCRM.Services
             return Task.FromResult(false);
         }
 
+        /// <summary>
+        /// 检查用户是否在线
+        /// </summary>
         public Task<bool> IsUserOnlineAsync(string userId)
         {
             if (_userConnections.TryGetValue(userId, out var connectionIds))
@@ -229,6 +298,9 @@ namespace SCRM.Services
             return Task.FromResult(false);
         }
 
+        /// <summary>
+        /// 获取当前在线用户总数
+        /// </summary>
         public Task<int> GetOnlineUserCountAsync()
         {
             var onlineUsers = _userConnections
@@ -240,7 +312,9 @@ namespace SCRM.Services
             return Task.FromResult(onlineUsers);
         }
 
-        // 获取统计信息
+        /// <summary>
+        /// 获取连接统计概览
+        /// </summary>
         public ConnectionStatistics GetStatistics()
         {
             var totalConnections = _connections.Count;
@@ -260,6 +334,9 @@ namespace SCRM.Services
         }
     }
 
+    /// <summary>
+    /// 连接统计数据模型
+    /// </summary>
     public class ConnectionStatistics
     {
         public int TotalConnections { get; set; }

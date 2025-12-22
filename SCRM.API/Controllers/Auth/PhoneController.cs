@@ -21,12 +21,13 @@ namespace SCRM.Controllers.Auth
     {
         private readonly ApplicationDbContext _context;
         private readonly AuthService _authService;
-        private readonly Serilog.ILogger _logger = SCRM.Shared.Core.Utility.logger;
+        private readonly Microsoft.Extensions.Logging.ILogger<PhoneController> _logger;
 
-        public PhoneController(ApplicationDbContext context, AuthService authService)
+        public PhoneController(ApplicationDbContext context, AuthService authService, Microsoft.Extensions.Logging.ILogger<PhoneController> logger)
         {
             _context = context;
             _authService = authService;
+            _logger = logger;
         }
 
         private async Task<T> GetDecryptedBody<T>()
@@ -42,7 +43,7 @@ namespace SCRM.Controllers.Auth
                     string json = EncryptionHelper.DecryptDefault(encryptedBody);
                     if (string.IsNullOrEmpty(json))
                     {
-                        _logger.Warning($"Failed to decrypt body. Length: {encryptedBody.Length}");
+                        _logger.LogWarning($"Failed to decrypt body. Length: {encryptedBody.Length}");
                         return default;
                     }
 
@@ -52,7 +53,7 @@ namespace SCRM.Controllers.Auth
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error reading/decrypting body");
+                _logger.LogError(ex, "Error reading/decrypting body");
                 return default;
             }
         }
@@ -135,7 +136,7 @@ namespace SCRM.Controllers.Auth
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Phone registration error");
+                _logger.LogError(ex, "Phone registration error");
                 return Ok(ApiResponse<UserAuthToken>.Fail(-1, "服务器内部错误"));
             }
         }
@@ -264,7 +265,7 @@ namespace SCRM.Controllers.Auth
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Phone login error");
+                _logger.LogError(ex, "Phone login error");
                 return Ok(ApiResponse<SrClient>.Fail(-1, "服务器内部错误"));
             }
         }
@@ -318,7 +319,7 @@ namespace SCRM.Controllers.Auth
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Phone validation error");
+                _logger.LogError(ex, "Phone validation error");
                 return Ok(ApiResponse<SrClient>.Fail(-1, "验证失败"));
             }
         }
