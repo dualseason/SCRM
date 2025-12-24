@@ -14,13 +14,13 @@
 
 <style>
     .layout-container { height: 100%; border: none; }
-    .device-sider { background: #2e2e2e; text-align: center; padding-top: 10px; overflow-y: auto; border-right: 1px solid #141414; }
+    .device-sider { background: #fff; text-align: center; padding-top: 10px; overflow-y: auto; border-right: 1px solid #f0f0f0; }
     .contact-sider { background: #fdfdfd; border-right: 1px solid #e8e8e8; overflow-y: auto; }
     .chat-content { background: #fff; display: flex; flex-direction: column; overflow: hidden; height: 100%; }
     
-    .device-item { cursor: pointer; padding: 10px 0; opacity: 0.6; transition: 0.3s; }
-    .device-item:hover { opacity: 1; }
-    .device-item.active { opacity: 1; border-left: 3px solid #1890ff; background: rgba(255,255,255,0.1); }
+    .device-item { cursor: pointer; padding: 10px 0; opacity: 0.8; transition: 0.3s; }
+    .device-item:hover { opacity: 1; background-color: #f5f5f5; }
+    .device-item.active { opacity: 1; border-left: 3px solid #1890ff; background: #e6f7ff; }
     
     .contact-item { cursor: pointer; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; transition: 0.2s; display: flex; align-items: center; }
     .contact-item:hover { background: #f5f5f5; }
@@ -45,7 +45,7 @@
 
 <Layout Class="layout-container">
     <!-- 1. Left Sider: Devices -->
-    <Sider Width="80" Class="device-sider" Theme="SiderTheme.Dark">
+    <Sider Width="80" Class="device-sider" Theme="SiderTheme.Light">
         <SCRM.UI.Components.Shared.DeviceList OnDeviceSelected="OnDeviceSelectedInternal" />
     </Sider>
 

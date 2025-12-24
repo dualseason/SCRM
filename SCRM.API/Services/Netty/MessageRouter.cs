@@ -166,6 +166,10 @@ namespace SCRM.Services.Netty
                         // 3.8 手机上发送了朋友圈通知
                         await HandleCircleNewPublishNotice(message, context);
                         break;
+                    case EnumMsgType.PostMessageReadNotice:
+                        // 4.3 客户端上传消息已读状态
+                        await HandlePostMessageReadNotice(message, context);
+                        break;
                     case EnumMsgType.PostFriendDetectCountNotice:
                         // 上报好友检测计数
                         await HandlePostFriendDetectCountNotice(message, context);
@@ -729,6 +733,19 @@ namespace SCRM.Services.Netty
                 _ = SaveAddedFriendAsync(connectionId, notice.Friend, notice.WeChatId, message, context);
             }
             return;
+        }
+
+        /// <summary>
+        /// 处理消息已读通知 (4.3)
+        /// </summary>
+        private async Task HandlePostMessageReadNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<PostMessageReadNoticeMessage>();
+            _logger.LogInformation("消息已读通知：{WeChatId} 在会话 {FriendId} 中已读", 
+                notice.WeChatId, notice.FriendId);
+            
+            // 发送 ACK
+            await SendAckAsync(message, context);
         }
 
         private async Task SaveAddedFriendAsync(string connectionId, FriendMessage friend, string weChatId, TransportMessage message, IChannelHandlerContext context)
