@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace SCRM.API.Models.Entities;
 
@@ -9,6 +10,7 @@ namespace SCRM.API.Models.Entities;
 public class Contact
 {
     public int Id { get; set; }
+    [Column("wechat_account_id")]
     public long WechatAccountId { get; set; }
     public string Wxid { get; set; }
     public string Nickname { get; set; }

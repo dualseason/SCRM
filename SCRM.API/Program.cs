@@ -31,8 +31,6 @@ public partial class Program
             return;
         }
 
-        // 初始化 Serilog（Debug & Console）
-        // 初始化 Serilog（Debug & Console）
         // 初始化 Serilog (统一配置)
         // 读取配置
         var pgConnectionString = builder.Configuration.GetConnectionString("PostgresConnection");
@@ -49,7 +47,10 @@ public partial class Program
         var loggerConfig = new LoggerConfiguration()
             .ReadFrom.Configuration(builder.Configuration) // 读取 appsettings.json (包括 LogLevel Overrides)
             .Enrich.FromLogContext()
-            .WriteTo.Debug(outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}")
+            .WriteTo.Debug(
+                outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}",
+                restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Verbose // 允许 Debug 窗口显示所有级别的日志（受限于 appsettings.json）
+            )
             .WriteTo.Console(
                 outputTemplate: "{Timestamp:HH:mm:ss.fff} 【{Level:u3}】 {Message:lj}{NewLine}{Exception}",
                 restrictedToMinimumLevel: Serilog.Events.LogEventLevel.Information
@@ -187,6 +188,7 @@ public partial class Program
         builder.Services.AddHostedService<EventForwardingService>(); // Forward events to SignalR
         builder.Services.AddHostedService<SCRM.Services.Automation.AutomationService>(); // C&C Automation (Auto-Reply, etc.)
         builder.Services.AddHostedService<SCRM.API.Services.Maintenance.IndexCleanupService>(); // Auto-fix zombie indexes
+        builder.Services.AddHostedService<SCRM.API.Services.Maintenance.MessageCleanupService>(); // Auto-delete old messages
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAll", builder =>

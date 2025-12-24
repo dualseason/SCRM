@@ -6,7 +6,7 @@
 public class Group
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string GroupWxid { get; set; }
     public string GroupName { get; set; }
     public string GroupNotice { get; set; }

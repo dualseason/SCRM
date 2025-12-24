@@ -6,7 +6,7 @@
 public class MassMessage
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string MessageTitle { get; set; }
     public string MessageContent { get; set; }
     public int MessageType { get; set; }

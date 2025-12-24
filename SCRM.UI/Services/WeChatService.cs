@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.SignalR.Client;
 using System;
 using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Linq;
 using Blazored.LocalStorage;
 using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
@@ -15,6 +17,7 @@ namespace SCRM.UI.Services
     {
         private HubConnection? _hubConnection;
         private readonly ILocalStorageService _localStorage;
+        private readonly HashSet<string> _pendingGroups = new(); // Track groups to join
 
         public event Action<ReceiveMessageDto>? OnMessageReceived;
         public event Action<string, string, bool>? OnWeChatStatusChanged;
@@ -65,6 +68,7 @@ namespace SCRM.UI.Services
             _hubConnection.Reconnected += async (connectionId) =>
             {
                 Console.WriteLine($"[WeChatService] SignalR Reconnected. New ConnectionId: {connectionId}");
+                await SyncPendingGroupsAsync();
                 OnReconnected?.Invoke(connectionId);
                 await Task.CompletedTask;
             };
@@ -81,6 +85,7 @@ namespace SCRM.UI.Services
             // ... (rest of the handlers)
             _hubConnection.On<long>("ContactsUpdated", (accountId) =>
             {
+                Console.WriteLine($"[WeChatService] SignalR Received 'ContactsUpdated' for Account: {accountId}");
                 OnContactsUpdated?.Invoke(accountId);
             });
 
@@ -115,6 +120,8 @@ namespace SCRM.UI.Services
             try
             {
                 await _hubConnection.StartAsync();
+                Console.WriteLine("[WeChatService] SignalR Connected. Syncing pending groups...");
+                await SyncPendingGroupsAsync();
             }
             catch (Exception ex)
             {
@@ -128,9 +135,43 @@ namespace SCRM.UI.Services
 
         public async Task JoinGroupAsync(string groupName)
         {
+            lock (_pendingGroups)
+            {
+                _pendingGroups.Add(groupName);
+            }
+
             if (IsConnected && _hubConnection is not null)
             {
+                Console.WriteLine($"[WeChatService] Joining SignalR Group: {groupName}");
                 await _hubConnection.InvokeAsync("JoinGroup", groupName);
+            }
+            else
+            {
+                Console.WriteLine($"[WeChatService] JoinGroupAsync queued for {groupName}: Not connected yet.");
+            }
+        }
+
+        private async Task SyncPendingGroupsAsync()
+        {
+            if (_hubConnection == null || _hubConnection.State != HubConnectionState.Connected) return;
+
+            List<string> groups;
+            lock (_pendingGroups)
+            {
+                groups = _pendingGroups.ToList();
+            }
+
+            foreach (var group in groups)
+            {
+                try
+                {
+                    Console.WriteLine($"[WeChatService] Syncing Group: {group}");
+                    await _hubConnection.InvokeAsync("JoinGroup", group);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[WeChatService] Failed to join group {group}: {ex.Message}");
+                }
             }
         }
 
@@ -162,9 +203,24 @@ namespace SCRM.UI.Services
 
         public async Task<IEnumerable<Contact>> GetContactsAsync(long accountId)
         {
-            if (_hubConnection is not null)
+            // Wait for connection
+            int retries = 0;
+            while (!IsConnected && retries < 40) // Wait up to 4 seconds
             {
-                return await _hubConnection.InvokeAsync<IEnumerable<Contact>>("GetContacts", accountId);
+                await Task.Delay(100);
+                retries++;
+            }
+
+            if (IsConnected && _hubConnection is not null)
+            {
+                try
+                {
+                    return await _hubConnection.InvokeAsync<IEnumerable<Contact>>("GetContacts", accountId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[WeChatService] GetContactsAsync Failed: {ex.Message}");
+                }
             }
             return Enumerable.Empty<Contact>();
         }
@@ -178,22 +234,22 @@ namespace SCRM.UI.Services
             return Enumerable.Empty<Message>();
         }
 
-        public async Task<bool> SyncContactsAsync(string connectionId)
+        public async Task<bool> SyncContactsAsync(string deviceUuid)
         {
             if (IsConnected && _hubConnection is not null)
             {
-                return await _hubConnection.InvokeAsync<bool>("SyncContacts", connectionId);
+                return await _hubConnection.InvokeAsync<bool>("SyncContacts", deviceUuid);
             }
             return false;
         }
 
-        public async Task<bool> SyncChatRoomsAsync(string connectionId)
+        public async Task<bool> SyncChatRoomsAsync(string deviceUuid)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<bool>("SyncChatRooms", connectionId);
+                    return await _hubConnection.InvokeAsync<bool>("SyncChatRooms", deviceUuid);
                 }
                 catch (Exception ex)
                 {
@@ -204,13 +260,13 @@ namespace SCRM.UI.Services
             return false;
         }
 
-        public async Task<bool> SyncMomentsAsync(string connectionId)
+        public async Task<bool> SyncMomentsAsync(string deviceUuid)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<bool>("SyncMoments", connectionId);
+                    return await _hubConnection.InvokeAsync<bool>("SyncMoments", deviceUuid);
                 }
                 catch (Exception ex)
                 {
@@ -221,13 +277,13 @@ namespace SCRM.UI.Services
             return false;
         }
 
-        public async Task<TaskResult> SendMessageAsync(string connectionId, string friendWxId, string content)
+        public async Task<TaskResult> SendMessageAsync(string deviceUuid, string friendWxId, string content)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<TaskResult>("SendMessage", connectionId, friendWxId, content);
+                    return await _hubConnection.InvokeAsync<TaskResult>("SendMessage", deviceUuid, friendWxId, content);
                 }
                 catch (Exception ex)
                 {
@@ -240,13 +296,13 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 调用 SignalR 执行群聊操作
         /// </summary>
-        public async Task<bool> ExecuteGroupActionAsync(string connectionId, string chatRoomId, int action, string content, int intValue)
+        public async Task<bool> ExecuteGroupActionAsync(string deviceUuid, string chatRoomId, int action, string content, int intValue)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<bool>("ExecuteGroupAction", connectionId, chatRoomId, action, content, intValue);
+                    return await _hubConnection.InvokeAsync<bool>("ExecuteGroupAction", deviceUuid, chatRoomId, action, content, intValue);
                 }
                 catch (Exception ex)
                 {
@@ -260,13 +316,13 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 调用 SignalR 同意入群
         /// </summary>
-        public async Task<bool> AgreeJoinGroupAsync(string connectionId, string talker, long msgSvrId, string content)
+        public async Task<bool> AgreeJoinGroupAsync(string deviceUuid, string talker, long msgSvrId, string content)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<bool>("AgreeJoinGroup", connectionId, talker, msgSvrId, content);
+                    return await _hubConnection.InvokeAsync<bool>("AgreeJoinGroup", deviceUuid, talker, msgSvrId, content);
                 }
                 catch (Exception ex)
                 {
@@ -280,13 +336,13 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 调用 SignalR 删除好友
         /// </summary>
-        public async Task<bool> DeleteFriendAsync(string connectionId, string friendId)
+        public async Task<bool> DeleteFriendAsync(string deviceUuid, string friendId)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<bool>("DeleteFriend", connectionId, friendId);
+                    return await _hubConnection.InvokeAsync<bool>("DeleteFriend", deviceUuid, friendId);
                 }
                 catch (Exception ex)
                 {
@@ -300,13 +356,13 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 调用 SignalR 接受好友请求
         /// </summary>
-        public async Task<bool> AcceptFriendRequestAsync(string connectionId, string friendId, string friendNick)
+        public async Task<bool> AcceptFriendRequestAsync(string deviceUuid, string friendId, string friendNick)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<bool>("AcceptFriendRequest", connectionId, friendId, friendNick);
+                    return await _hubConnection.InvokeAsync<bool>("AcceptFriendRequest", deviceUuid, friendId, friendNick);
                 }
                 catch (Exception ex)
                 {
@@ -320,13 +376,13 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 调用 SignalR 请求截屏
         /// </summary>
-        public async Task<bool> RequestScreenShotAsync(string connectionId)
+        public async Task<bool> RequestScreenShotAsync(string deviceUuid)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<bool>("RequestScreenShot", connectionId);
+                    return await _hubConnection.InvokeAsync<bool>("RequestScreenShot", deviceUuid);
                 }
                 catch (Exception ex)
                 {
@@ -340,13 +396,13 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 调用 SignalR 执行手机操作
         /// </summary>
-        public async Task<bool> ExecutePhoneActionAsync(string connectionId, int action)
+        public async Task<bool> ExecutePhoneActionAsync(string deviceUuid, int action)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<bool>("ExecutePhoneAction", connectionId, action);
+                    return await _hubConnection.InvokeAsync<bool>("ExecutePhoneAction", deviceUuid, action);
                 }
                 catch (Exception ex)
                 {
@@ -406,13 +462,13 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 调用 SignalR 获取朋友圈列表
         /// </summary>
-        public async Task<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>> GetMomentsTimelineAsync(string connectionId)
+        public async Task<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>> GetMomentsTimelineAsync(string deviceUuid)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>>("GetMomentsTimeline", connectionId);
+                    return await _hubConnection.InvokeAsync<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>>("GetMomentsTimeline", deviceUuid);
                 }
                 catch (Exception ex)
                 {
@@ -426,13 +482,13 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 调用 SignalR 发送朋友圈
         /// </summary>
-        public async Task<TaskResult> PostMomentAsync(string connectionId, string content, List<string> imageUrls)
+        public async Task<TaskResult> PostMomentAsync(string deviceUuid, string content, List<string> imageUrls)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<TaskResult>("PostMoment", connectionId, content, imageUrls);
+                    return await _hubConnection.InvokeAsync<TaskResult>("PostMoment", deviceUuid, content, imageUrls);
                 }
                 catch (Exception ex)
                 {

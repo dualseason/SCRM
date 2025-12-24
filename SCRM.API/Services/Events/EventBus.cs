@@ -22,8 +22,8 @@ namespace SCRM.Services.Events
             if (_subscriptions.TryGetValue(eventType, out var handlers))
             {
                 // Snapshot handlers to avoid modification during iteration
-                var handlersToRun = handlers.ToList();
-                foreach (var handlerObj in handlersToRun)
+                List<object> handlersToRun = handlers.ToList();
+                foreach (object handlerObj in handlersToRun)
                 {
                     if (handlerObj is Func<T, Task> handler)
                     {

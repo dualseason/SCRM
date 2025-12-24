@@ -4,7 +4,7 @@ namespace SCRM.SHARED.Models.Dtos
 {
     public class MomentsTimelineDto
     {
-        public string SnsId { get; set; }
+        public long SnsId { get; set; }
         public string UserName { get; set; }
         public string NickName { get; set; }
         public string Content { get; set; }

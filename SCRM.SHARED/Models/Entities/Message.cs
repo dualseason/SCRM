@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
@@ -13,6 +15,7 @@ public class Message
     /// <summary>
     /// 所属微信账号ID
     /// </summary>
+    [Column("account_id")]
     public long AccountId { get; set; }
 
     /// <summary>

@@ -9,6 +9,10 @@ public class GroupMember
     public int GroupId { get; set; }
     public string MemberWxid { get; set; }
     public string MemberNickname { get; set; }
+    public string? MemberAvatar { get; set; }
+    public string? Alias { get; set; }
+    public int? MemberGender { get; set; }
+    public string? Region { get; set; }
     public int MemberRole { get; set; }
     public int JoinSource { get; set; }
     public string InviterWxid { get; set; }

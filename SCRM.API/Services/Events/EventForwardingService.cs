@@ -63,6 +63,7 @@ namespace SCRM.Services.Events
                     // Push to SignalR group (DeviceUuid)
                     // 前端收到 "ContactsUpdated" 信号后，应该重新调用 GetContacts API
                     await _hubContext.Clients.Group(e.DeviceUuid).SendAsync("ContactsUpdated", e.AccountId, stoppingToken);
+                    _logger.LogInformation("转发联系人列表更新事件: 设备 {DeviceUuid} -> SignalR组 {DeviceUuid}", e.DeviceUuid, e.DeviceUuid);
                 }
             });
 

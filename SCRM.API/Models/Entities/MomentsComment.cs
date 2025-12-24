@@ -8,6 +8,8 @@ public class MomentsComment
     public int Id { get; set; }
     public int PostId { get; set; }
     public string CommenterWxid { get; set; }
+    public long WeChatCommentId { get; set; }
+    public long? ReplyCommentId { get; set; }
     public string CommentContent { get; set; }
     public int ReplyTo { get; set; }
     public string ReplyToWxid { get; set; }

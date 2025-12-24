@@ -16,9 +16,12 @@ namespace SCRM.Services.Netty
         {
             // 序列化消息为字节数组
             byte[] bytes = message.ToByteArray();
-            // 先写入4字节长度（大端序）
+            
+            // 手动写入4字节长度头 (大端序)，确保客户端能正确拆包
+            // 这种方式比使用 LengthFieldPrepender 更直观且易于调试
             output.WriteInt(bytes.Length);
-            // 再写入消息体
+            
+            // 写入消息体
             output.WriteBytes(bytes);
         }
     }

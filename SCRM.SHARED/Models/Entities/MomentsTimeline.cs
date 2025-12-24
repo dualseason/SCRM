@@ -12,7 +12,8 @@ namespace SCRM.API.Models.Entities
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public long Id { get; set; }
 
-        public string SnsId { get; set; } // WeChat SnsId (unique)
+        public long WechatAccountId { get; set; } // Added for multi-tenancy
+        public long SnsId { get; set; } // WeChat SnsId (unique)
 
         public string UserName { get; set; } // Author Wxid
         public string NickName { get; set; } // Author Nick

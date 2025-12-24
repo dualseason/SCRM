@@ -30,6 +30,8 @@
              <Column @bind-Field="@context.Nickname" Title="Nickname" Sortable />
              <Column @bind-Field="@context.Remarks" Title="Remark" />
              <Column @bind-Field="@context.Wxid" Title="Wxid" />
+             <Column @bind-Field="@context.Source" Title="Source" />
+             <Column @bind-Field="@context.LabelIds" Title="Labels" />
              <ActionColumn Title="Action">
                  <Button Type="@AntDesign.ButtonType.Primary" OnClick="()=>Chat(context)">Chat</Button>
                  <Popconfirm Title="Are you sure delete this friend?" OnConfirm="()=>Delete(context)">

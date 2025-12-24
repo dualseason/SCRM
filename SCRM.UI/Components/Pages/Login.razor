@@ -8,6 +8,7 @@
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ILocalStorageService LocalStorage
 @inject NotificationService NotificationService
+@inject WeChatService _weChatService
 
 <PageTitle>登录 - SCRM</PageTitle>
 
@@ -63,6 +64,19 @@
                 {
                     await LocalStorage.SetItemAsStringAsync("authToken", result.Data.Token);
                     await AuthStateProvider.GetAuthenticationStateAsync();
+
+                    // Re-initialize SignalR with the new token
+                    // Re-initialize SignalR with the new token
+                    try
+                    {
+                        var hubUrl = new Uri(Http.BaseAddress!, "hubs/client").ToString();
+                        await _weChatService.InitializeAsync(hubUrl);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[Login] Failed to initialize SignalR: {ex.Message}");
+                    }
+
                     Navigation.NavigateTo(ReturnUrl ?? "/");
                 }
                 else

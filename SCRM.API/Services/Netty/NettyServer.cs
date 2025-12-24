@@ -1,6 +1,7 @@
 using DotNetty.Transport.Bootstrapping;
 using DotNetty.Transport.Channels;
 using DotNetty.Transport.Channels.Sockets;
+using DotNetty.Codecs;
 using System;
 using System.Net;
 using System.Threading.Tasks;
@@ -57,10 +58,24 @@ namespace SCRM.Services.Netty
                     {
                         IChannelPipeline pipeline = channel.Pipeline;
                         
+                        // 入站解码器：处理 TCP 粘包/拆包，确保 ProtobufDecoder 接收到完整的数据包
+                        // MaxFrameLength: 100MB, LengthFieldOffset: 0, LengthFieldLength: 4, LengthAdjustment: 0, InitialBytesToStrip: 4
+
+                        // 入站解码器：处理 TCP 粘包/拆包，确保 ProtobufDecoder 接收到完整的数据包
+                        // MaxFrameLength: 100MB, LengthFieldOffset: 0, LengthFieldLength: 4, LengthAdjustment: 0, InitialBytesToStrip: 4
+                        // Strip=4 意味着移除 4 字节长度头，下游 ProtobufDecoder 只接收纯消息体
+                        pipeline.AddLast(new LengthFieldBasedFrameDecoder(100 * 1024 * 1024, 0, 4, 0, 4));
+
                         // 入站解码器：将接收到的 ByteBuf 解码为 TransportMessage
                         pipeline.AddLast(new ProtobufDecoder());
+                        
+                        // Debug: 打印出站消息的 Hex (必须放在 Encoder 之前添加，这样在 Outbound 流程中它会在 Encoder 之后执行)
+                        // Outbound 顺序: Tail -> Encoder -> HexDump -> Head
+                        var hexLogger = (Microsoft.Extensions.Logging.ILogger<HexDumpChannelHandler>)_serviceProvider.GetService(typeof(Microsoft.Extensions.Logging.ILogger<HexDumpChannelHandler>));
+                        pipeline.AddLast(new HexDumpChannelHandler(hexLogger));
+
                         // 出站编码器：将 TransportMessage 编码为 ByteBuf 发送
-                        pipeline.AddLast(new ProtobufEncoder());    
+                        pipeline.AddLast(new ProtobufEncoder());
 
                         // 业务处理均需通过依赖注入获取
                         var messageRouter = (MessageRouter)_serviceProvider.GetService(typeof(MessageRouter))!;

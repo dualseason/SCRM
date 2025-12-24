@@ -312,7 +312,8 @@ namespace SCRM.API.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<long>("WechatAccountId")
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasColumnName("wechat_account_id");
 
                     b.Property<string>("Wxid")
                         .IsRequired()
@@ -392,8 +393,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -439,6 +440,9 @@ namespace SCRM.API.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<int>("LabelId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("TagColor")
                         .IsRequired()
                         .HasColumnType("text");
@@ -454,8 +458,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -534,8 +538,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -585,8 +589,20 @@ namespace SCRM.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Avatar")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("Gender")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Nickname")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Region")
+                        .HasColumnType("text");
 
                     b.Property<string>("RequestMessage")
                         .IsRequired()
@@ -606,14 +622,17 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("ResponseTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("Source")
+                        .HasColumnType("text");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -673,8 +692,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -816,6 +835,9 @@ namespace SCRM.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Alias")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -838,6 +860,12 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("JoinTime")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("MemberAvatar")
+                        .HasColumnType("text");
+
+                    b.Property<int?>("MemberGender")
+                        .HasColumnType("integer");
+
                     b.Property<string>("MemberNickname")
                         .IsRequired()
                         .HasColumnType("text");
@@ -851,6 +879,9 @@ namespace SCRM.API.Migrations
 
                     b.Property<string>("MemberWxid")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Region")
                         .HasColumnType("text");
 
                     b.Property<DateTime>("UpdatedAt")
@@ -1043,8 +1074,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -1099,7 +1130,8 @@ namespace SCRM.API.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("MessageId"));
 
                     b.Property<long>("AccountId")
-                        .HasColumnType("bigint");
+                        .HasColumnType("bigint")
+                        .HasColumnName("account_id");
 
                     b.Property<short>("ChatType")
                         .HasColumnType("smallint");
@@ -1391,8 +1423,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -1487,8 +1519,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -1605,8 +1637,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -1641,6 +1673,9 @@ namespace SCRM.API.Migrations
                     b.Property<int>("PostId")
                         .HasColumnType("integer");
 
+                    b.Property<long?>("ReplyCommentId")
+                        .HasColumnType("bigint");
+
                     b.Property<int>("ReplyTo")
                         .HasColumnType("integer");
 
@@ -1650,6 +1685,9 @@ namespace SCRM.API.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("WeChatCommentId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -1713,6 +1751,9 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("ImagesJson")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -1721,6 +1762,9 @@ namespace SCRM.API.Migrations
 
                     b.Property<int>("LikeCount")
                         .HasColumnType("integer");
+
+                    b.Property<string>("LinkInfoJson")
+                        .HasColumnType("text");
 
                     b.Property<string>("PostContent")
                         .IsRequired()
@@ -1736,14 +1780,20 @@ namespace SCRM.API.Migrations
                     b.Property<int>("ShareCount")
                         .HasColumnType("integer");
 
+                    b.Property<long>("SnsId")
+                        .HasColumnType("bigint");
+
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("VideoUrl")
+                        .HasColumnType("text");
 
                     b.Property<int>("ViewCount")
                         .HasColumnType("integer");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -1788,13 +1838,15 @@ namespace SCRM.API.Migrations
                     b.Property<long>("ReceivedAt")
                         .HasColumnType("bigint");
 
-                    b.Property<string>("SnsId")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<long>("SnsId")
+                        .HasColumnType("bigint");
 
                     b.Property<string>("UserName")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -1856,8 +1908,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -1974,8 +2026,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -2130,8 +2182,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -2582,8 +2634,8 @@ namespace SCRM.API.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("WechatAccountId")
-                        .HasColumnType("integer");
+                    b.Property<long>("WechatAccountId")
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 

@@ -6,8 +6,9 @@
 public class ContactTag
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string TagName { get; set; }
+    public int LabelId { get; set; }
     public string TagColor { get; set; }
     public string TagDescription { get; set; }
     public DateTime CreatedAt { get; set; }

@@ -6,7 +6,7 @@
 public class WalletTransaction
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string TransactionId { get; set; }
     public int TransactionType { get; set; }
     public decimal Amount { get; set; }

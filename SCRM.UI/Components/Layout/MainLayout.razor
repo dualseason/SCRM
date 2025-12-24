@@ -21,8 +21,20 @@
     </RadzenBody>
 </RadzenLayout>
 
+@inject SCRM.UI.Services.WeChatService _weChatService
+@inject NavigationManager _navigationManager
+@inject HttpClient _httpClient
+
 @code {
     bool sidebarExpanded = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // 确保 SignalR 服务连接
+        // fix: 使用 API BaseAddress (因为 Client 和 API 是分离的) 且修正路径为 /hubs/client
+        var hubUrl = new Uri(_httpClient.BaseAddress!, "hubs/client").ToString();
+        await _weChatService.InitializeAsync(hubUrl);
+    }
 }
 
 <style>

@@ -6,7 +6,7 @@
 public class RedPacket
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string SenderWxid { get; set; }
     public decimal TotalAmount { get; set; }
     public int TotalCount { get; set; }

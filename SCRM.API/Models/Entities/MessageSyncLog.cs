@@ -6,7 +6,7 @@
 public class MessageSyncLog
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public int SyncType { get; set; }
     public int SyncStatus { get; set; }
     public int TotalMessages { get; set; }

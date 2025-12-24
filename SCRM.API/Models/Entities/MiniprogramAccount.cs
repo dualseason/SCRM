@@ -6,7 +6,7 @@
 public class MiniprogramAccount
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string AppId { get; set; }
     public string AppName { get; set; }
     public string Avatar { get; set; }

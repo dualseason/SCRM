@@ -65,12 +65,12 @@ namespace SCRM.Services.Netty
 
         public async Task RouteMessage(TransportMessage message, IChannelHandlerContext context)
         {
-            _logger.LogInformation("Routing message: Id={Id}, MsgType={MsgType} ({MsgTypeId}), Token={Token}", 
+            _logger.LogInformation("路由消息：Id={Id}, MsgType={MsgType} ({MsgTypeId}), Token={Token}", 
                 message.Id, message.MsgType, (int)message.MsgType, message.AccessToken);
 
             if (message.Content != null)
             {
-                _logger.LogInformation("Incoming Content TypeUrl: {TypeUrl}", message.Content.TypeUrl);
+                _logger.LogInformation("传入内容 TypeUrl: {TypeUrl}", message.Content.TypeUrl);
             }
 
             try
@@ -203,13 +203,13 @@ namespace SCRM.Services.Netty
                         await HandleBizContactAddNotice(message, context);
                         break;
                     default:
-                        _logger.LogWarning("Unhandled message type: {MsgType}", message.MsgType);
+                        _logger.LogWarning("未处理的消息类型：{MsgType}", message.MsgType);
                         break;
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error routing message type: {MsgType}", message.MsgType);
+                _logger.LogError(ex, "路由消息类型错误：{MsgType}", message.MsgType);
             }
         }
 
@@ -222,7 +222,7 @@ namespace SCRM.Services.Netty
         private async Task HandleHeartBeat(TransportMessage message, IChannelHandlerContext context)
         {
             var connId = context.Channel.Id.AsLongText();
-            _logger.LogInformation("HeartBeat received from {RemoteAddress}, ConnectionId: {ConnectionId}", context.Channel.RemoteAddress, connId);
+            _logger.LogInformation("收到心跳包，来自 {RemoteAddress}，连接ID：{ConnectionId}", context.Channel.RemoteAddress, connId);
             
             // 检查连接是否已认证（是否映射到用户）
             bool isAuthenticated = await _connectionManager.IsConnectionAuthenticatedAsync(connId);
@@ -230,7 +230,7 @@ namespace SCRM.Services.Netty
 
             if (!isAuthenticated)
             {
-                _logger.LogWarning("HeartBeat from unauthenticated connection {ConnectionId}. Sending ForceOffline.", connId);
+                _logger.LogWarning("收到未认证连接的心跳包 {ConnectionId}。发送强制下线通知。", connId);
                 
                 // 连接丢失（例如服务器重启），强制客户端重新认证
                 var offlineNotice = new AccountForceOfflineNoticeMessage
@@ -271,7 +271,7 @@ namespace SCRM.Services.Netty
             var authReq = message.Content.Unpack<DeviceAuthReqMessage>();
             string credential = authReq.Credential; 
             
-            _logger.LogInformation("Device auth request received. Credential: {Credential}", credential);
+            _logger.LogInformation("收到设备认证请求。凭证：{Credential}", credential);
 
             using (var scope = _scopeFactory.CreateScope())
             {
@@ -295,19 +295,19 @@ namespace SCRM.Services.Netty
 
                 if (account == null)
                 {
-                    _logger.LogWarning("Device authentication failed: Device not registered. Credential: {Credential}", credential);
+                    _logger.LogWarning("设备认证失败：设备未注册。凭证：{Credential}", credential);
                     return;
                 }
 
                 if (!account.IsVip)
                 {
                     // 开发环境自动续期 VIP
-                    _logger.LogWarning("Device VIP expired. Auto-renewing for 1 year. Credential: {Credential}, Old Expiry: {Expiry}", credential, account.VipExpiryDate);
+                    _logger.LogWarning("设备 VIP 已过期。自动续期1年。凭证：{Credential}, 原过期时间：{Expiry}", credential, account.VipExpiryDate);
                     account.VipExpiryDate = DateTime.UtcNow.AddYears(1);
                     await dbContext.SaveWechatAccount(account); // 原子保存
                 }
 
-                _logger.LogInformation("Device authenticated successfully. AccountId: {AccountId}, Nickname: {Nickname}", account.AccountId, account.Nickname);
+                _logger.LogInformation("设备认证成功。账号ID：{AccountId}, 昵称：{Nickname}", account.AccountId, account.Nickname);
 
                 // 注册连接信息
                 string userId = account.AccountId.ToString();
@@ -346,11 +346,12 @@ namespace SCRM.Services.Netty
                 await context.WriteAndFlushAsync(response);
 
                 // --- 触发初始化任务 ---
-                _logger.LogInformation("Triggering initialization tasks for AccountId: {AccountId}", account.AccountId);
+                _logger.LogInformation("触发账号初始化任务，账号ID：{AccountId}", account.AccountId);
 
                 try
                 {
                     var connId = context.Channel.Id.AsLongText();
+                    // [Revert] 恢复自动触发
                     // 触发推送好友列表
                     long friendTaskId = DateTime.UtcNow.Ticks;
                     await _clientTaskService.SendTriggerFriendPushTaskAsync(connId, friendTaskId);
@@ -365,7 +366,7 @@ namespace SCRM.Services.Netty
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error triggering initialization tasks for AccountId: {AccountId}", account.AccountId);
+                    _logger.LogError(ex, "触发账号初始化任务出错，账号ID：{AccountId}", account.AccountId);
                 }
 
                 // --- 修复：将 ConnectionId 持久化到数据库，以便 api/device 返回正确的 ID ---
@@ -380,7 +381,7 @@ namespace SCRM.Services.Netty
                         client.ConnectionId = context.Channel.Id.AsLongText(); // 更新 ConnectionId
                         
                         await dbContext.SaveSrClient(client); // 原子保存
-                        _logger.LogInformation("Updated SrClient {Uuid} with new ConnectionId: {ConnectionId}", client.uuid, client.ConnectionId);
+                        _logger.LogInformation("已更新 SrClient {Uuid} 的新连接ID：{ConnectionId}", client.uuid, client.ConnectionId);
                     }
                 }
             }
@@ -393,12 +394,12 @@ namespace SCRM.Services.Netty
         private async Task HandleTalkToFriendTaskResult(TransportMessage message, IChannelHandlerContext context)
         {
             var result = message.Content.Unpack<TalkToFriendTaskResultNoticeMessage>();
-            _logger.LogInformation("TalkToFriend task result: Success={Success}, Code={Code}, Msg={ErrMsg}", 
+            _logger.LogInformation("给好友发消息任务结果：成功={Success}, 代码={Code}, 消息={ErrMsg}", 
                 result.Success, result.Code, result.ErrMsg);
             
              // 标记任务完成
              long correlationId = result.MsgId;
-             if (correlationId == 0 && message.RefMessageId != 0) correlationId = message.RefMessageId; // Fallback to Transport ID
+             if (correlationId == 0 && message.RefMessageId != 0) correlationId = message.RefMessageId; // 回退到 Transport ID
              _clientTaskService.CompleteTask(correlationId, result.Success, result.ErrMsg);
 
             // Publish Event for UI
@@ -419,7 +420,7 @@ namespace SCRM.Services.Netty
         private async Task HandleWeChatOnline(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<WeChatOnlineNoticeMessage>();
-            _logger.LogInformation("WeChat Online: {WeChatId} ({WeChatNick})", notice.WeChatId, notice.WeChatNick);
+            _logger.LogInformation("微信上线：{WeChatId} ({WeChatNick})", notice.WeChatId, notice.WeChatNick);
 
             var connectionId = context.Channel.Id.AsLongText();
             var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
@@ -453,7 +454,7 @@ namespace SCRM.Services.Netty
                                 client.WeChatNick = account.Nickname; // 同步昵称
                                 
                                 await dbContext.SaveSrClient(client); // 原子保存
-                                _logger.LogInformation("Proactively bound SrClient {Uuid} to WechatAccount {AccountId}", client.uuid, account.AccountId);
+                                _logger.LogInformation("主动绑定 SrClient {Uuid} 到 WechatAccount {AccountId}", client.uuid, account.AccountId);
                             }
                         }
 
@@ -461,7 +462,8 @@ namespace SCRM.Services.Netty
                         await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("WeChatStatusChanged", notice.WeChatId, notice.WeChatNick, true);
                         
                         // 主动触发全量同步指令
-                        _logger.LogInformation("Proactively triggering background sync for {WeChatId}", notice.WeChatId);
+                        _logger.LogInformation("主动触发 {WeChatId} 的后台同步", notice.WeChatId);
+                        // [Revert] 恢复自动触发
                         _ = _clientTaskService.SendTriggerFriendPushTaskAsync(connectionId, DateTime.UtcNow.Ticks);
                         _ = _clientTaskService.SendTriggerChatRoomPushTaskAsync(connectionId, DateTime.UtcNow.Ticks + 1);
                     }
@@ -478,7 +480,7 @@ namespace SCRM.Services.Netty
         private async Task HandleWeChatOffline(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<WeChatOfflineNoticeMessage>();
-            _logger.LogInformation("WeChat Offline: {WeChatId}, Reason={Reason}", notice.WeChatId, notice.Reason);
+            _logger.LogInformation("微信下线：{WeChatId}, 原因={Reason}", notice.WeChatId, notice.Reason);
             // Send ACK
             await SendAckAsync(message, context);
         }
@@ -495,7 +497,7 @@ namespace SCRM.Services.Netty
             FriendTalkNoticeMessage notice = message.Content.Unpack<FriendTalkNoticeMessage>();
             string contentUtf8 = notice.Content.ToStringUtf8();
             
-            _logger.LogInformation("Friend Talk Notice: {WeChatId} 收到来自 {FriendId} 的消息: {Content}", 
+            _logger.LogInformation("好友聊天通知：{WeChatId} 收到来自 {FriendId} 的消息: {Content}", 
                 notice.WeChatId, notice.FriendId, contentUtf8);
 
             var connectionId = context.Channel.Id.AsLongText();
@@ -537,8 +539,37 @@ namespace SCRM.Services.Netty
                 
                 if (existingMsg == null)
                 {
+                    // 1.5 确保会话存在
+                    // 注意：WechatAccountId 在 Conversation 中定义为 int，这里强转 (int)acctId。
+                    // 假设 AccountId 在 int 范围内。如果将来 AccountId 超过 int，需修改 Conversation 实体。
+                    var conversation = await dbContext.Conversations
+                        .FirstOrDefaultAsync(c => c.WechatAccountId == acctId && c.ConversationWxid == notice.FriendId);
+
+                    if (conversation == null)
+                    {
+                        conversation = new Conversation
+                        {
+                            WechatAccountId = acctId,
+                            ConversationWxid = notice.FriendId,
+                            ConversationType = isGroup ? 2 : 1,
+                            DisplayName = notice.FriendId, // 暂用 Wxid 作为显示名称
+                            DisplayAvatar = "",
+                            UnreadCount = 0,
+                            MessageCount = 0,
+                            IsPinned = 0,
+                            IsMuted = 0,
+                            LastMessageTime = DateTime.UtcNow,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow,
+                            IsDeleted = false
+                        };
+                        dbContext.Conversations.Add(conversation);
+                        await dbContext.SaveChangesAsync(); // 保存以获取 Id
+                    }
+
                     var msg = new Message
                     {
+                        ConversationId = conversation.Id,
                         AccountId = acctId,
                         SenderWxid = isSelf ? notice.WeChatId : notice.FriendId,
                         ReceiverWxid = isSelf ? notice.FriendId : notice.WeChatId,
@@ -559,7 +590,7 @@ namespace SCRM.Services.Netty
                 }
                 else
                 {
-                     _logger.LogDebug("Duplicate message detected, skipping DB save. MsgSvrId: {MsgSvrId}", notice.MsgSvrId);
+                     _logger.LogDebug("检测到重复消息，跳过保存。MsgSvrId: {MsgSvrId}", notice.MsgSvrId);
                 }
             }
 
@@ -592,7 +623,7 @@ namespace SCRM.Services.Netty
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error publishing automation event");
+                _logger.LogError(ex, "发布自动化事件出错");
             }
 
             // 发送 ACK
@@ -602,7 +633,7 @@ namespace SCRM.Services.Netty
         private string ExtractXmlValue(string xml, string tagName)
         {
             try {
-                // simple parser
+                // 简单的解析器
                 string startTag = $"<{tagName}>";
                 string endTag = $"</{tagName}>";
                 int start = xml.IndexOf(startTag);
@@ -635,10 +666,10 @@ namespace SCRM.Services.Netty
         private async Task HandleWeChatTalkToFriendNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<WeChatTalkToFriendNoticeMessage>();
-            _logger.LogInformation("WeChat Talk To Friend Notice: {WeChatId} sent message to {FriendId}: {Content}", 
+            _logger.LogInformation("微信回复好友通知：{WeChatId} 发送消息给 {FriendId}: {Content}", 
                 notice.WeChatId, notice.FriendId, notice.Content.ToStringUtf8());
 
-            // Push to SignalR Group (UUID)
+            // 推送到 SignalR 组 (UUID)
             var connectionId = context.Channel.Id.AsLongText();
             var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
             
@@ -647,18 +678,18 @@ namespace SCRM.Services.Netty
                 await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ReceiveMessage", notice.FriendId, notice.Content.ToStringUtf8(), true); 
             } 
 
-            // Persist to DB
+            // 持久化到数据库
             using (var scope = _scopeFactory.CreateScope())
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
                 
-                // connectionId and connectionInfo are available from outer scope
+                // connectionId 和 connectionInfo 从外部作用域可用
                 
                 if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
                 {
                     var msg = new Message
                     {
-                        AccountId = accountId,
+                        AccountId = (int)accountId,
                         SenderWxid = notice.WeChatId, // 当前账号
                         ReceiverWxid = notice.FriendId,
                         Content = notice.Content.ToStringUtf8(),
@@ -689,12 +720,12 @@ namespace SCRM.Services.Netty
             var notice = message.Content.Unpack<FriendAddNoticeMessage>();
             if (notice.Friend != null)
             {
-                _logger.LogInformation("Friend Add Notice: {WeChatId} added friend {FriendNick}", 
+                _logger.LogInformation("新增好友通知：{WeChatId} 添加了好友 {FriendNick}", 
                     notice.WeChatId, notice.Friend.FriendNick);
 
                 var connectionId = context.Channel.Id.AsLongText();
-                // We need to wait for the async context to persist
-                // Since this method returns Task, we can make it async
+                // 我们需要等待异步上下文持久化
+                // 由于此方法返回 Task，我们可以将其异步化
                 _ = SaveAddedFriendAsync(connectionId, notice.Friend, notice.WeChatId, message, context);
             }
             return;
@@ -742,7 +773,7 @@ namespace SCRM.Services.Netty
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error saving added friend {FriendId}", friend.FriendId);
+                _logger.LogError(ex, "保存新增好友失败 {FriendId}", friend.FriendId);
             }
         }
 
@@ -754,7 +785,7 @@ namespace SCRM.Services.Netty
         private async Task HandleChatRoomPushNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<ChatRoomPushNoticeMessage>();
-            _logger.LogInformation("Chat Room Push Notice: {WeChatId} pushed {Count} chat rooms (Page {Page}/{Size})", 
+            _logger.LogInformation("群聊推送通知：{WeChatId} 推送了 {Count} 个群聊 (第 {Page}/{Size} 页)", 
                 notice.WeChatId, notice.ChatRooms.Count, notice.Page, notice.Size);
 
             var connectionId = context.Channel.Id.AsLongText();
@@ -762,7 +793,7 @@ namespace SCRM.Services.Netty
 
             if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId))
             {
-                _logger.LogWarning("Received ChatRoom Push from unauthenticated connection: {ConnectionId}", connectionId);
+                _logger.LogWarning("收到来自未认证连接的群聊推送：{ConnectionId}", connectionId);
                 return;
             }
 
@@ -810,7 +841,7 @@ namespace SCRM.Services.Netty
                 }
 
                 await dbContext.SaveChangesAsync();
-                _logger.LogInformation("Saved {New} new and {Update} updated chat rooms for AccountId: {AccountId}", newCount, updateCount, accountId);
+                _logger.LogInformation("账号 {AccountId} 已保存 {New} 个新群聊，{Update} 个更新。", newCount, updateCount, accountId);
                 
                 // 通知 Web 端刷新
                 await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ChatRoomsUpdated", accountId);
@@ -826,13 +857,13 @@ namespace SCRM.Services.Netty
         private async Task HandleChatRoomMembersNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<ChatRoomMembersNoticeMessage>();
-            _logger.LogInformation("Chat Room Members Notice: {WeChatId}, Members={Count}", notice.WeChatId, notice.Members.Count);
+            _logger.LogInformation("群成员通知：{WeChatId}, 成员数={Count}", notice.WeChatId, notice.Members.Count);
             
             // 待实现具体的成员同步逻辑
             // 需要明确 ChatRoomMembersNoticeMessage 是否包含 ChatRoomId 上下文
             // 目前暂做日志记录
 
-            // Send ACK
+            // 发送 ACK
             await SendAckAsync(message, context);
         }
 
@@ -843,9 +874,9 @@ namespace SCRM.Services.Netty
         private async Task HandlePostFriendDetectCountNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<PostFriendDetectCountNoticeMessage>();
-            _logger.LogInformation("Friend Detect Count Notice: {WeChatId} count: {Count}", notice.WeChatId, notice.Count);
+            _logger.LogInformation("好友检测计数通知：{WeChatId} 数量：{Count}", notice.WeChatId, notice.Count);
             
-            // Send ACK
+            // 发送 ACK
             await SendAckAsync(message, context);
         }
 
@@ -857,19 +888,58 @@ namespace SCRM.Services.Netty
         private async Task HandleOneKeyLikeTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var result = message.Content.Unpack<OneKeyLikeTaskResultNoticeMessage>();
-            _logger.LogInformation("OneKeyLike Task Result: TaskId={TaskId}, Count={Count}, EndType={EndType}", result.TaskId, result.Count, result.EndType);
+            _logger.LogInformation("一键点赞任务结果：TaskId={TaskId}, Count={Count}, EndType={EndType}", result.TaskId, result.Count, result.EndType);
             _clientTaskService.CompleteTask(result.TaskId, true, $"Count: {result.Count}, EndType: {result.EndType}");
             await SendAckAsync(message, context);
         }
 
         /// <summary>
         /// 处理联系人标签通知 (3.16)
-        /// 此处仅接收并记录日志
         /// </summary>
         private async Task HandleContactLabelInfoNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<ContactLabelInfoNoticeMessage>();
             _logger.LogInformation("收到联系人标签通知: WeChatId={WeChatId}, LabelCount={LabelCount}", notice.WeChatId, notice.Labels.Count);
+            
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+
+            if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId)) return;
+
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+                
+                foreach (var label in notice.Labels)
+                {
+                    // 查找或更新标签
+                    var existing = await dbContext.ContactTags
+                        .FirstOrDefaultAsync(t => t.WechatAccountId == accountId && t.LabelId == label.LabelId);
+                    
+                    if (existing != null)
+                    {
+                        existing.TagName = label.LabelName;
+                        existing.UpdatedAt = DateTime.UtcNow;
+                        existing.IsDeleted = false; // 复活
+                    }
+                    else
+                    {
+                        var newTag = new ContactTag
+                        {
+                            WechatAccountId = accountId,
+                            LabelId = label.LabelId,
+                            TagName = label.LabelName,
+                            CreatedAt = DateTime.UtcNow,
+                            UpdatedAt = DateTime.UtcNow,
+                            IsDeleted = false
+                        };
+                        dbContext.ContactTags.Add(newTag);
+                    }
+                }
+                
+                await dbContext.SaveChangesAsync();
+            }
+            
             await SendMsgReceivedAck(context, message);
         }
 
@@ -891,7 +961,7 @@ namespace SCRM.Services.Netty
         private async Task HandleConversationPushNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<ConversationPushNoticeMessage>();
-            // Fix: 'Conversations' -> 'Convers' based on proto generated code
+            // 修复：基于 proto 生成代码 'Conversations' -> 'Convers'
             _logger.LogInformation("收到会话列表推送: WeChatId={WeChatId}, ConversCount={ConversCount}", notice.WeChatId, notice.Convers.Count);
             await SendMsgReceivedAck(context, message);
         }
@@ -925,7 +995,7 @@ namespace SCRM.Services.Netty
         private async Task HandleBizContactAddNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<BizContactAddNoticeMessage>();
-            // Fix: 'UserName' -> 'Username' based on proto generated code (lowercase 'n')
+            // 修复：基于 proto 生成代码 'UserName' -> 'Username' (小写 'n')
             _logger.LogInformation("收到企业微信添加通知: WeChatId={WeChatId}, AddedUser={AddedUser}", notice.WeChatId, notice.Contact?.Username ?? "Unknown");
             await SendMsgReceivedAck(context, message);
         }
@@ -944,7 +1014,7 @@ namespace SCRM.Services.Netty
             if (notice.Circle == null) return;
 
             var circle = notice.Circle;
-            _logger.LogInformation("Circle Detail Notice: {WeChatId} - {CircleId} (Author: {Author})", 
+            _logger.LogInformation("朋友圈详情通知：{WeChatId} - {CircleId} (作者：{Author})", 
                 notice.WeChatId, circle.CircleId, circle.WeChatId);
 
             var connectionId = context.Channel.Id.AsLongText();
@@ -988,10 +1058,24 @@ namespace SCRM.Services.Netty
                     if (circle.Content.Images != null && circle.Content.Images.Count > 0)
                     {
                         post.PostCover = circle.Content.Images[0].ThumbImg ?? circle.Content.Images[0].Url ?? "";
+                        // 保存多图
+                         post.ImagesJson = System.Text.Json.JsonSerializer.Serialize(
+                             circle.Content.Images.Select(i => i.Url).ToList()
+                         );
                     }
                     else if (circle.Content.Video != null)
                     {
                         post.PostCover = circle.Content.Video.ThumbImg ?? "";
+                        post.VideoUrl = circle.Content.Video.Url;
+                    }
+                     else if (circle.Content.Link != null) 
+                    {
+                        // 处理链接
+                         post.LinkInfoJson = System.Text.Json.JsonSerializer.Serialize(new {
+                             Title = circle.Content.Link.Description,
+                             Url = circle.Content.Link.Url,
+                             Thumb = circle.Content.Link.ThumbImg
+                         });
                     }
                 }
                 
@@ -1028,6 +1112,8 @@ namespace SCRM.Services.Netty
                     {
                         PostId = post.Id,
                         CommenterWxid = cmtProto.FromWeChatId,
+                        WeChatCommentId = cmtProto.CommentId, // 映射微信服务端的 CommentId
+                        ReplyCommentId = cmtProto.ReplyCommentId, // 映射回复ID
                         CommentContent = cmtProto.Content ?? "",
                         ReplyToWxid = cmtProto.ToWeChatId ?? "",
                         CommentTime = DateTimeOffset.FromUnixTimeSeconds(cmtProto.PublishTime).UtcDateTime,
@@ -1052,7 +1138,7 @@ namespace SCRM.Services.Netty
         private async Task HandlePostSNSNewsTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var result = message.Content.Unpack<PostSNSNewsTaskResultNoticeMessage>();
-            _logger.LogInformation("Post SNS News Result: Success={Success}, TaskId={TaskId}", result.Success, result.TaskId);
+            _logger.LogInformation("发朋友圈结果：成功={Success}, 任务Id={TaskId}", result.Success, result.TaskId);
             _clientTaskService.CompleteTask(result.TaskId, result.Success);
             await SendAckAsync(message, context);
         }
@@ -1066,7 +1152,7 @@ namespace SCRM.Services.Netty
 
             long correlationId = result.TaskId;
             if (correlationId == 0 && message.RefMessageId != 0) correlationId = message.RefMessageId; // Fallback
-            _logger.LogInformation("Task Result: Success={Success}, TaskId={TaskId}, RefId={RefId}, Msg={ErrMsg}", result.Success, result.TaskId, message.RefMessageId, result.ErrMsg);
+            _logger.LogInformation("任务结果：成功={Success}, 任务Id={TaskId}, 关联Id={RefId}, 消息={ErrMsg}", result.Success, result.TaskId, message.RefMessageId, result.ErrMsg);
             _clientTaskService.CompleteTask(correlationId, result.Success, result.ErrMsg);
 
             // Publish Event for UI
@@ -1083,7 +1169,7 @@ namespace SCRM.Services.Netty
         private async Task HandleScreenShotTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var result = message.Content.Unpack<ScreenShotTaskResultNoticeMessage>();
-            _logger.LogInformation("Screen Shot Result: Success={Success}, Url={Url}", result.Success, result.Url);
+            _logger.LogInformation("截屏结果：成功={Success}, Url={Url}", result.Success, result.Url);
             
              // 标记任务完成
             _clientTaskService.CompleteTask(result.TaskId, result.Success, result.Url);
@@ -1093,10 +1179,10 @@ namespace SCRM.Services.Netty
             
             if (connectionInfo != null)
             {
-                 // Notify frontend via UUID (Legacy Hub Call - can potentially remove later)
+                 // 如果需要，可以通过 UUID 通知前端 (为了兼容旧版)
                  await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ScreenShotReceived", result.Url);
                  
-                 // Publish Event for Reactive UI
+                 // 发布 Reactive UI 事件
                  await _eventBus.PublishAsync(new TaskResultReceivedEvent(result.TaskId, result.Success, result.Url, connectionId, connectionInfo.DeviceInfo ?? connectionId));
             }
             await SendAckAsync(message, context);
@@ -1112,15 +1198,15 @@ namespace SCRM.Services.Netty
         private async Task HandlePostDeviceInfoNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<PostDeviceInfoNoticeMessage>();
-            _logger.LogInformation("Post Device Info: {Brand} {Model}, IMEI={Imei}", notice.PhoneBrand, notice.PhoneModel, notice.IMEI);
+            _logger.LogInformation("上报设备信息：{Brand} {Model}, IMEI={Imei}", notice.PhoneBrand, notice.PhoneModel, notice.IMEI);
 
-            // Resolve Client UUID from Connection
+            // 从连接中解析客户端 UUID
             var connectionId = context.Channel.Id.AsLongText();
             var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
             
             if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId))
             {
-                _logger.LogWarning("Received Device Info from unauthenticated or unknown connection: {ConnectionId}", connectionId);
+                _logger.LogWarning("收到来自未认证或未知连接的设备信息：{ConnectionId}", connectionId);
                 return;
             }
 
@@ -1128,11 +1214,11 @@ namespace SCRM.Services.Netty
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
                 
-                // Find WechatAccount to get ClientUuid (Atomic)
+                // 查找 WechatAccount 以获取 ClientUuid (原子操作)
                 var account = await dbContext.GetWechatAccount(accountId);
                 if (account == null || string.IsNullOrEmpty(account.ClientUuid))
                 {
-                    _logger.LogWarning("WechatAccount not found or missing ClientUuid for AccountId: {AccountId}", accountId);
+                    _logger.LogWarning("未找到 WechatAccount 或缺少 ClientUuid，AccountId：{AccountId}", accountId);
                     return;
                 }
 
@@ -1146,10 +1232,10 @@ namespace SCRM.Services.Netty
                         uuid = clientUuid,
                         createdAt = DateTime.UtcNow
                     };
-                    // Note: Atomic Save will handle Add
+                    // 注意：原子保存将处理新增
                 }
 
-                // Map properties to Device DTO
+                // 映射属性到 Device DTO
                 client.device = new SCRM.API.Models.DTOs.Device
                 {
                     hsman = notice.PhoneBrand,
@@ -1168,7 +1254,7 @@ namespace SCRM.Services.Netty
                 client.ConnectionId = connectionId; // Update ConnectionId
                 
                 await dbContext.SaveSrClient(client);
-                _logger.LogInformation("Updated SrClient info for UUID: {Uuid}", clientUuid);
+                _logger.LogInformation("更新 SrClient 信息，UUID：{Uuid}", clientUuid);
 
                 // 发送 ACK
                 await SendAckAsync(message, context);
@@ -1184,16 +1270,16 @@ namespace SCRM.Services.Netty
         private async Task HandleFriendPushNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<FriendPushNoticeMessage>();
-            _logger.LogInformation("Friend Push Notice: {WeChatId} pushed {Count} friends (Page {Page}/{Size})", 
+            _logger.LogInformation("好友列表推送：{WeChatId} 推送了 {Count} 个好友 (第 {Page}/{Size} 页)", 
                 notice.WeChatId, notice.Friends.Count, notice.Page, notice.Size);
 
-            // Resolve AccountId from Connection
+            // 从连接解析 AccountId
             var connectionId = context.Channel.Id.AsLongText();
             var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
             
             if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId))
             {
-                _logger.LogWarning("Received Friend Push from unauthenticated or unknown connection: {ConnectionId}", connectionId);
+                _logger.LogWarning("收到来自未认证或未知连接的好友推送：{ConnectionId}", connectionId);
                 return;
             }
 
@@ -1201,11 +1287,11 @@ namespace SCRM.Services.Netty
             {
                 var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
                 
-                // Verify account exists
+                // 验证账号是否存在
                 var account = await dbContext.WechatAccounts.FindAsync(accountId);
                 if (account == null)
                 {
-                    _logger.LogWarning("WechatAccount not found for AccountId: {AccountId}", accountId);
+                    _logger.LogWarning("未找到 AccountId 的 WechatAccount：{AccountId}", accountId);
                     return;
                 }
 
@@ -1213,14 +1299,14 @@ namespace SCRM.Services.Netty
 
                 foreach (var friend in notice.Friends)
                 {
-                    // Map Proto to Entity
+                    // 将 Proto 映射到实体
                     var contact = new Contact
                     {
-                        WechatAccountId = (int)accountId,
+                        WechatAccountId = accountId,
                         Wxid = friend.FriendId,
                         Nickname = friend.FriendNick ?? "",
-                        Remarks = friend.Remark ?? "", // Map Remark(备注名) to Remarks
-                        Description = friend.Memo ?? "", // Map Memo(备注) to Description
+                        Remarks = friend.Remark ?? "", // 映射 Remark(备注名) 到 Remarks
+                        Description = friend.Memo ?? "", // 映射 Memo(备注) 到 Description
                         Avatar = friend.Avatar ?? "",
                         Gender = (int)friend.Gender,
                         Province = friend.Province ?? "",
@@ -1230,9 +1316,9 @@ namespace SCRM.Services.Netty
                         Source = friend.Source.ToString(),
                         LabelIds = friend.LabelIds ?? "",
                         Email = "",
-                        Country = "", // Proto might lack Country? Check if available or default empty
+                        Country = "", // Proto 可能缺少 Country？如果是这样则留空
                         
-                        ContactType = 0, // Friend
+                        ContactType = 0, // 好友
                         IsDeleted = false,
                         CreatedAt = DateTime.UtcNow,
                         UpdatedAt = DateTime.UtcNow
@@ -1240,23 +1326,23 @@ namespace SCRM.Services.Netty
                     contactsToSave.Add(contact);
                 }
 
-                // Atomic Save (DB + Cache Invalidation)
-                _logger.LogInformation("[TRACE] About to SaveContacts for {Count} contacts...", contactsToSave.Count);
+                // 原子保存 (数据库 + 缓存失效)
+                _logger.LogInformation("[TRACE] 准备保存 {Count} 个联系人...", contactsToSave.Count);
                 await dbContext.SaveContacts(accountId, contactsToSave);
-                _logger.LogInformation("[TRACE] SaveContacts finished.");
+                _logger.LogInformation("[TRACE] 保存联系人完成。");
                 
-                _logger.LogInformation("Processed Friend Push: {Count} friends synced for Account {AccountId}", contactsToSave.Count, accountId);
+                _logger.LogInformation("处理好友推送完成：已同步 {Count} 个好友，账号 {AccountId}", contactsToSave.Count, accountId);
 
 
                 
-                // Notify UI to refresh contact list (using the outer connectionInfo)
+                // 通知 UI 刷新联系人列表 (使用外部 connectionInfo)
                 try
                 {
                     await _eventBus.PublishAsync(new ContactsReceivedEvent(connectionInfo.DeviceInfo ?? connectionId, accountId, connectionInfo.UserId));
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Failed to publish ContactsReceivedEvent");
+                    _logger.LogError(ex, "发布 ContactsReceivedEvent 失败");
                 }
             }
             await SendAckAsync(message, context);
@@ -1272,7 +1358,7 @@ namespace SCRM.Services.Netty
         private async Task HandleQueryHbDetailTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<QueryHbDetailTaskResultNoticeMessage>();
-            _logger.LogInformation("Red Packet Detail: {WeChatId} - {HbUrl} (Sender: {Sender}, Amount: {TotalAmount})", 
+            _logger.LogInformation("红包详情：{WeChatId} - {HbUrl} (发送者：{Sender}, 金额：{TotalAmount})", 
                 notice.WeChatId, notice.HbUrl, notice.Sender, notice.TotalAmount);
 
             var connectionId = context.Channel.Id.AsLongText();
@@ -1331,7 +1417,7 @@ namespace SCRM.Services.Netty
                     await dbContext.SaveChangesAsync();
                 }
 
-                _logger.LogInformation("Saved Red Packet: Id={Id}", rp.Id);
+                _logger.LogInformation("保存红包：Id={Id}", rp.Id);
 
                 // 3. 前端通知
                 await _hubContext.Clients.Group(connectionId).SendAsync("RedPacketReceived", rp.SenderWxid, rp.TotalAmount);
@@ -1346,7 +1432,7 @@ namespace SCRM.Services.Netty
         private async Task HandleQueryHbStatusTaskResultNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<QueryHbStatusTaskResultNoticeMessage>();
-            _logger.LogInformation("Red Packet Status: {WeChatId} - {HbUrl} (Status: {Status}, Msg: {Msg})", 
+            _logger.LogInformation("红包状态：{WeChatId} - {HbUrl} (状态：{Status}, 消息：{Msg})", 
                 notice.WeChatId, notice.HbUrl, notice.HbStatus, notice.StatusMsg);
             
             // 简单通知前端
@@ -1362,7 +1448,7 @@ namespace SCRM.Services.Netty
         private async Task HandleFriendDelNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<FriendDelNoticeMessage>();
-            _logger.LogInformation("Friend Del Notice: {WeChatId} deleted friend {FriendId}", notice.WeChatId, notice.FriendId);
+            _logger.LogInformation("删除好友通知：{WeChatId} 删除了好友 {FriendId}", notice.WeChatId, notice.FriendId);
             
             var connectionId = context.Channel.Id.AsLongText();
             _ = DeleteFriendAsync(connectionId, notice.FriendId, notice.WeChatId);
@@ -1391,14 +1477,75 @@ namespace SCRM.Services.Netty
                         // Notify UI
                         await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("ContactsUpdated", accountId);
                         
-                        _logger.LogInformation("Deleted friend {FriendId} for Account {AccountId}", friendId, accountId);
+                        _logger.LogInformation("账号 {AccountId} 已删除好友 {FriendId}", friendId, accountId);
                     }
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting friend {FriendId}", friendId);
+                _logger.LogError(ex, "删除好友失败 {FriendId}", friendId);
             }
+        }
+        
+        /// <summary>
+        /// 处理好友添加请求通知 (3.7)
+        /// 保存请求详情到 FriendRequest 表
+        /// </summary>
+        private async Task HandleFriendAddReqeustNotice(TransportMessage message, IChannelHandlerContext context)
+        {
+            var notice = message.Content.Unpack<FriendAddReqeustNoticeMessage>();
+            _logger.LogInformation("收到好友验证请求：{WeChatId} 来自 {FriendNick} ({FriendId})", notice.WeChatId, notice.FriendNick, notice.FriendId);
+
+            var connectionId = context.Channel.Id.AsLongText();
+            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
+            
+            if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId)) return;
+
+            using (var scope = _scopeFactory.CreateScope())
+            {
+                var dbContext = scope.ServiceProvider.GetRequiredService<SCRM.Services.Data.ApplicationDbContext>();
+                
+                // 1. 去重检查 (基于 RequestWxid + RequestMessage)
+                var exists = await dbContext.FriendRequests
+                    .AnyAsync(r => r.WechatAccountId == accountId && r.RequestWxid == notice.FriendId && r.Status == 0); // 0=未处理
+                
+                if (!exists)
+                {
+                    var request = new FriendRequest
+                    {
+                        WechatAccountId = accountId,
+                        RequestWxid = notice.FriendId,
+                        Nickname = notice.FriendNick,
+                        Avatar = notice.Avatar,
+                        Gender = (int)notice.Gender,
+                        Region = $"{notice.Province} {notice.City}".Trim(),
+                        Source = notice.Source.ToString(), // Source is int in proto
+                        RequestMessage = notice.Reason ?? "",
+                        Status = 0, // Pending
+                        RequestTime = DateTime.UtcNow,
+                        CreatedAt = DateTime.UtcNow,
+                        UpdatedAt = DateTime.UtcNow
+                    };
+                    
+                    dbContext.FriendRequests.Add(request);
+                    await dbContext.SaveChangesAsync();
+                    
+                    // 2. 通知前端
+                    await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("FriendRequestReceived", request);
+                }
+
+                 // 发布自动化事件 (兼容旧逻辑)
+                var evt = new FriendRequestEvent(
+                    notice.WeChatId, 
+                    notice.FriendId, 
+                    notice.FriendNick, 
+                    notice.Reason, 
+                    connectionId, 
+                    accountId);
+                await _eventBus.PublishAsync(evt);
+            }
+
+            await SendAckAsync(message, context);
         }
 
         /// <summary>
@@ -1408,7 +1555,7 @@ namespace SCRM.Services.Netty
         private async Task HandleConfigPushNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<ConfigPushNoticeMessage>();
-            _logger.LogInformation("Config Push Received from {WeChatId}", notice.WeChatId);
+            _logger.LogInformation("收到配置推送，来自 {WeChatId}", notice.WeChatId);
             
             if (notice.BoolConfs != null)
             {
@@ -1455,35 +1602,10 @@ namespace SCRM.Services.Netty
             }
 
             await context.WriteAndFlushAsync(response);
-            _logger.LogInformation("Sent MsgReceivedAck for MsgType {MsgType}, RefId {Id}", message.MsgType, message.Id);
+            _logger.LogInformation("发送 MsgReceivedAck，MsgType：{MsgType}，关联ID：{Id}", message.MsgType, message.Id);
         }
 
-        /// <summary>
-        /// 处理好友请求通知 (3.7)
-        /// 发布 FriendRequestEvent 供自动化逻辑处理
-        /// </summary>
-        private async Task HandleFriendAddReqeustNotice(TransportMessage message, IChannelHandlerContext context)
-        {
-            var notice = message.Content.Unpack<FriendAddReqeustNoticeMessage>();
-            _logger.LogInformation("Friend Add Request Notice: {WeChatId} received request from {FriendId} ({FriendNick}): {Reason}", 
-                notice.WeChatId, notice.FriendId, notice.FriendNick, notice.Reason);
 
-            var connectionId = context.Channel.Id.AsLongText();
-            var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
-
-            if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
-            {
-                // Publish Event for Automation
-                var evt = new FriendRequestEvent(
-                    notice.WeChatId, 
-                    notice.FriendId, 
-                    notice.FriendNick, 
-                    notice.Reason, 
-                    connectionId, 
-                    accountId);
-                await _eventBus.PublishAsync(evt);
-            }
-        }
 
         /// <summary>
         /// 处理朋友圈新发通知 (3.8)
@@ -1494,7 +1616,7 @@ namespace SCRM.Services.Netty
             var notice = message.Content.Unpack<CircleNewPublishNoticeMessage>();
             if (notice.Circle == null) return;
 
-            _logger.LogInformation("Circle New Publish Notice: {WeChatId} received new moment from {Author}: {Content}", 
+            _logger.LogInformation("朋友圈新发布通知：{WeChatId} 收到来自 {Author} 的新动态：{Content}", 
                 notice.WeChatId, notice.Circle.WeChatId, notice.Circle.Content?.Text);
 
             var connectionId = context.Channel.Id.AsLongText();
@@ -1502,7 +1624,7 @@ namespace SCRM.Services.Netty
 
             if (connectionInfo != null && long.TryParse(connectionInfo.UserId, out long accountId))
             {
-                 // Publish Event for Automation
+                 // 发布自动化事件
                  var evt = new CircleNewPublishEvent(
                      notice.WeChatId,
                      notice.Circle.WeChatId,
@@ -1514,7 +1636,7 @@ namespace SCRM.Services.Netty
             }
         }
 
-        // Removed logic: ExtractXmlValue is no longer needed in this file.
+        // 已移除逻辑：此文件中不再需要 ExtractXmlValue。
 
 
 
@@ -1532,7 +1654,7 @@ namespace SCRM.Services.Netty
                     notice.WeChatId, notice.Friend?.FriendNick);
 
                 // 可以在此处添加业务逻辑，例如更新好友列表缓存或通知前端
-                // Currently just logging and ACKing to suppress warnings
+                // 目前仅记录日志并 ACK 以抑制警告
 
                 await SendMsgReceivedAck(context, message);
             }
@@ -1565,7 +1687,7 @@ namespace SCRM.Services.Netty
         private async Task HandleCirclePushNotice(TransportMessage message, IChannelHandlerContext context)
         {
             var notice = message.Content.Unpack<CirclePushNoticeMessage>();
-            _logger.LogInformation("Circle Push Notice: {WeChatId}, Count={Count}, Page={Page}", 
+            _logger.LogInformation("朋友圈推送通知：{WeChatId}，数量={Count}，页码={Page}", 
                 notice.WeChatId, notice.Circles.Count, notice.Page);
 
             var connectionId = context.Channel.Id.AsLongText();
@@ -1573,13 +1695,13 @@ namespace SCRM.Services.Netty
             
             if (connectionInfo == null || !long.TryParse(connectionInfo.UserId, out long accountId)) return;
 
-            // We use a list to collect DTOs to send in batch or individually
-            // Ideally batch, but client expects single? I defined `OnMomentReceived` for single item.
-            // But `GetMomentsTimelineAsync` returns list.
-            // Let's send individually for real-time feed effect, or modify client to accept list.
-            // Client: `OnMomentReceived` takes DTO. So invalid.
-            // I should ideally send list if many.
-            // But SignalR allows calling client method in loop.
+            // 我们使用列表来收集 DTO，以便批量或单独发送
+            // 理想情况下是批量，但客户端目前接收单个？我定义了 `OnMomentReceived` 接收单个项目。
+            // 但 `GetMomentsTimelineAsync` 返回列表。
+            // 让我们为实现实时 feed 效果而单独发送，或者修改客户端以接受列表。
+            // 客户端：`OnMomentReceived` 接收 DTO。所以无效。
+            // 如果数量多，我理想情况下应该发送列表。
+            // 但 SignalR 允许在循环中调用客户端方法。
             
             using (var scope = _scopeFactory.CreateScope())
             {
@@ -1587,24 +1709,22 @@ namespace SCRM.Services.Netty
                 
                 foreach (var circle in notice.Circles)
                 {
-                    string snsId = circle.CircleId.ToString();
+                    long snsId = circle.CircleId;
                     
-                    // 1. Check if exists
+                    // 1. 检查是否存在
                     var exists = await dbContext.MomentsTimelines.AnyAsync(m => m.SnsId == snsId);
                     if (!exists)
                     {
                         var entity = new MomentsTimeline
                         {
                             SnsId = snsId,
+                            WechatAccountId = accountId, // 确保赋值
                             UserName = circle.WeChatId,
-                            NickName = "", // Nickname not in CircleInfo? Wait. Author Nickname is usually separate. 
-                                           // CircleLike has NickName. CircleInfo doesn't? 
-                                           // We might need to look up Contact? 
-                                           // Or it might be empty.
+                            NickName = "", 
                             Content = circle.Content?.Text ?? "",
                             CreateTime = circle.PublishTime,
                             ReceivedAt = DateTime.UtcNow.Ticks,
-                            OwnerWxid = notice.WeChatId, // The device owner seeing this
+                            OwnerWxid = notice.WeChatId,
                             
                             ImagesJson = System.Text.Json.JsonSerializer.Serialize(
                                 circle.Content?.Images.Select(i => i.ThumbImg).ToList() ?? new List<string>()
@@ -1620,20 +1740,20 @@ namespace SCRM.Services.Netty
                         dbContext.MomentsTimelines.Add(entity);
                     }
                     
-                    // 2. Build DTO
+                    // 2. 构建 DTO
                     var dto = new SCRM.SHARED.Models.Dtos.MomentsTimelineDto
                     {
                         SnsId = snsId,
                         UserName = circle.WeChatId,
-                        NickName = "", // Placeholder
+                        NickName = "", // 占位符
                         Content = circle.Content?.Text ?? "",
-                        CreateTime = circle.PublishTime, // Seconds
+                        CreateTime = circle.PublishTime, // 秒
                         Images = circle.Content?.Images.Select(i => i.ThumbImg).ToList() ?? new List<string>(),
                         Comments = circle.Comments.Select(c => new SCRM.SHARED.Models.Dtos.MomentCommentDto { AuthorName = c.FromName, Content = c.Content }).ToList(),
                         Likes = circle.Likes.Select(l => new SCRM.SHARED.Models.Dtos.MomentLikeDto { UserName = l.FriendId, NickName = l.NickName }).ToList()
                     };
                     
-                    // 3. Send to Client
+                    // 3. 发送给客户端
                     await _hubContext.Clients.Group(connectionInfo.DeviceInfo ?? connectionId).SendAsync("MomentReceived", dto);
                 }
                 

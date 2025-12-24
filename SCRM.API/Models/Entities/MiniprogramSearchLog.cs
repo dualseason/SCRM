@@ -6,7 +6,7 @@
 public class MiniprogramSearchLog
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string SearchKeyword { get; set; }
     public int SearchResultCount { get; set; }
     public string SelectedAppId { get; set; }

@@ -1,12 +1,12 @@
-﻿namespace SCRM.API.Models.Entities;
+namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 浼氳瘽琛?
+/// 会话表
 /// </summary>
 public class Conversation
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string ConversationWxid { get; set; }
     public int ConversationType { get; set; }
     public string DisplayName { get; set; }
@@ -20,4 +20,3 @@ public class Conversation
     public DateTime UpdatedAt { get; set; }
     public bool IsDeleted { get; set; }
 }
-

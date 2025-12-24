@@ -9,11 +9,14 @@ namespace SCRM.UI.Services.Data
         public DbSet<Contact> Contacts { get; set; }
         public DbSet<WechatAccount> WechatAccounts { get; set; }
         public DbSet<Message> Messages { get; set; }
+        public DbSet<Conversation> Conversations { get; set; }
         public DbSet<SCRM.API.Models.Entities.MomentsTimeline> MomentsTimelines { get; set; }
 
         // Interface Implementation via Wrapper
         IClientDataSet<Contact> IClientDbContext.Contacts => new EfClientDataSet<Contact>(this);
+        IClientDataSet<WechatAccount> IClientDbContext.WechatAccounts => new EfClientDataSet<WechatAccount>(this);
         IClientDataSet<Message> IClientDbContext.Messages => new EfClientDataSet<Message>(this);
+        IClientDataSet<Conversation> IClientDbContext.Conversations => new EfClientDataSet<Conversation>(this);
         IClientDataSet<SCRM.API.Models.Entities.MomentsTimeline> IClientDbContext.MomentsTimelines => new EfClientDataSet<SCRM.API.Models.Entities.MomentsTimeline>(this);
 
         public ClientDbContext(DbContextOptions<ClientDbContext> options) : base(options)

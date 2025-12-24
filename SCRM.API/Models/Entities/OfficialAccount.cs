@@ -6,7 +6,7 @@
 public class OfficialAccount
 {
     public int Id { get; set; }
-    public int WechatAccountId { get; set; }
+    public long WechatAccountId { get; set; }
     public string AccountWxid { get; set; }
     public string AccountName { get; set; }
     public string AccountNickname { get; set; }

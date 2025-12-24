@@ -10,12 +10,16 @@ public class MemoryClientDbContext : IClientDbContext
     public MemoryClientDbContext()
     {
         Contacts = new MemoryDataSet<Contact>();
+        WechatAccounts = new MemoryDataSet<WechatAccount>();
         Messages = new MemoryDataSet<Message>();
+        Conversations = new MemoryDataSet<Conversation>();
         MomentsTimelines = new MemoryDataSet<SCRM.API.Models.Entities.MomentsTimeline>();
     }
 
     public IClientDataSet<Contact> Contacts { get; }
+    public IClientDataSet<WechatAccount> WechatAccounts { get; }
     public IClientDataSet<Message> Messages { get; }
+    public IClientDataSet<Conversation> Conversations { get; }
     public IClientDataSet<SCRM.API.Models.Entities.MomentsTimeline> MomentsTimelines { get; }
 }
 
