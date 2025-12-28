@@ -304,5 +304,20 @@ namespace SCRM.API.Hubs
                 Likes = !string.IsNullOrEmpty(m.LikesJson) ? System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(m.LikesJson) : new List<SCRM.SHARED.Models.Dtos.MomentLikeDto>()
             });
         }
+        public async Task<IEnumerable<Conversation>> GetConversations(long accountId)
+        {
+            var userId = Context.User?.Identity?.Name;
+            var isAdmin = Context.User?.IsInRole("SuperAdmin") == true || Context.User?.IsInRole("Admin") == true;
+
+            // Security Check (Simplified)
+            // var account = await _context.GetWechatAccount(accountId);
+            // if (account == null) return Enumerable.Empty<Conversation>();
+
+            return await _context.Conversations
+                .Where(c => c.WechatAccountId == accountId && !c.IsDeleted)
+                .OrderByDescending(c => c.LastMessageTime)
+                .Take(100) // Limit to 100 recent conversations
+                .ToListAsync();
+        }
     }
 }

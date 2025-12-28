@@ -263,3 +263,4 @@ azure-pipelines.yml
 # User secrets
 secrets.json
 *.md
+doc/

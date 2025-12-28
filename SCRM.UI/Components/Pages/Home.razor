@@ -14,7 +14,7 @@
             <RadzenDataGridColumn TItem="SrClient" Property="uuid" Title="UUID" Width="200px" />
             <RadzenDataGridColumn TItem="SrClient" Title="Device Name">
                 <Template Context="data">
-                    @($"{data.device?.hsman} {data.device?.hstype}")
+                    @($"{data.device?.PhoneBrand} {data.device?.PhoneModel}")
                 </Template>
             </RadzenDataGridColumn>
             <RadzenDataGridColumn TItem="SrClient" Property="isOnline" Title="Online" />

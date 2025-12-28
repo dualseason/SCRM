@@ -234,6 +234,22 @@ namespace SCRM.UI.Services
             return Enumerable.Empty<Message>();
         }
 
+        public async Task<IEnumerable<Conversation>> GetConversationsAsync(long accountId)
+        {
+            if (IsConnected && _hubConnection is not null)
+            {
+                try
+                {
+                    return await _hubConnection.InvokeAsync<IEnumerable<Conversation>>("GetConversations", accountId);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[WeChatService] GetConversationsAsync Failed: {ex.Message}");
+                }
+            }
+            return Enumerable.Empty<Conversation>();
+        }
+
         public async Task<bool> SyncContactsAsync(string deviceUuid)
         {
             if (IsConnected && _hubConnection is not null)

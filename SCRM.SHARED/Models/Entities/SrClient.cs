@@ -15,7 +15,7 @@ namespace SCRM.API.Models.Entities
         public int tcpPort { get; set; }
 
         [Column(TypeName = "jsonb")]
-        public SCRM.API.Models.DTOs.Device device { get; set; }
+        public SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage device { get; set; }
 
         public string? ip { get; set; }
         public DateTime? lastLoginAt { get; set; }

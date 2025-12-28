@@ -198,7 +198,15 @@ namespace SCRM.Services.Data
             {
                 entity.ToTable("sr_clients");
                 entity.HasKey(e => e.uuid);
-                entity.OwnsOne(e => e.device, b => b.ToJson());
+                // entity.OwnsOne(e => e.device, b => b.ToJson()); // Old DTO Mapping
+                
+                // New Proto-JSONB Mapping
+                entity.Property(e => e.device)
+                      .HasColumnType("jsonb")
+                      .HasConversion(
+                          v => v == null ? "{}" : Google.Protobuf.JsonFormatter.Default.Format(v),
+                          v => string.IsNullOrEmpty(v) ? new SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage() : new Google.Protobuf.JsonParser(Google.Protobuf.JsonParser.Settings.Default.WithIgnoreUnknownFields(true)).Parse<SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage>(v)
+                      );
                 entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 

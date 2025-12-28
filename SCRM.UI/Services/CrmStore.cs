@@ -46,8 +46,23 @@ namespace SCRM.UI.Services
         /// </summary>
         public Contact? SelectedContact { get; private set; }
         
+        /// <summary>
+        /// 当前设备的会话列表
+        /// </summary>
+        public List<Conversation> Conversations { get; private set; } = new(); // Chat Sessions
+
+        /// <summary>
+        /// 当前选中的会话
+        /// </summary>
+        public Conversation? SelectedConversation { get; private set; }
+        
         // 内存优化：仅保留当前会话的聊天记录
         public List<Message> CurrentMessages { get; private set; } = new();
+        
+        /// <summary>
+        /// 最后一次截屏的 URL
+        /// </summary>
+        public string? LastScreenShotUrl { get; set; }
         
         // 朋友圈动态列表
         public List<MomentsTimeline> CurrentMoments { get; private set; } = new();
@@ -176,11 +191,13 @@ namespace SCRM.UI.Services
             
             SelectedDevice = device;
             SelectedContact = null;
+            SelectedConversation = null;
             CurrentMessages.Clear(); // 清空聊天记录
             LastScreenShotUrl = null;
             
             // 切换设备时，联系人列表必须清空重载
             Contacts.Clear(); 
+            Conversations.Clear(); 
             NotifyStateChanged();
             
             // 1. 尝试从本地数据库 (IndexedDB) 加载联系人
@@ -217,23 +234,30 @@ namespace SCRM.UI.Services
                     _logger.LogInformation("[CrmStore] 调试: 从 Accounts 集合中找到了 AccountId {AccountId}", accountId);
                 }
 
-                if (accountId.HasValue && Contacts.Count == 0)
+                if (accountId.HasValue)
                 {
-                     _logger.LogInformation("[CrmStore] 调试: 正在从服务器获取联系人 (AccountId {AccountId})...", accountId);
-                     var result = await _weChatService.GetContactsAsync(accountId.Value);
-                     Contacts = result.ToList();
-                     _logger.LogInformation("[CrmStore] 调试: 从服务器成功获取 {Count} 个联系人。", Contacts.Count);
-                     NotifyStateChanged();
-                     
-                     // 异步保存到本地数据库
-                     _ = SaveContactsToDbAsync(Contacts);
+                    // 加载联系人 (如果为空)
+                    if (Contacts.Count == 0)
+                    {
+                         _logger.LogInformation("[CrmStore] 调试: 正在从服务器获取联系人 (AccountId {AccountId})...", accountId);
+                         var result = await _weChatService.GetContactsAsync(accountId.Value);
+                         Contacts = result.ToList();
+                         _logger.LogInformation("[CrmStore] 调试: 从服务器成功获取 {Count} 个联系人。", Contacts.Count);
+                         
+                         // 异步保存到本地数据库
+                         _ = SaveContactsToDbAsync(Contacts);
 
-                     // 3. 自动同步逻辑：如果服务器也没有数据，且设备在线，触发手机端上传
-                     if (Contacts.Count == 0 && !string.IsNullOrEmpty(SelectedDevice.uuid))
-                     {
-                         _logger.LogInformation("[CrmStore] 在线设备 {Uuid} 联系人列表为空，触发自动同步。", SelectedDevice.uuid);
-                         _ = SyncContactsAsync();
-                     }
+                         // 3. 自动同步逻辑：如果服务器也没有数据，且设备在线，触发手机端上传
+                         if (Contacts.Count == 0 && !string.IsNullOrEmpty(SelectedDevice.uuid))
+                         {
+                             _logger.LogInformation("[CrmStore] 在线设备 {Uuid} 联系人列表为空，触发自动同步。", SelectedDevice.uuid);
+                             _ = SyncContactsAsync();
+                         }
+                    }
+                    
+                    // 加载会话列表 (新增)
+                    await LoadConversationsAsync(accountId.Value);
+                    NotifyStateChanged();
                 }
                 else if (!accountId.HasValue)
                 {
@@ -242,6 +266,90 @@ namespace SCRM.UI.Services
             }
         }
         
+        /// <summary>
+        /// 加载会话列表
+        /// </summary>
+        public async Task LoadConversationsAsync(long accountId)
+        {
+            try
+            {
+                var list = await _weChatService.GetConversationsAsync(accountId);
+                Conversations = list.ToList();
+                _logger.LogInformation("[CrmStore] 已加载 {Count} 个会话。", Conversations.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[CrmStore] 加载会话列表失败");
+            }
+        }
+
+        /// <summary>
+        /// 选中会话
+        /// </summary>
+        public async Task SelectConversationAsync(Conversation conversation)
+        {
+            if (SelectedConversation == conversation) return;
+            if (SelectedDevice?.WechatAccountId == null) return;
+            
+            SelectedConversation = conversation;
+            SelectedContact = null; // 互斥
+            
+            // 构造临时 Contact 对象用于界面显示 (兼容现有 Chat UI)
+            // 如果该会话对应一个已知联系人，优先使用联系人详细信息
+            var existingContact = Contacts.FirstOrDefault(c => c.Wxid == conversation.ConversationWxid);
+            if (existingContact != null)
+            {
+                SelectedContact = existingContact;
+            }
+            else
+            {
+                // 为群聊或陌生人构造临时 Contact
+                SelectedContact = new Contact
+                {
+                    Wxid = conversation.ConversationWxid,
+                    Nickname = conversation.DisplayName,
+                    Avatar = conversation.DisplayAvatar,
+                    Remarks = conversation.DisplayName // 显示群名称
+                };
+            }
+
+            CurrentMessages.Clear();
+            NotifyStateChanged();
+
+            // 加载聊天历史
+            await LoadChatHistoryAsync(SelectedDevice.WechatAccountId.Value, conversation.ConversationWxid);
+        }
+
+        private async Task LoadChatHistoryAsync(long accountId, string friendWxid)
+        {
+             // 1. 本地
+             var dbMessages = await LoadChatHistoryFromDbAsync(friendWxid);
+             if (dbMessages.Any())
+             {
+                 CurrentMessages = dbMessages;
+                 NotifyStateChanged();
+             }
+
+             // 2. 远程补全
+             try 
+             {
+                 var history = await _weChatService.GetChatHistoryAsync(accountId, friendWxid);
+                 if (history.Any())
+                 {
+                     var sortedList = history.OrderBy(m => m.CreatedAt).ToList();
+                     // Merge? Or just replace if remote is authority.
+                     // For now, let's just use remote if available as it is more likely to be complete for history
+                     CurrentMessages = sortedList; 
+                     NotifyStateChanged();
+                     _ = SaveMessagesToDbAsync(sortedList);
+                 }
+             }
+             catch(Exception ex)
+             {
+                 _logger.LogError(ex, "LoadChatHistoryAsync remote failed");
+             }
+        }
+
         /// <summary>
         /// 将联系人保存到本地数据库
         /// </summary>
@@ -788,7 +896,7 @@ namespace SCRM.UI.Services
 
         private void NotifyStateChanged() => OnChange?.Invoke();
 
-        public string? LastScreenShotUrl { get; private set; }
+
 
         private void HandleTaskResultReceived(TaskResultDto result)
         {

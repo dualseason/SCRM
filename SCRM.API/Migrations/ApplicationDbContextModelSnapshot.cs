@@ -2370,6 +2370,10 @@ namespace SCRM.API.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<string>("device")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
                     b.Property<string>("ip")
                         .HasColumnType("text");
 
@@ -2929,64 +2933,7 @@ namespace SCRM.API.Migrations
                         .WithMany("Clients")
                         .HasForeignKey("OwnerId");
 
-                    b.OwnsOne("SCRM.API.Models.DTOs.Device", "device", b1 =>
-                        {
-                            b1.Property<string>("SrClientuuid")
-                                .HasColumnType("text");
-
-                            b1.Property<string>("androidApi")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("androidId")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("hsman")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("hstype")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("imei")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("mac")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("packageName")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("regCode")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<string>("returnKey")
-                                .IsRequired()
-                                .HasColumnType("text");
-
-                            b1.Property<int>("versionCode")
-                                .HasColumnType("integer");
-
-                            b1.HasKey("SrClientuuid");
-
-                            b1.ToTable("sr_clients");
-
-                            b1.ToJson("device");
-
-                            b1.WithOwner()
-                                .HasForeignKey("SrClientuuid");
-                        });
-
                     b.Navigation("Owner");
-
-                    b.Navigation("device")
-                        .IsRequired();
                 });
 
             modelBuilder.Entity("SCRM.API.Models.Entities.UserRole", b =>

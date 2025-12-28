@@ -105,7 +105,8 @@ namespace SCRM.Controllers.Auth
                         status = 1,
                         isOnline = true,
                         lastLoginAt = DateTime.UtcNow,
-                        ip = clientIp
+                        ip = clientIp,
+                        device = new SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage()
                     };
                     _context.SrClients.Add(srClient);
                 }
@@ -127,7 +128,7 @@ namespace SCRM.Controllers.Auth
                 var token = new UserAuthToken
                 {
                     userId = user.Id.ToString(),
-                    token = "API_KEY_AUTH",
+                    token = await _authService.GenerateTokenAsync(user),
                     tcpHost = srClient.tcpHost,
                     tcpPort = srClient.tcpPort
                 };
@@ -244,7 +245,22 @@ namespace SCRM.Controllers.Auth
                     _context.SrClients.Add(srClient);
                 }
 
-                srClient.device = request;
+                srClient.device = new SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage
+                {
+                    IMEI = request.imei ?? "",
+                    PhoneBrand = request.hsman ?? "",
+                    PhoneModel = request.hstype ?? "",
+                    OSVerNumber = int.TryParse(request.androidApi, out int v) ? v : 0
+                };
+                
+                if (!string.IsNullOrEmpty(request.packageName))
+                {
+                    srClient.device.AppInfos.Add(new SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage.Types.DeviceAppInfoMessage
+                    {
+                        PackageName = request.packageName,
+                        VerNumber = request.versionCode
+                    });
+                }
                 srClient.tcpHost = "192.168.1.226";
                 srClient.tcpPort = 8647;
                 srClient.updatedAt = DateTime.UtcNow;

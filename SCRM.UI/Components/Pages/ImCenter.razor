@@ -49,37 +49,92 @@
         <SCRM.UI.Components.Shared.DeviceList OnDeviceSelected="OnDeviceSelectedInternal" />
     </Sider>
 
-    <!-- 2. Middle Sider: Contacts -->
-    <Sider Width="250" Class="contact-sider" Theme="SiderTheme.Light">
-        <div style="padding: 10px; border-bottom: 1px solid #d9d9d9;">
-            <Search Placeholder="Search Contacts..." OnSearch="OnSearchContact" EnterButton="@true" />
+    <!-- 2. Middle Sider: Contacts & Chats -->
+    <Sider Width="280" Class="contact-sider" Theme="SiderTheme.Light">
+        <!-- Tab Switcher -->
+        <div style="display: flex; border-bottom: 1px solid #f0f0f0; background: #fff;">
+            <div class="tab-item @(_activeTab == "chats" ? "active" : "")" @onclick="@(() => _activeTab = "chats")">
+                <Icon Type="message" /> Chats
+            </div>
+            <div class="tab-item @(_activeTab == "contacts" ? "active" : "")" @onclick="@(() => _activeTab = "contacts")">
+                <Icon Type="team" /> Contacts
+            </div>
         </div>
-        
-        @if (Store.SelectedDevice == null)
+
+        @if (_activeTab == "chats")
         {
-            <Empty Description="@("Select a Device")" Simple />
-        }
-        else if (Store.Contacts.Count == 0)
-        {
-            <Empty Description="@("Select a Device")" Simple>
-                <Button Type="@AntDesign.ButtonType.Dashed" OnClick="SyncContacts">Sync Contacts</Button>
-            </Empty>
+            <!-- Conversation List -->
+             @if (Store.SelectedDevice == null)
+             {
+                 <Empty Description="@("Select a Device")" Simple />
+             }
+             else if (Store.Conversations.Count == 0)
+             {
+                 <Empty Description="@("No chats, sync contacts first")" Simple />
+             }
+             else
+             {
+                 <div style="overflow-y: auto; height: calc(100% - 46px);">
+                    @foreach (var conv in Store.Conversations)
+                    {
+                        var isActive = Store.SelectedConversation?.Id == conv.Id;
+                        <div class="contact-item @(isActive ? "active" : "")" @onclick="@(() => SelectConversation(conv))">
+                            <Badge Count="@conv.UnreadCount" Dot="@(conv.UnreadCount > 0)">
+                                <Avatar Src="@conv.DisplayAvatar" Icon="user" Shape="@AvatarShape.Square" />
+                            </Badge>
+                            <div style="margin-left: 10px; overflow: hidden; flex: 1;">
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span style="font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
+                                        @conv.DisplayName
+                                    </span>
+                                    <span style="font-size: 10px; color: #aaa;">
+                                        @FormatDate(conv.LastMessageTime)
+                                    </span>
+                                </div>
+                                <div style="font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                    @(conv.ConversationType == 2 ? "[Group] " : "") 
+                                    @* todo: show last message content preview if available *@
+                                    Chat Session
+                                </div>
+                            </div>
+                        </div>
+                    }
+                 </div>
+             }
         }
         else
         {
-            <div style="overflow-y: auto; height: calc(100% - 52px);">
-                @foreach (var contact in _filteredContacts)
-                {
-                    <div class="contact-item @(Store.SelectedContact?.Wxid == contact.Wxid ? "active" : "")" 
-                         @onclick="@(() => SelectContact(contact))">
-                        <Avatar Src="@contact.Avatar" Icon="user" />
-                        <div style="margin-left: 10px; overflow: hidden;">
-                            <div style="font-weight: 500; font-size: 14px;">@(string.IsNullOrEmpty(contact.Remarks) ? contact.Nickname : contact.Remarks)</div>
-                            <div style="font-size: 12px; color: #888;">@contact.Nickname</div>
-                        </div>
-                    </div>
-                }
+            <!-- Contact List -->
+            <div style="padding: 10px; border-bottom: 1px solid #d9d9d9;">
+                <Search Placeholder="Search Contacts..." OnSearch="OnSearchContact" EnterButton="@true" />
             </div>
+            
+            @if (Store.SelectedDevice == null)
+            {
+                <Empty Description="@("Select a Device")" Simple />
+            }
+            else if (Store.Contacts.Count == 0)
+            {
+                <Empty Description="@("Select a Device")" Simple>
+                    <Button Type="@AntDesign.ButtonType.Dashed" OnClick="SyncContacts">Sync Contacts</Button>
+                </Empty>
+            }
+            else
+            {
+                <div style="overflow-y: auto; height: calc(100% - 98px);">
+                    @foreach (var contact in _filteredContacts)
+                    {
+                        <div class="contact-item @(Store.SelectedContact?.Wxid == contact.Wxid ? "active" : "")" 
+                             @onclick="@(() => SelectContact(contact))">
+                            <Avatar Src="@contact.Avatar" Icon="user" />
+                            <div style="margin-left: 10px; overflow: hidden;">
+                                <div style="font-weight: 500; font-size: 14px;">@(string.IsNullOrEmpty(contact.Remarks) ? contact.Nickname : contact.Remarks)</div>
+                                <div style="font-size: 12px; color: #888;">@contact.Nickname</div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
         }
     </Sider>
 
@@ -166,6 +221,8 @@
     private string _msgContent = "";
     private string _searchText = "";
     private bool _sending = false;
+    private string _activeTab = "chats"; // Default to Chats
+    
     private List<Contact> _filteredContacts => string.IsNullOrWhiteSpace(_searchText) 
         ? Store.Contacts 
         : Store.Contacts.Where(c => (c.Nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) 
@@ -298,5 +355,22 @@
         try {
             await JS.InvokeVoidAsync("eval", "const el = document.getElementById('chat-box'); if(el) el.scrollTop = el.scrollHeight;");
         } catch {}
+    }
+
+    private async Task SelectConversation(Conversation conv)
+    {
+        await Store.SelectConversationAsync(conv);
+        // todo: scroll to bottom
+    }
+
+    private string FormatDate(DateTime dt)
+    {
+        if (dt.Date == DateTime.Today)
+            return dt.ToString("HH:mm");
+        if (dt.Date == DateTime.Today.AddDays(-1))
+            return "Yesterday";
+        if (dt.Year == DateTime.Now.Year)
+            return dt.ToString("MM-dd");
+        return dt.ToString("yyyy-MM-dd");
     }
 }

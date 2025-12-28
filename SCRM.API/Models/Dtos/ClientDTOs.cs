@@ -4,13 +4,18 @@ namespace SCRM.API.Models.DTOs
 {
     public class ApiResponse<T>
     {
+        [JsonPropertyName("bizCode")]
         public int code { get; set; }
+
+        [JsonPropertyName("msg")]
         public string message { get; set; }
+
+        [JsonPropertyName("data")]
         public T data { get; set; }
 
         public static ApiResponse<T> Success(T data, string message = "Success")
         {
-            return new ApiResponse<T> { code = 200, message = message, data = data };
+            return new ApiResponse<T> { code = 0, message = message, data = data };
         }
 
         public static ApiResponse<T> Fail(int code, string message)
