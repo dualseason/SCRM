@@ -2,11 +2,11 @@ namespace SCRM.SHARED.Models.Dtos
 {
     public class TaskResult
     {
-        public bool Success { get; set; }
-        public string? Message { get; set; }
-        public object? Data { get; set; }
+        public bool success { get; set; }
+        public string? message { get; set; }
+        public object? data { get; set; }
 
-        public static TaskResult Ok(object? data = null) => new TaskResult { Success = true, Data = data };
-        public static TaskResult Fail(string message) => new TaskResult { Success = false, Message = message };
+        public static TaskResult Ok(object? data = null) => new TaskResult { success = true, data = data };
+        public static TaskResult Fail(string message) => new TaskResult { success = false, message = message };
     }
 }

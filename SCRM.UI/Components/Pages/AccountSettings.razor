@@ -1,75 +1,78 @@
 @page "/settings/{AccountId:long}"
 @using SCRM.UI.Services
 @using SCRM.SHARED.Models
+@using Radzen
+@using Radzen.Blazor
 @inject WeChatService WeChatService
 @inject NotificationService NotificationService
 @inject NavigationManager Navigation
 
-<RadzenContent Container="main">
-    <RadzenHeading Size="H3" Text="账号自动化设置" />
-    <RadzenCard>
-        @if (isLoading)
-        {
-            <RadzenProgressBar Mode="ProgressBarMode.Indeterminate" />
-        }
-        else
-        {
-            <div class="row">
-                <div class="col-md-6">
-                    <RadzenFieldset Text="红包助手">
-                        <div class="row align-items-center mb-3">
-                            <div class="col-md-4">
-                                <RadzenLabel Text="自动抢红包" Component="AutoAcceptLuckyMoney" />
-                            </div>
-                            <div class="col-md-8">
+<RadzenStack Gap="1rem">
+    <RadzenText TextStyle="TextStyle.H4">账号自动化设置 (Automation Settings)</RadzenText>
+
+    @if (isLoading)
+    {
+        <RadzenProgressBar Mode="ProgressBarMode.Indeterminate" />
+    }
+    else
+    {
+        <RadzenCard>
+            <RadzenStack Gap="1.5rem">
+                <RadzenFieldset Text="红包助手 (Red Packet Assistant)">
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="自动抢红包 (Auto Accept)" Component="AutoAcceptLuckyMoney" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenStack Orientation="Orientation.Vertical" Gap="0.5rem">
                                 <RadzenSwitch @bind-Value=@settings.AutoAcceptLuckyMoney Name="AutoAcceptLuckyMoney" />
-                                <RadzenText TextStyle="TextStyle.Caption" Class="mt-1">开启后将自动领取接收到的个人和群红包。</RadzenText>
-                            </div>
-                        </div>
-                    </RadzenFieldset>
+                                <RadzenText TextStyle="TextStyle.Caption">开启后将自动领取接收到的个人和群红包。</RadzenText>
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenFieldset>
 
-                    <RadzenFieldset Text="好友管理" Class="mt-4">
-                        <div class="row align-items-center mb-3">
-                            <div class="col-md-4">
-                                <RadzenLabel Text="自动通过好友请求" Component="AutoAcceptFriendRequest" />
-                            </div>
-                            <div class="col-md-8">
+                <RadzenFieldset Text="好友管理 (Friend Management)">
+                    <RadzenStack Gap="1rem">
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="自动通过好友请求 (Auto Accept Friend)" Component="AutoAcceptFriendRequest" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
                                 <RadzenSwitch @bind-Value=@settings.AutoAcceptFriendRequest Name="AutoAcceptFriendRequest" />
-                            </div>
-                        </div>
-                        <div class="row align-items-center mb-3">
-                            <div class="col-md-4">
-                                <RadzenLabel Text="自动回复内容" Component="AutoReplyContent" />
-                            </div>
-                            <div class="col-md-8">
-                                <RadzenTextBox @bind-Value=@settings.AutoReplyContent Name="AutoReplyContent" Class="w-100" />
-                                <RadzenText TextStyle="TextStyle.Caption" Class="mt-1">留空则不自动回复。</RadzenText>
-                            </div>
-                        </div>
-                    </RadzenFieldset>
-                    
-                    <RadzenFieldset Text="朋友圈" Class="mt-4">
-                        <div class="row align-items-center mb-3">
-                            <div class="col-md-4">
-                                <RadzenLabel Text="自动点赞" Component="AutoLikeMoments" />
-                            </div>
-                            <div class="col-md-8">
-                                <RadzenSwitch @bind-Value=@settings.AutoLikeMoments Name="AutoLikeMoments" />
-                            </div>
-                        </div>
-                    </RadzenFieldset>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="自动回复内容 (Auto Reply Content)" Component="AutoReplyContent" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenTextBox @bind-Value=@settings.AutoReplyContent Name="AutoReplyContent" Style="width: 100%;" />
+                                <RadzenText TextStyle="TextStyle.Caption">留空则不自动回复。</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenFieldset>
+                
+                <RadzenFieldset Text="朋友圈 (Moments)">
+                    <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenLabel Text="自动点赞 (Auto Like)" Component="AutoLikeMoments" />
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenSwitch @bind-Value=@settings.AutoLikeMoments Name="AutoLikeMoments" />
+                        </RadzenColumn>
+                    </RadzenRow>
+                </RadzenFieldset>
 
-                    <div class="row mt-4">
-                        <div class="col-md-12 text-right">
-                            <RadzenButton Text="保存配置" Icon="save" ButtonStyle="ButtonStyle.Primary" Click=@SaveSettings />
-                            <RadzenButton Text="返回" ButtonStyle="ButtonStyle.Light" Click=@(() => Navigation.NavigateTo("/")) Class="ml-2" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        }
-    </RadzenCard>
-</RadzenContent>
+                <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem">
+                    <RadzenButton Text="保存配置" Icon="save" ButtonStyle="ButtonStyle.Primary" Click=@SaveSettings />
+                    <RadzenButton Text="返回" ButtonStyle="ButtonStyle.Light" Click=@(() => Navigation.NavigateTo("/")) />
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenCard>
+    }
+</RadzenStack>
 
 @code {
     [Parameter]

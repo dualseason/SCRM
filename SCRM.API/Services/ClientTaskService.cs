@@ -1,6 +1,6 @@
 using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
-using SCRM.SHARED.Proto;
+using Jubo.JuLiao.IM.Wx.Proto;
 using SCRM.Services;
 using System;
 using System.Threading.Tasks;
@@ -36,7 +36,7 @@ namespace SCRM.Services
         {
             if (_pendingTasks.TryRemove(taskId, out var tcs))
             {
-                tcs.TrySetResult(new SCRM.SHARED.Models.Dtos.TaskResult { Success = success, Message = message });
+                tcs.TrySetResult(new SCRM.SHARED.Models.Dtos.TaskResult { success = success, message = message });
             }
         }
 

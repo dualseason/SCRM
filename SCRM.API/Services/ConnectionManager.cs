@@ -58,13 +58,13 @@ namespace SCRM.Services
         {
             var connectionInfo = new UserConnectionInfo
             {
-                UserId = userId,
-                ConnectionId = connectionId,
-                DeviceType = deviceType,
-                DeviceInfo = deviceInfo,
-                DeviceUuid = deviceInfo, // In MessageRouter, we pass UUID as deviceInfo
-                ConnectedAt = DateTime.UtcNow,
-                LastActivityAt = DateTime.UtcNow
+                userId = userId,
+                connectionId = connectionId,
+                deviceType = deviceType,
+                deviceInfo = deviceInfo,
+                deviceUuid = deviceInfo, // In MessageRouter, we pass UUID as deviceInfo
+                connectedAt = DateTime.UtcNow,
+                lastActivityAt = DateTime.UtcNow
             };
 
             // 添加到连接字典
@@ -105,43 +105,43 @@ namespace SCRM.Services
             if (_connections.TryRemove(connectionId, out var connectionInfo))
             {
                 // 从用户连接映射中移除
-                if (_userConnections.TryGetValue(connectionInfo.UserId, out var userConns))
+                if (_userConnections.TryGetValue(connectionInfo.userId, out var userConns))
                 {
                     lock (userConns)
                     {
                         userConns.Remove(connectionId);
                         if (userConns.Count == 0)
                         {
-                            _userConnections.TryRemove(connectionInfo.UserId, out _);
+                            _userConnections.TryRemove(connectionInfo.userId, out _);
                         }
                     }
                 }
 
                 // 从设备类型连接映射中移除
-                if (_deviceTypeConnections.TryGetValue(connectionInfo.DeviceType, out var deviceConns))
+                if (_deviceTypeConnections.TryGetValue(connectionInfo.deviceType, out var deviceConns))
                 {
                     lock (deviceConns)
                     {
                         deviceConns.Remove(connectionId);
                         if (deviceConns.Count == 0)
                         {
-                            _deviceTypeConnections.TryRemove(connectionInfo.DeviceType, out _);
+                            _deviceTypeConnections.TryRemove(connectionInfo.deviceType, out _);
                         }
                     }
                 }
 
                 // 从设备UUID映射中移除
-                if (!string.IsNullOrEmpty(connectionInfo.DeviceUuid))
+                if (!string.IsNullOrEmpty(connectionInfo.deviceUuid))
                 {
                     // Only remove if it points to THIS connectionId (handle race conditions)
-                    if (_deviceUuidConnections.TryGetValue(connectionInfo.DeviceUuid, out var currentConnId) && currentConnId == connectionId)
+                    if (_deviceUuidConnections.TryGetValue(connectionInfo.deviceUuid, out var currentConnId) && currentConnId == connectionId)
                     {
-                        _deviceUuidConnections.TryRemove(connectionInfo.DeviceUuid, out _);
+                        _deviceUuidConnections.TryRemove(connectionInfo.deviceUuid, out _);
                     }
                 }
 
                 _logger.LogInformation("连接已移除 - 用户ID: {UserId}, 连接ID: {ConnectionId}, 设备类型: {DeviceType}",
-                    connectionInfo.UserId, connectionId, connectionInfo.DeviceType);
+                    connectionInfo.userId, connectionId, connectionInfo.deviceType);
             }
 
             return Task.CompletedTask;
@@ -262,7 +262,46 @@ namespace SCRM.Services
         {
             if (_connections.TryGetValue(connectionId, out var connection))
             {
-                connection.LastActivityAt = DateTime.UtcNow;
+                connection.lastActivityAt = DateTime.UtcNow;
+                return Task.FromResult(true);
+            }
+            return Task.FromResult(false);
+        }
+
+        /// <summary>
+        /// 更新连接绑定的 UserId (账号切换/合并时使用)
+        /// </summary>
+        public Task<bool> UpdateConnectionUserIdAsync(string connectionId, string newUserId)
+        {
+            if (_connections.TryGetValue(connectionId, out var connection))
+            {
+                var oldUserId = connection.userId;
+                if (oldUserId == newUserId) return Task.FromResult(true);
+
+                // 1. Remove from old User mapping
+                if (!string.IsNullOrEmpty(oldUserId))
+                {
+                    if (_userConnections.TryGetValue(oldUserId, out var oldUserConns))
+                    {
+                        lock (oldUserConns)
+                        {
+                            oldUserConns.Remove(connectionId);
+                            if (oldUserConns.Count == 0) _userConnections.TryRemove(oldUserId, out _);
+                        }
+                    }
+                }
+
+                // 2. Update Connection Info
+                connection.userId = newUserId;
+
+                // 3. Add to new User mapping
+                var newUserConns = _userConnections.GetOrAdd(newUserId, _ => new HashSet<string>());
+                lock (newUserConns)
+                {
+                    newUserConns.Add(connectionId);
+                }
+
+                _logger.LogInformation("Connection {ConnectionId} re-bound from User {OldUser} to {NewUser}", connectionId, oldUserId, newUserId);
                 return Task.FromResult(true);
             }
             return Task.FromResult(false);
@@ -276,7 +315,7 @@ namespace SCRM.Services
             if (_connections.TryGetValue(connectionId, out var connection))
             {
                 // Must have a valid UserId to be considered authenticated
-                return Task.FromResult(!string.IsNullOrEmpty(connection.UserId));
+                return Task.FromResult(!string.IsNullOrEmpty(connection.userId));
             }
             return Task.FromResult(false);
         }
@@ -290,7 +329,7 @@ namespace SCRM.Services
             {
                 var hasActiveConnections = connectionIds
                     .Select(connId => _connections.TryGetValue(connId, out var conn) ? conn : null)
-                    .Any(conn => conn != null && conn.IsOnline);
+                    .Any(conn => conn != null && conn.isOnline);
 
                 return Task.FromResult(hasActiveConnections);
             }
@@ -306,7 +345,7 @@ namespace SCRM.Services
             var onlineUsers = _userConnections
                 .Select(kvp => kvp.Value
                     .Select(connId => _connections.TryGetValue(connId, out var conn) ? conn : null)
-                    .Any(conn => conn != null && conn.IsOnline))
+                    .Any(conn => conn != null && conn.isOnline))
                 .Count(isOnline => isOnline);
 
             return Task.FromResult(onlineUsers);
@@ -321,15 +360,15 @@ namespace SCRM.Services
             var totalUsers = _userConnections.Count;
             var deviceTypeStats = _deviceTypeConnections
                 .ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Count);
-            var onlineUsers = _connections.Values.Count(conn => conn.IsOnline);
+            var onlineUsers = _connections.Values.Count(conn => conn.isOnline);
 
             return new ConnectionStatistics
             {
-                TotalConnections = totalConnections,
-                TotalUsers = totalUsers,
-                OnlineUsers = onlineUsers,
-                DeviceTypeStatistics = deviceTypeStats,
-                LastUpdated = DateTime.UtcNow
+                totalConnections = totalConnections,
+                totalUsers = totalUsers,
+                onlineUsers = onlineUsers,
+                deviceTypeStatistics = deviceTypeStats,
+                lastUpdated = DateTime.UtcNow
             };
         }
     }
@@ -339,10 +378,10 @@ namespace SCRM.Services
     /// </summary>
     public class ConnectionStatistics
     {
-        public int TotalConnections { get; set; }
-        public int TotalUsers { get; set; }
-        public int OnlineUsers { get; set; }
-        public Dictionary<string, int> DeviceTypeStatistics { get; set; } = new Dictionary<string, int>();
-        public DateTime LastUpdated { get; set; }
+        public int totalConnections { get; set; }
+        public int totalUsers { get; set; }
+        public int onlineUsers { get; set; }
+        public Dictionary<string, int> deviceTypeStatistics { get; set; } = new Dictionary<string, int>();
+        public DateTime lastUpdated { get; set; }
     }
 }

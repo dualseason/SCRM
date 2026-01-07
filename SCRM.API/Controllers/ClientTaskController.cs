@@ -1,12 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
 using SCRM.Services;
 using System.Threading.Tasks;
-using SCRM.SHARED.Proto;
+using Jubo.JuLiao.IM.Wx.Proto;
 
 namespace SCRM.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Microsoft.AspNetCore.Authorization.Authorize(Policy = "RequireAdminRole")]
     public class ClientTaskController : ControllerBase
     {
         private readonly ClientTaskService _clientTaskService;

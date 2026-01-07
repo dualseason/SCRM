@@ -78,7 +78,7 @@ public class MessageCleanupService : BackgroundService
             
             // 1. Delete Messages
             var deletedCount = await context.Database.ExecuteSqlRawAsync(
-                "DELETE FROM \"Messages\" WHERE \"CreatedAt\" < {0}", 
+                "DELETE FROM \"Messages\" WHERE \"created_at\" < {0}", 
                 new object[] { thresholdDate }, 
                 cancellationToken);
 
@@ -105,9 +105,10 @@ public class MessageCleanupService : BackgroundService
         // 2. Query Candidates (Batching to avoid memory issues)
         // We look for files that have a local path and exceed size/age
         var candidates = await context.MessageMedias
-            .Where(m => !string.IsNullOrEmpty(m.LocalPath) 
-                        && m.FileSize > limitBytes 
-                        && m.CreatedAt < thresholdDate)
+            .Where(m => !string.IsNullOrEmpty(m.localPath) 
+                        && m.fileSize > limitBytes 
+                        && m.createdAt < thresholdDate)
+            .OrderBy(m => m.createdAt) // Resolve EF Core Warning: Row limiting operation without OrderBy
             .Take(100) // Process in batches of 100
             .ToListAsync(cancellationToken);
 
@@ -120,24 +121,24 @@ public class MessageCleanupService : BackgroundService
 
             try
             {
-                if (File.Exists(media.LocalPath))
+                if (File.Exists(media.localPath))
                 {
-                    File.Delete(media.LocalPath);
-                    _logger.LogDebug("Deleted physical file: {Path}", media.LocalPath);
+                    File.Delete(media.localPath);
+                    _logger.LogDebug("Deleted physical file: {Path}", media.localPath);
                 }
                 
                 // Update DB Record
-                media.LocalPath = ""; // Clear path
-                media.UploadStatus = -1; // Mark as expired/deleted
-                // media.MediaUrl ? We might keep the URL if it points to a remote server, 
-                // but if LocalPath was the source of truth, it's gone.
-                // Assuming MediaUrl might be valid if uploaded to cloud, otherwise it's just local.
+                media.localPath = ""; // Clear path
+                media.uploadStatus = -1; // Mark as expired/deleted
+                // media.mediaUrl ? We might keep the URL if it points to a remote server, 
+                // but if localPath was the source of truth, it's gone.
+                // Assuming mediaUrl might be valid if uploaded to cloud, otherwise it's just local.
                 
                 deletedCount++;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to delete file: {Path}", media.LocalPath);
+                _logger.LogError(ex, "Failed to delete file: {Path}", media.localPath);
             }
         }
 

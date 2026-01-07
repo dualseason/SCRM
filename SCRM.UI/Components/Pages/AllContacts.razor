@@ -1,0 +1,134 @@
+@page "/contacts/all"
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@inject IContactService ContactService
+@inject NotificationService NotificationService
+@attribute [Authorize]
+
+<PageTitle>所有联系人</PageTitle>
+
+<RadzenStack>
+    <RadzenText TextStyle="TextStyle.H3">联系人总览</RadzenText>
+    
+    <RadzenCard>
+        <RadzenRow AlignItems="AlignItems.Center" Class="rz-mb-4">
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenTextBox Placeholder="搜索昵称、备注、微信号..." @bind-Value="@searchTerm" Style="width: 100%" Change="@OnSearch" />
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenButton Icon="search" Text="搜索" Click="@OnSearch" ButtonStyle="ButtonStyle.Primary" />
+                <RadzenButton Icon="refresh" Text="刷新" Click="@ReloadData" ButtonStyle="ButtonStyle.Light" Class="rz-ml-2" />
+            </RadzenColumn>
+        </RadzenRow>
+
+        <RadzenDataGrid @ref="grid" Data="@contacts" TItem="Contact" Count="@totalCount" LoadData="@OnLoadData" AllowPaging="true" PageSize="20" AllowSorting="true">
+            <Columns>
+                <RadzenDataGridColumn TItem="Contact" Title="联系人" Width="250px">
+                    <Template Context="data">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px">
+                            <RadzenImage Path="@(string.IsNullOrEmpty(data.avatar) ? "images/default-avatar.png" : data.avatar)" Style="width: 40px; height: 40px; border-radius: 50%;" />
+                            <RadzenStack Gap="0">
+                                <RadzenText TextStyle="TextStyle.Body1" Class="rz-mb-0">@data.nickname</RadzenText>
+                                @if (!string.IsNullOrEmpty(data.remarks))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-mb-0" Style="color: gray">备注: @data.remarks</RadzenText>
+                                }
+                                <RadzenText TextStyle="TextStyle.Caption" Class="rz-mb-0">@data.wxid</RadzenText>
+                            </RadzenStack>
+                        </RadzenStack>
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Contact" Title="所属微信" Width="200px">
+                    <Template Context="data">
+                        @if (data.Account != null)
+                        {
+                            <RadzenStack Gap="0">
+                                <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@data.Account.nickname</RadzenText>
+                                @if (!string.IsNullOrEmpty(data.Account.mobilePhone))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption">@data.Account.mobilePhone</RadzenText>
+                                }
+                            </RadzenStack>
+                        }
+                        else
+                        {
+                            <RadzenText TextStyle="TextStyle.Caption">未知</RadzenText>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Contact" Title="所属设备" Width="200px">
+                    <Template Context="data">
+                        @if (data.Account?.Client != null)
+                        {
+                            <RadzenStack Gap="0">
+                                <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0" title="@data.Account.Client.uuid">
+                                    @(data.Account.Client.uuid.Length > 8 ? data.Account.Client.uuid.Substring(0, 8) + "..." : data.Account.Client.uuid)
+                                </RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption">
+                                    @(data.Account.Client.isOnline ? "在线" : "离线")
+                                </RadzenText>
+                            </RadzenStack>
+                        }
+                        else if (data.Account != null)
+                        {
+                             <RadzenText TextStyle="TextStyle.Caption">无设备信息 (@data.Account.clientUuid)</RadzenText>
+                        }
+                        else 
+                        {
+                             <RadzenText TextStyle="TextStyle.Caption">-</RadzenText>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+
+                <RadzenDataGridColumn TItem="Contact" Title="归属用户" Width="150px">
+                    <Template Context="data">
+                         @if (data.Account?.owner != null)
+                        {
+                            <RadzenStack Gap="0">
+                                <RadzenText TextStyle="TextStyle.Body2">@data.Account.owner.UserName</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption">@data.Account.owner.PhoneNumber</RadzenText>
+                            </RadzenStack>
+                        }
+                        else
+                        {
+                             <RadzenText TextStyle="TextStyle.Caption">-</RadzenText>
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+
+                 <RadzenDataGridColumn TItem="Contact" Property="lastInteractionTime" Title="最后互动" FormatString="{0:g}" Width="150px" />
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    RadzenDataGrid<Contact> grid;
+    IEnumerable<Contact> contacts;
+    int totalCount;
+    string searchTerm;
+
+    async Task OnLoadData(LoadDataArgs args)
+    {
+        var page = (args.Skip / args.Top) + 1;
+        var pageSize = args.Top ?? 20;
+
+        var result = await ContactService.GetContactsAsync(page.Value, pageSize, searchTerm);
+        contacts = result.Items;
+        totalCount = result.TotalCount;
+    }
+
+    async Task OnSearch()
+    {
+        await grid.Reload();
+    }
+
+    async Task ReloadData()
+    {
+        searchTerm = "";
+        await grid.Reload();
+    }
+}

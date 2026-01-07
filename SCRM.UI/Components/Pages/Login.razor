@@ -62,7 +62,7 @@
                 var result = await response.Content.ReadFromJsonAsync<ApiResponse<TokenResponse>>();
                 if (result != null && result.Success && result.Data != null)
                 {
-                    await LocalStorage.SetItemAsStringAsync("authToken", result.Data.Token);
+                    await LocalStorage.SetItemAsStringAsync("authToken", result.Data.token);
                     await AuthStateProvider.GetAuthenticationStateAsync();
 
                     // Re-initialize SignalR with the new token

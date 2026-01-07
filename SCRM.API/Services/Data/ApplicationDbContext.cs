@@ -4,6 +4,7 @@ using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
 using SCRM.SHARED.Models;
 
+
 namespace SCRM.Services.Data
 {
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
@@ -16,10 +17,10 @@ namespace SCRM.Services.Data
         public DbSet<LegacyWechatUser> LegacyWechatUsers { get; set; }
         public DbSet<WechatAccount> WechatAccounts { get; set; }
         public DbSet<VipKey> VipKeys { get; set; }
-        public DbSet<Role> Roles { get; set; }
-        public DbSet<Permission> Permissions { get; set; }
-        public DbSet<UserRole> UserRoles { get; set; }
-        public DbSet<RolePermission> RolePermissions { get; set; }
+        public DbSet<Role> roles { get; set; }
+        public DbSet<Permission> permissions { get; set; }
+        public DbSet<UserRole> userRoles { get; set; }
+        public DbSet<RolePermission> rolePermissions { get; set; }
 
         // ==================== 一、设备与账号管理 ====================
 
@@ -85,9 +86,12 @@ namespace SCRM.Services.Data
         public DbSet<ServerRedirect> ServerRedirects { get; set; }
 
         // ==================== 十、其他功能 ====================
+        // ==================== 十、其他功能 ====================
         public DbSet<SystemNotification> SystemNotifications { get; set; }
         public DbSet<AppVersion> AppVersions { get; set; }
         public DbSet<SrClient> SrClients { get; set; }
+        public DbSet<SystemLog> SystemLogs { get; set; }
+        public DbSet<SystemConfig> SystemConfigs { get; set; } // 新增配置表
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -98,55 +102,69 @@ namespace SCRM.Services.Data
             {
                 entity.ToTable("users");
                 entity.HasKey(e => e.UserId);
-                entity.HasIndex(e => e.UserName).IsUnique();
-                entity.HasIndex(e => e.Email).IsUnique();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                // ... (existing code) ...
+            });
+
+            // 配置 SystemConfig 索引
+            modelBuilder.Entity<SystemConfig>(entity =>
+            {
+                entity.HasIndex(e => e.key).IsUnique(); // 键名唯一
+                entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            // 配置 SystemLog 索引
+            modelBuilder.Entity<SystemLog>(entity =>
+            {
+                entity.HasIndex(e => e.createdAt); // 用于按时间查询
+                entity.HasIndex(e => e.level);     // 用于按级别筛选
+                entity.HasIndex(e => e.module);    // 用于按模块筛选
+                entity.HasIndex(e => e.action);    // 用于按动作筛选
+                entity.HasIndex(e => e.operatorId);// 用于查询某个人的操作记录
             });
 
             // 配置 Role 实体
             modelBuilder.Entity<Role>(entity =>
             {
                 entity.ToTable("roles");
-                entity.HasKey(e => e.RoleId);
-                entity.HasIndex(e => e.RoleName);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasKey(e => e.roleId);
+                entity.HasIndex(e => e.roleName);
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             // 配置 Permission 实体
             modelBuilder.Entity<Permission>(entity =>
             {
                 entity.ToTable("permissions");
-                entity.HasKey(e => e.PermissionId);
-                entity.HasIndex(e => e.PermissionCode);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasKey(e => e.permissionId);
+                entity.HasIndex(e => e.permissionCode);
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             // 配置 UserRole 关系
             modelBuilder.Entity<UserRole>(entity =>
             {
                 entity.ToTable("user_roles");
-                entity.HasKey(e => e.UserRoleId);
-                entity.HasIndex(e => new { e.AccountId, e.RoleId });
-                entity.Property(e => e.AssignedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasKey(e => e.userRoleId);
+                entity.HasIndex(e => new { e.accountId, e.roleId });
+                entity.Property(e => e.assignedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // 配置外键关系
-                entity.HasOne(e => e.Account)
+                entity.HasOne(e => e.account)
                       .WithMany()
-                      .HasForeignKey(e => e.AccountId)
+                      .HasForeignKey(e => e.accountId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(e => e.Role)
-                      .WithMany(r => r.UserRoles)
-                      .HasForeignKey(e => e.RoleId)
+                entity.HasOne(e => e.role)
+                      .WithMany(r => r.userRoles)
+                      .HasForeignKey(e => e.roleId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(e => e.AssignedByAccount)
+                entity.HasOne(e => e.assignedByAccount)
                       .WithMany()
-                      .HasForeignKey(e => e.AssignedBy)
+                      .HasForeignKey(e => e.assignedBy)
                       .OnDelete(DeleteBehavior.SetNull);
             });
 
@@ -154,20 +172,20 @@ namespace SCRM.Services.Data
             modelBuilder.Entity<RolePermission>(entity =>
             {
                 entity.ToTable("role_permissions");
-                entity.HasKey(e => e.RolePermId);
-                entity.HasIndex(e => new { e.RoleId, e.PermissionId });
-                entity.Property(e => e.GrantedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasKey(e => e.rolePermId);
+                entity.HasIndex(e => new { e.roleId, e.permissionId });
+                entity.Property(e => e.grantedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // 配置外键关系
-                entity.HasOne(e => e.Role)
-                      .WithMany(r => r.RolePermissions)
-                      .HasForeignKey(e => e.RoleId)
+                entity.HasOne(e => e.role)
+                      .WithMany(r => r.rolePermissions)
+                      .HasForeignKey(e => e.roleId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasOne(e => e.Permission)
-                      .WithMany(p => p.RolePermissions)
-                      .HasForeignKey(e => e.PermissionId)
+                entity.HasOne(e => e.permission)
+                      .WithMany(p => p.rolePermissions)
+                      .HasForeignKey(e => e.permissionId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -175,22 +193,22 @@ namespace SCRM.Services.Data
             modelBuilder.Entity<WechatAccount>(entity =>
             {
                 entity.ToTable("wechat_accounts");
-                entity.HasKey(e => e.AccountId);
-                entity.HasIndex(e => e.Wxid).IsUnique();
-                entity.HasIndex(e => e.AccountStatus);
-                entity.HasIndex(e => e.IsDeleted);
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasKey(e => e.accountId);
+                entity.HasIndex(e => e.wxid).IsUnique();
+                entity.HasIndex(e => e.accountStatus);
+                entity.HasIndex(e => e.isDeleted);
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             // 配置 AppVersion
             modelBuilder.Entity<AppVersion>(entity =>
             {
                 entity.ToTable("app_versions");
-                entity.HasKey(e => e.VersionId);
-                entity.HasIndex(e => new { e.Platform, e.VersionNumber }).IsUnique();
-                entity.Property(e => e.CreatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
-                entity.Property(e => e.UpdatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.HasKey(e => e.versionId);
+                entity.HasIndex(e => new { e.platform, e.versionNumber }).IsUnique();
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
             });
 
             // 配置 SrClient
@@ -198,22 +216,21 @@ namespace SCRM.Services.Data
             {
                 entity.ToTable("sr_clients");
                 entity.HasKey(e => e.uuid);
-                // entity.OwnsOne(e => e.device, b => b.ToJson()); // Old DTO Mapping
                 
                 // New Proto-JSONB Mapping
                 entity.Property(e => e.device)
                       .HasColumnType("jsonb")
                       .HasConversion(
                           v => v == null ? "{}" : Google.Protobuf.JsonFormatter.Default.Format(v),
-                          v => string.IsNullOrEmpty(v) ? new SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage() : new Google.Protobuf.JsonParser(Google.Protobuf.JsonParser.Settings.Default.WithIgnoreUnknownFields(true)).Parse<SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage>(v)
+                          v => string.IsNullOrEmpty(v) ? new Jubo.JuLiao.IM.Wx.Proto.PostDeviceInfoNoticeMessage() : new Google.Protobuf.JsonParser(Google.Protobuf.JsonParser.Settings.Default.WithIgnoreUnknownFields(true)).Parse<Jubo.JuLiao.IM.Wx.Proto.PostDeviceInfoNoticeMessage>(v)
                       );
                 entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
                 entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Configure relationship with WechatAccount
-                entity.HasMany(e => e.Accounts)
-                      .WithOne()
-                      .HasForeignKey(w => w.ClientUuid)
+                entity.HasMany(e => e.accounts)
+                      .WithOne(w => w.Client)
+                      .HasForeignKey(w => w.clientUuid)
                       .HasPrincipalKey(e => e.uuid);
             });
         }

@@ -1,5 +1,5 @@
 using DotNetty.Transport.Channels;
-using SCRM.SHARED.Proto;
+using Jubo.JuLiao.IM.Wx.Proto;
 using System;
 using System.Threading.Tasks;
 using SCRM.Shared.Core;
@@ -29,6 +29,7 @@ namespace SCRM.Services.Netty
         /// </summary>
         public override void ChannelActive(IChannelHandlerContext ctx)
         {
+            _logger.LogInformation("[TCP接入] 客户端连接成功: {RemoteAddress}, ChannelId: {ChannelId}", ctx.Channel.RemoteAddress, ctx.Channel.Id.AsLongText());
             _logger.LogInformation("Client connected: {RemoteAddress}", ctx.Channel.RemoteAddress);
             _connectionManager.RegisterChannel(ctx.Channel.Id.AsLongText(), ctx.Channel);
             base.ChannelActive(ctx);
@@ -39,6 +40,7 @@ namespace SCRM.Services.Netty
         /// </summary>
         public override void ChannelInactive(IChannelHandlerContext ctx)
         {
+            _logger.LogInformation("[TCP断开] 客户端连接断开: {RemoteAddress}, ChannelId: {ChannelId}", ctx.Channel.RemoteAddress, ctx.Channel.Id.AsLongText());
             _logger.LogInformation("Client disconnected: {RemoteAddress}", ctx.Channel.RemoteAddress);
             _connectionManager.RemoveChannel(ctx.Channel.Id.AsLongText());
             base.ChannelInactive(ctx);

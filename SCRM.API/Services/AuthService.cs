@@ -20,10 +20,12 @@ using SCRM.SHARED.Models;
 
 namespace SCRM.Services
 {
+    /// <summary>
+    /// 身份验证与权限服务
+    /// </summary>
     public class AuthService
     {
         private readonly Microsoft.Extensions.Logging.ILogger<AuthService> _logger;
-
         private readonly ApplicationDbContext _context;
         private readonly JwtSettings _jwtSettings;
         private readonly IMemoryCache _cache;
@@ -46,8 +48,11 @@ namespace SCRM.Services
             _logger = logger;
         }
 
-        #region JWT Logic
+        #region JWT 逻辑
 
+        /// <summary>
+        /// 为 Standard Identity 用户生成令牌
+        /// </summary>
         public async Task<string> GenerateTokenAsync(ApplicationUser user)
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
@@ -72,12 +77,14 @@ namespace SCRM.Services
             return CreateJwtToken(claims);
         }
 
+        /// <summary>
+        /// 为旧版微信用户生成令牌
+        /// </summary>
         public async Task<string> GenerateTokenAsync(LegacyWechatUser user)
         {
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            // Use cached permission/role logic
             var roles = await GetUserRolesAsync(user.Id);
             var permissions = await GetUserPermissionsAsync(user.Id);
 
@@ -106,6 +113,9 @@ namespace SCRM.Services
             return CreateJwtToken(claims);
         }
 
+        /// <summary>
+        /// 为设备账号生成长效令牌
+        /// </summary>
         public string GenerateDeviceToken(WechatAccount device)
         {
             if (device == null)
@@ -113,9 +123,9 @@ namespace SCRM.Services
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, device.AccountId.ToString()),
-                new Claim("device_imei", device.WechatNumber ?? ""),
-                new Claim("device_uuid", device.ClientUuid ?? ""),
+                new Claim(ClaimTypes.NameIdentifier, device.accountId.ToString()),
+                new Claim("device_imei", device.wechatNumber ?? ""),
+                new Claim("device_uuid", device.clientUuid ?? ""),
                 new Claim("is_device", "true")
             };
 
@@ -139,13 +149,16 @@ namespace SCRM.Services
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
+        /// <summary>
+        /// 生成刷新令牌
+        /// </summary>
         public string GenerateRefreshTokenAsync<T>(T user) where T : class
         {
             string userId = user switch
             {
                 ApplicationUser au => au.Id,
                 LegacyWechatUser lu => lu.Id.ToString(),
-                _ => throw new ArgumentException("Unsupported user type")
+                _ => throw new ArgumentException("不支持的用户类型")
             };
 
             var refreshToken = Guid.NewGuid().ToString("N");
@@ -155,10 +168,13 @@ namespace SCRM.Services
                 AbsoluteExpirationRelativeToNow = TimeSpan.FromDays(_jwtSettings.RefreshTokenExpiryDays)
             };
             _cache.Set(cacheKey, refreshToken, cacheOptions);
-            _logger.LogInformation("Generated refresh token for user {UserId}", userId);
+            _logger.LogInformation("已为用户 {UserId} 生成刷新令牌", userId);
             return refreshToken;
         }
 
+        /// <summary>
+        /// 验证刷新令牌
+        /// </summary>
         public bool ValidateRefreshTokenAsync(string userId, string refreshToken)
         {
             if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(refreshToken))
@@ -171,12 +187,15 @@ namespace SCRM.Services
 
             if (!isValid)
             {
-                _logger.LogWarning("Invalid refresh token for user {UserId}", userId);
+                _logger.LogWarning("用户 {UserId} 的刷新令牌无效", userId);
             }
 
             return isValid;
         }
 
+        /// <summary>
+        /// 验证 JWT 令牌
+        /// </summary>
         public ClaimsPrincipal? ValidateToken(string token)
         {
             try
@@ -196,27 +215,42 @@ namespace SCRM.Services
                     ClockSkew = TimeSpan.Zero
                 };
 
-                var principal = tokenHandler.ValidateToken(token, validationParameters, out SecurityToken validatedToken);
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
                 return principal;
+            }
+            catch (Microsoft.IdentityModel.Tokens.SecurityTokenMalformedException)
+            {
+                _logger.LogWarning("令牌格式错误: {TokenPart}...", token.Length > 20 ? token.Substring(0, 20) : token);
+                return null;
+            }
+            catch (Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException)
+            {
+                 _logger.LogWarning("令牌已过期");
+                 return null;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Token validation failed");
+                _logger.LogError(ex, "令牌验证失败");
                 return null;
             }
         }
 
+        /// <summary>
+        /// 撤销刷新令牌
+        /// </summary>
         public void RevokeRefreshTokenAsync(string userId)
         {
             if (!string.IsNullOrEmpty(userId))
             {
                 var cacheKey = $"refresh_token_{userId}";
                 _cache.Remove(cacheKey);
-                _logger.LogInformation("Revoked refresh token for user {UserId}", userId);
+                _logger.LogInformation("已撤销用户 {UserId} 的刷新令牌", userId);
             }
         }
 
-        // Consolidated from JwtService
+        /// <summary>
+        /// 生成完整令牌响应 (Identity 用户)
+        /// </summary>
         public async Task<TokenResponse> GenerateTokenResponseAsync(ApplicationUser user)
         {
             var token = await GenerateTokenAsync(user);
@@ -225,18 +259,21 @@ namespace SCRM.Services
 
             return new TokenResponse
             {
-                Token = token,
-                RefreshToken = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
-                User = new UserDto
+                token = token,
+                refreshToken = refreshToken,
+                expiresAt = (long)(DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes) - new DateTime(1970, 1, 1)).TotalSeconds,
+                user = new UserDto
                 {
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    Roles = roles.ToList()
+                    userName = user.UserName ?? string.Empty,
+                    email = user.Email ?? string.Empty,
+                    roles = roles.ToList()
                 }
             };
         }
 
+        /// <summary>
+        /// 生成完整令牌响应 (旧版用户)
+        /// </summary>
         public async Task<TokenResponse> GenerateTokenResponseAsync(LegacyWechatUser user)
         {
             var token = await GenerateTokenAsync(user);
@@ -247,57 +284,59 @@ namespace SCRM.Services
 
             return new TokenResponse
             {
-                Token = token,
-                RefreshToken = refreshToken,
-                ExpiresAt = DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes),
-                User = new UserDto
+                token = token,
+                refreshToken = refreshToken,
+                expiresAt = (long)(DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes) - new DateTime(1970, 1, 1)).TotalSeconds,
+                user = new UserDto
                 {
-                    Id = user.Id,
-                    UserName = user.UserName,
-                    Email = user.Email,
-                    FirstName = user.FirstName,
-                    LastName = user.LastName,
-                    Roles = roles,
-                    Permissions = permissions
+                    id = user.Id.ToString(),
+                    userName = user.UserName ?? string.Empty,
+                    email = user.Email ?? string.Empty,
+                    firstName = user.FirstName ?? string.Empty,
+                    lastName = user.LastName ?? string.Empty,
+                    roles = roles,
+                    permissions = permissions
                 }
             };
         }
 
         #endregion
 
-        #region Authorization Logic
+        #region 权限与授权逻辑
 
+        /// <summary>
+        /// 验证用户是否有权操作指定连接的设备
+        /// </summary>
         public async Task<bool> ValidateDeviceOwnershipAsync(ClaimsPrincipal userPrincipal, string connectionId)
         {
             var userId = userPrincipal?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
             var userName = userPrincipal?.Identity?.Name;
             var roles = userPrincipal?.FindAll(ClaimTypes.Role).Select(r => r.Value).ToList() ?? new List<string>();
 
-            if (string.IsNullOrEmpty(userId)) userId = userName; // Fallback
+            if (string.IsNullOrEmpty(userId)) userId = userName;
 
             var isAdmin = userPrincipal?.IsInRole("SuperAdmin") == true || userPrincipal?.IsInRole("Admin") == true;
             
             if (isAdmin) 
             {
-                // _logger.LogInformation("ValidateDeviceOwnership: User {UserId} is Admin/SuperAdmin. Allowed.", userId);
                 return true;
             }
 
             var connectionInfo = await _connectionManager.GetConnectionAsync(connectionId);
             if (connectionInfo == null) 
             {
-                _logger.LogWarning("ValidateDeviceOwnership: Connection {ConnectionId} not found.", connectionId);
+                _logger.LogWarning("ValidateDeviceOwnership: 找不到连接 {ConnectionId}", connectionId);
                 return false;
             }
 
-            if (long.TryParse(connectionInfo.UserId, out long accountId))
+            if (long.TryParse(connectionInfo.userId, out long accountId))
             {
                 var ownerId = await _context.WechatAccounts
-                    .Where(w => w.AccountId == accountId && !w.IsDeleted)
+                    .Where(w => w.accountId == accountId && !w.isDeleted)
                     .Join(_context.SrClients, 
-                          w => w.ClientUuid, 
+                          w => w.clientUuid, 
                           c => c.uuid, 
-                          (w, c) => c.OwnerId)
+                          (w, c) => c.ownerId)
                     .FirstOrDefaultAsync();
 
                 if (ownerId == userId || ownerId == null)
@@ -305,32 +344,34 @@ namespace SCRM.Services
                     return true;
                 }
                 
-                _logger.LogWarning("ValidateDeviceOwnership: Forbidden. User {UserId} (Roles: {Roles}) does not own device connected at {ConnectionId}. DeviceOwner: {DeviceOwner}", userId, string.Join(",", roles), connectionId, ownerId);
+                _logger.LogWarning("ValidateDeviceOwnership: 拒绝访问。用户 {UserId} 无权操作连接 {ConnectionId} 的设备。设备所有者: {DeviceOwner}", userId, connectionId, ownerId);
                 return false;
             }
             
-            _logger.LogWarning("ValidateDeviceOwnership: Failed to parse Connection UserID '{ConnUserId}' as long.", connectionInfo.UserId);
+            _logger.LogWarning("ValidateDeviceOwnership: 无法将连接用户ID '{ConnUserId}' 解析为 long", connectionInfo.userId);
             return false;
         }
 
         public ClaimsPrincipal? ValidateTransportToken(string token) => ValidateToken(token);
 
-        #region Device Management (Consolidated)
+        #region 设备管理
 
+        /// <summary>
+        /// 获取指定用户的可见设备列表
+        /// </summary>
         public async Task<List<SrClient>> GetDevicesForUserAsync(string userId, bool isAdmin)
         {
             IQueryable<SrClient> query = _context.SrClients;
 
             if (!isAdmin && !string.IsNullOrEmpty(userId))
             {
-                query = query.Where(c => c.OwnerId == userId || c.OwnerId == null);
+                query = query.Where(c => c.ownerId == userId || c.ownerId == null);
             }
 
-            // Join with WechatAccounts to populate enrichments
             var clientData = await query
-                .GroupJoin(_context.WechatAccounts.Where(w => !w.IsDeleted),
+                .GroupJoin(_context.WechatAccounts.Where(w => !w.isDeleted),
                     client => client.uuid,
-                    account => account.ClientUuid,
+                    account => account.clientUuid,
                     (client, accounts) => new { Client = client, Accounts = accounts })
                 .SelectMany(
                     x => x.Accounts.DefaultIfEmpty(),
@@ -346,19 +387,19 @@ namespace SCRM.Services
 
                 if (account != null)
                 {
-                    client.WeChatId = account.Wxid;
-                    client.WeChatNick = account.Nickname;
-                    client.WechatAccountId = account.AccountId;
+                    client.weChatId = account.wxid;
+                    client.weChatNick = account.nickname;
+                    client.wechatAccountId = account.accountId;
 
                     var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(client.uuid);
                     if (!string.IsNullOrEmpty(connectionId))
                     {
-                        client.ConnectionId = connectionId;
+                        client.connectionId = connectionId;
                         client.isOnline = true;
                     }
                     else
                     {
-                        client.ConnectionId = null;
+                        client.connectionId = null;
                         client.isOnline = false;
                     }
                 }
@@ -372,34 +413,35 @@ namespace SCRM.Services
             return result;
         }
 
+        /// <summary>
+        /// 获取特定设备详情
+        /// </summary>
         public async Task<SrClient?> GetDeviceAsync(string deviceUuid, string userId, bool isAdmin)
         {
             var client = await _context.SrClients.FirstOrDefaultAsync(c => c.uuid == deviceUuid);
             if (client == null) return null;
 
-            if (!isAdmin && client.OwnerId != null && client.OwnerId != userId)
+            if (!isAdmin && client.ownerId != null && client.ownerId != userId)
             {
-                // Forbidden
                 return null;
             }
 
-            // Enrich
-            var account = await _context.WechatAccounts.FirstOrDefaultAsync(w => w.ClientUuid == deviceUuid && !w.IsDeleted);
+            var account = await _context.WechatAccounts.FirstOrDefaultAsync(w => w.clientUuid == deviceUuid && !w.isDeleted);
             if (account != null)
             {
-                client.WeChatId = account.Wxid;
-                client.WeChatNick = account.Nickname;
-                client.WechatAccountId = account.AccountId;
+                client.weChatId = account.wxid;
+                client.weChatNick = account.nickname;
+                client.wechatAccountId = account.accountId;
 
                 var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
                 if (!string.IsNullOrEmpty(connectionId))
                 {
-                    client.ConnectionId = connectionId;
+                    client.connectionId = connectionId;
                     client.isOnline = true;
                 }
                 else
                 {
-                    client.ConnectionId = null;
+                    client.connectionId = null;
                     client.isOnline = false;
                 }
             }
@@ -409,9 +451,7 @@ namespace SCRM.Services
 
         #endregion
 
-        #endregion
-
-        #region Permission & Role Cache Logic (From PermissionService)
+        #region 权限与角色缓存
 
         public async Task<bool> HasPermissionAsync(int userId, string permissionCode)
         {
@@ -434,6 +474,9 @@ namespace SCRM.Services
             return roles.Contains(roleName);
         }
 
+        /// <summary>
+        /// 获取用户所有权限（带缓存）
+        /// </summary>
         public async Task<List<string>> GetUserPermissionsAsync(long userId)
         {
             if (userId <= 0) return new List<string>();
@@ -442,20 +485,23 @@ namespace SCRM.Services
             return await _cache.GetOrCreateAsync(cacheKey, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
-                var permissions = await _context.UserRoles
-                    .Where(ur => ur.AccountId == userId && !ur.Account.IsDeleted)
-                    .Include(ur => ur.Role)
-                    .Where(ur => !ur.Role.IsDeleted)
-                    .SelectMany(ur => ur.Role.RolePermissions)
-                    .Include(rp => rp.Permission)
-                    .Where(rp => !rp.Permission.IsDeleted)
-                    .Select(rp => rp.Permission.Code)
+                var permissions = await _context.userRoles
+                    .Where(ur => ur.accountId == userId && ur.account != null && !ur.account.isDeleted)
+                    .Include(ur => ur.role)
+                    .Where(ur => ur.role != null && !ur.role.isDeleted)
+                    .SelectMany(ur => ur.role!.rolePermissions)
+                    .Include(rp => rp.permission)
+                    .Where(rp => rp.permission != null && !rp.permission.isDeleted)
+                    .Select(rp => rp.permission!.code)
                     .Distinct()
                     .ToListAsync();
                 return permissions;
-            });
+            }) ?? new List<string>();
         }
 
+        /// <summary>
+        /// 获取用户所有角色（带缓存）
+        /// </summary>
         public async Task<List<string>> GetUserRolesAsync(long userId)
         {
             if (userId <= 0) return new List<string>();
@@ -464,44 +510,53 @@ namespace SCRM.Services
             return await _cache.GetOrCreateAsync(cacheKey, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(30);
-                var roles = await _context.UserRoles
-                    .Where(ur => ur.AccountId == userId && !ur.Account.IsDeleted)
-                    .Include(ur => ur.Role)
-                    .Where(ur => !ur.Role.IsDeleted)
-                    .Select(ur => ur.Role.Name)
+                var roles = await _context.userRoles
+                    .Where(ur => ur.accountId == userId && ur.account != null && !ur.account.isDeleted)
+                    .Include(ur => ur.role)
+                    .Where(ur => ur.role != null && !ur.role.isDeleted)
+                    .Select(ur => ur.role!.roleName)
                     .ToListAsync();
                 return roles;
-            });
+            }) ?? new List<string>();
         }
 
+        /// <summary>
+        /// 获取所有可用权限（带缓存）
+        /// </summary>
         public async Task<List<SCRM.API.Models.Entities.Permission>> GetAllPermissionsAsync()
         {
             return await _cache.GetOrCreateAsync("all_permissions", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
-                return await _context.Permissions
-                    .Where(p => !p.IsDeleted)
-                    .OrderBy(p => p.Module)
-                    .ThenBy(p => p.SortOrder)
+                return await _context.permissions
+                    .Where(p => !p.isDeleted)
+                    .OrderBy(p => p.module)
+                    .ThenBy(p => p.sortOrder)
                     .ToListAsync();
-            });
+            }) ?? new List<SCRM.API.Models.Entities.Permission>();
         }
 
+        /// <summary>
+        /// 获取所有角色（带缓存）
+        /// </summary>
         public async Task<List<SCRM.API.Models.Entities.Role>> GetAllRolesAsync()
         {
             return await _cache.GetOrCreateAsync("all_roles", async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1);
-                return await _context.Roles
-                    .Where(r => !r.IsDeleted)
-                    .Include(r => r.RolePermissions)
-                    .ThenInclude(rp => rp.Permission)
-                    .OrderBy(r => r.Name)
+                return await _context.roles
+                    .Where(r => !r.isDeleted)
+                    .Include(r => r.rolePermissions)
+                    .ThenInclude(rp => rp.permission)
+                    .OrderBy(r => r.roleName)
                     .ToListAsync();
-            });
+            }) ?? new List<SCRM.API.Models.Entities.Role>();
         }
 
-        public async Task<UserPermissionInfo> GetUserPermissionInfoAsync(int userId)
+        /// <summary>
+        /// 获取完整用户信息及权限详情（带缓存）
+        /// </summary>
+        public async Task<UserPermissionInfo> GetUserPermissionInfoAsync(long userId)
         {
             if (userId <= 0) return new UserPermissionInfo();
             var cacheKey = $"user_permission_info_{userId}";
@@ -510,8 +565,13 @@ namespace SCRM.Services
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
                 var user = await _context.WechatAccounts
-                    .Where(u => u.AccountId == userId && !u.IsDeleted)
-                    .Select(u => new UserDto { Id = u.AccountId, UserName = u.Wxid, FirstName = u.Nickname })
+                    .Where(u => u.accountId == userId && !u.isDeleted)
+                    .Select(u => new UserDto 
+                    { 
+                        id = u.accountId.ToString(), 
+                        userName = u.wxid, 
+                        firstName = u.nickname ?? string.Empty 
+                    })
                     .FirstOrDefaultAsync();
 
                 if (user == null) return new UserPermissionInfo();
@@ -519,8 +579,8 @@ namespace SCRM.Services
                 var roles = await GetUserRolesAsync(userId);
                 var permissions = await GetUserPermissionsAsync(userId);
 
-                return new UserPermissionInfo { User = user, Roles = roles, Permissions = permissions };
-            });
+                return new UserPermissionInfo { user = user, roles = roles, permissions = permissions };
+            }) ?? new UserPermissionInfo();
         }
 
         public void ClearUserPermissionCache(int userId)
@@ -528,7 +588,7 @@ namespace SCRM.Services
             _cache.Remove($"user_permissions_{userId}");
             _cache.Remove($"user_roles_{userId}");
             _cache.Remove($"user_permission_info_{userId}");
-            _logger.LogDebug("Cleared permission cache for user {UserId}", userId);
+            _logger.LogDebug("已清除用户 {UserId} 的权限缓存", userId);
         }
 
         public void ClearAllCache()
@@ -552,5 +612,8 @@ namespace SCRM.Services
         }
 
         #endregion
+
+        #endregion
     }
 }
+

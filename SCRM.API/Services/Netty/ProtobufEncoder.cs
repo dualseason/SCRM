@@ -2,7 +2,7 @@ using DotNetty.Buffers;
 using DotNetty.Codecs;
 using DotNetty.Transport.Channels;
 using Google.Protobuf;
-using SCRM.SHARED.Proto;
+using Jubo.JuLiao.IM.Wx.Proto;
 
 namespace SCRM.Services.Netty
 {

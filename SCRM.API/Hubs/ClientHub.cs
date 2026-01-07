@@ -9,7 +9,7 @@ using SCRM.SHARED.Models.Dtos;
 using SCRM.Services;
 using SCRM.Services.Data;
 using SCRM.API.Services.Data;
-using SCRM.SHARED.Proto;
+using Jubo.JuLiao.IM.Wx.Proto;
 using Microsoft.AspNetCore.Authorization;
 
 namespace SCRM.API.Hubs
@@ -52,9 +52,9 @@ namespace SCRM.API.Hubs
             if (client == null) throw new HubException("Device not found");
 
             // Allow Admin or Owner
-            // Note: client.OwnerId check depends on whether it's populated. 
-            // Existing GetDevices uses: c.OwnerId == userId || c.OwnerId == null
-            if (isAdmin || client.OwnerId == userId || client.OwnerId == null)
+            // Note: client.ownerId check depends on whether it's populated. 
+            // Existing GetDevices uses: c.ownerId == userId || c.ownerId == null
+            if (isAdmin || client.ownerId == userId || client.ownerId == null)
             {
                 // Join the Group named after the Device UUID
                 await Groups.AddToGroupAsync(Context.ConnectionId, deviceUuid);
@@ -95,13 +95,10 @@ namespace SCRM.API.Hubs
             if (account == null) return Enumerable.Empty<Contact>();
 
             // Security check: ensure user owns the client linked to this account
-            if (!isAdmin && !string.IsNullOrEmpty(account.ClientUuid))
+            if (!isAdmin && !string.IsNullOrEmpty(account.clientUuid))
             {
-                 var client = await _context.GetSrClient(account.ClientUuid);
-                 // Note: OwnerId check relies on claim mapping. 
-                 // If AuthService.ValidateDeviceOwnershipAsync is robust, we could use that logic here too.
-                 // For now, keeping simple check.
-                 // if (client == null || (client.OwnerId != null && client.OwnerId != userId)) ...
+                 var client = await _context.GetSrClient(account.clientUuid);
+                 // Note: ownerId check relies on claim mapping. 
             }
 
             // Use Atomic Get
@@ -111,10 +108,10 @@ namespace SCRM.API.Hubs
         public async Task<IEnumerable<Message>> GetChatHistory(long accountId, string friendWxId)
         {
             return await _context.Messages
-                .Where(m => m.AccountId == accountId && (m.SenderWxid == friendWxId || m.ReceiverWxid == friendWxId))
-                .OrderByDescending(m => m.CreatedAt)
+                .Where(m => m.accountId == accountId && (m.senderWxid == friendWxId || m.receiverWxid == friendWxId))
+                .OrderByDescending(m => m.createdAt)
                 .Take(50)
-                .OrderBy(m => m.CreatedAt) 
+                .OrderBy(m => m.createdAt) 
                 .ToListAsync();
         }
 
@@ -161,7 +158,7 @@ namespace SCRM.API.Hubs
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
              var result = await _clientTaskService.SendChatRoomActionTaskAsync(connectionId, chatRoomId, (EnumChatRoomAction)action, content, intValue, DateTime.UtcNow.Ticks);
-             return result.Success;
+             return result.success;
         }
 
         /// <summary>
@@ -176,7 +173,7 @@ namespace SCRM.API.Hubs
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
              var result = await _clientTaskService.SendAgreeJoinChatRoomTaskAsync(connectionId, talker, msgSvrId, content, DateTime.UtcNow.Ticks);
-             return result.Success;
+             return result.success;
         }
         /// <summary>
         /// 删除好友
@@ -188,7 +185,7 @@ namespace SCRM.API.Hubs
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
              var result = await _clientTaskService.SendDeleteFriendTaskAsync(connectionId, friendId, DateTime.UtcNow.Ticks);
-             return result.Success;
+             return result.success;
         }
 
         /// <summary>
@@ -202,7 +199,7 @@ namespace SCRM.API.Hubs
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
              var result = await _clientTaskService.SendAcceptFriendAddRequestTaskAsync(connectionId, friendId, friendNick, DateTime.UtcNow.Ticks);
-             return result.Success;
+             return result.success;
         }
         /// <summary>
         /// 请求手机截屏
@@ -213,7 +210,7 @@ namespace SCRM.API.Hubs
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
              var result = await _clientTaskService.SendScreenShotTaskAsync(connectionId, DateTime.UtcNow.Ticks);
-             return result.Success;
+             return result.success;
         }
 
         /// <summary>
@@ -226,7 +223,7 @@ namespace SCRM.API.Hubs
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return false;
              var result = await _clientTaskService.SendPhoneActionTaskAsync(connectionId, (EnumPhoneAction)action, DateTime.UtcNow.Ticks);
-             return result.Success;
+             return result.success;
         }
         /// <summary>
         /// 获取账号配置
@@ -235,12 +232,12 @@ namespace SCRM.API.Hubs
         {
             var account = await _context.GetWechatAccount(accountId);
             // Security check omitted for brevity in this step, should add ownership check
-            if (account == null || string.IsNullOrEmpty(account.Settings))
+            if (account == null || string.IsNullOrEmpty(account.settings))
                 return new WechatAccountSettings();
 
             try
             {
-                return System.Text.Json.JsonSerializer.Deserialize<WechatAccountSettings>(account.Settings) ?? new WechatAccountSettings();
+                return System.Text.Json.JsonSerializer.Deserialize<WechatAccountSettings>(account.settings) ?? new WechatAccountSettings();
             }
             catch
             {
@@ -259,7 +256,7 @@ namespace SCRM.API.Hubs
             // Security check should go here
             // Checking if user owns this account
 
-            account.Settings = System.Text.Json.JsonSerializer.Serialize(settings);
+            account.settings = System.Text.Json.JsonSerializer.Serialize(settings);
             
             // Using standard SaveChangesAsync as the entity is tracked by the context.
             await _context.SaveChangesAsync();
@@ -278,30 +275,34 @@ namespace SCRM.API.Hubs
              var taskId = DateTime.UtcNow.Ticks;
              return await _clientTaskService.SendPostSNSNewsTaskAsync(connectionId, content, imageUrls, taskId);
         }
-        public async Task<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>> GetMomentsTimeline(string deviceUuid)
+        public async Task<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>> GetMomentsTimeline(string deviceUuid, int page = 1)
         {
+            int pageSize = 10;
             // 1. Find Account
-            var account = await _context.WechatAccounts.FirstOrDefaultAsync(u => u.ClientUuid == deviceUuid && !u.IsDeleted);
+            var account = await _context.WechatAccounts.FirstOrDefaultAsync(u => u.clientUuid == deviceUuid && !u.isDeleted);
             if (account == null) return Enumerable.Empty<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>();
 
             // 2. Query Moments
             var list = await _context.MomentsTimelines
-                .Where(m => m.OwnerWxid == account.Wxid)
-                .OrderByDescending(m => m.CreateTime)
-                .Take(20)
+                .Where(m => m.ownerWxid == account.wxid)
+                .OrderByDescending(m => m.createTime)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
                 .ToListAsync();
 
             // 3. Map to DTOs
             return list.Select(m => new SCRM.SHARED.Models.Dtos.MomentsTimelineDto
             {
-                SnsId = m.SnsId,
-                UserName = m.UserName,
-                NickName = m.NickName,
-                Content = m.Content,
-                CreateTime = m.CreateTime,
-                Images = !string.IsNullOrEmpty(m.ImagesJson) ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(m.ImagesJson) : new List<string>(),
-                Comments = !string.IsNullOrEmpty(m.CommentsJson) ? System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentCommentDto>>(m.CommentsJson) : new List<SCRM.SHARED.Models.Dtos.MomentCommentDto>(),
-                Likes = !string.IsNullOrEmpty(m.LikesJson) ? System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(m.LikesJson) : new List<SCRM.SHARED.Models.Dtos.MomentLikeDto>()
+                snsId = m.snsId,
+                userName = m.userName,
+                nickName = m.nickName,
+                content = m.content,
+                createTime = m.createTime,
+                images = !string.IsNullOrEmpty(m.imagesJson) ? System.Text.Json.JsonSerializer.Deserialize<List<string>>(m.imagesJson) : new List<string>(),
+                videoUrl = m.videoUrl,
+                link = !string.IsNullOrEmpty(m.linkInfoJson) ? System.Text.Json.JsonSerializer.Deserialize<SCRM.SHARED.Models.Dtos.MomentLinkDto>(m.linkInfoJson) : null,
+                comments = !string.IsNullOrEmpty(m.commentsJson) ? System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentCommentDto>>(m.commentsJson) : new List<SCRM.SHARED.Models.Dtos.MomentCommentDto>(),
+                likes = !string.IsNullOrEmpty(m.likesJson) ? System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(m.likesJson) : new List<SCRM.SHARED.Models.Dtos.MomentLikeDto>()
             });
         }
         public async Task<IEnumerable<Conversation>> GetConversations(long accountId)
@@ -314,8 +315,8 @@ namespace SCRM.API.Hubs
             // if (account == null) return Enumerable.Empty<Conversation>();
 
             return await _context.Conversations
-                .Where(c => c.WechatAccountId == accountId && !c.IsDeleted)
-                .OrderByDescending(c => c.LastMessageTime)
+                .Where(c => c.wechatAccountId == accountId && !c.isDeleted)
+                .OrderByDescending(c => c.lastMessageTime)
                 .Take(100) // Limit to 100 recent conversations
                 .ToListAsync();
         }

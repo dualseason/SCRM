@@ -1,0 +1,79 @@
+@page "/admin/devices"
+@using Microsoft.AspNetCore.Authorization
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@inject DialogService DialogService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize]
+
+<RadzenStack Gap="1rem">
+    <RadzenText TextStyle="TextStyle.H4">设备管理 (Device Management)</RadzenText>
+
+    <RadzenCard>
+        <RadzenDataGrid Data="@_devices" TItem="SrClient" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+            <Columns>
+                <RadzenDataGridColumn TItem="SrClient" Property="uuid" Title="UUID/IMEI" Width="200px" />
+                <RadzenDataGridColumn TItem="SrClient" Property="device.PhoneModel" Title="Phone Model" Width="150px" />
+                <RadzenDataGridColumn TItem="SrClient" Property="ip" Title="IP Address" Width="120px" />
+                <RadzenDataGridColumn TItem="SrClient" Property="isOnline" Title="Status" Width="100px">
+                    <Template Context="data">
+                        @if (data.isOnline)
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Success" Text="Online" />
+                        }
+                        else
+                        {
+                            <RadzenBadge BadgeStyle="BadgeStyle.Secondary" Text="Offline" />
+                        }
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SrClient" Property="lastLoginAt" Title="Last Login" Width="160px" />
+                
+                @if (_isAdmin)
+                {
+                    <RadzenDataGridColumn TItem="SrClient" Property="Owner.Email" Title="Owner" Width="200px" />
+                }
+
+                <RadzenDataGridColumn TItem="SrClient" Title="Actions" Width="100px">
+                    <Template Context="data">
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(args => DeleteDevice(data))" @onclick:stopPropagation="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private List<SrClient> _devices = new();
+    private bool _isAdmin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _isAdmin = user.IsInRole("Admin");
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _devices = await Store.LoadAllDevicesAsync();
+    }
+
+    private async Task DeleteDevice(SrClient device)
+    {
+        var result = await DialogService.Confirm("Are you sure you want to delete this device?", "Delete Device", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (result == true)
+        {
+            await Store.DeleteDeviceAsync(device.uuid);
+            await LoadData();
+            NoticeService.Notify(NotificationSeverity.Success, "Device Deleted");
+        }
+    }
+}

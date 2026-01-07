@@ -1,0 +1,75 @@
+@page "/admin/wechat-accounts"
+@using Microsoft.AspNetCore.Authorization
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@inject DialogService DialogService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@attribute [Authorize]
+
+<RadzenStack Gap="1rem">
+    <RadzenText TextStyle="TextStyle.H4">微信账号管理 (WeChat Account Management)</RadzenText>
+
+    <RadzenCard>
+        <RadzenDataGrid Data="@_accounts" TItem="WechatAccount" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
+            <Columns>
+                <RadzenDataGridColumn TItem="WechatAccount" Property="nickname" Title="Nickname" Width="150px">
+                     <Template Context="data">
+                        @if (!string.IsNullOrEmpty(data.avatarUrl))
+                        {
+                            <RadzenImage Path="@data.avatarUrl" Style="width: 30px; height: 30px; border-radius: 50%; margin-right: 8px;" />
+                        }
+                        @data.nickname
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="WechatAccount" Property="wxid" Title="Wxid" Width="180px" />
+                <RadzenDataGridColumn TItem="WechatAccount" Property="wechatNumber" Title="WeChat No." Width="120px" />
+                 <RadzenDataGridColumn TItem="WechatAccount" Property="mobilePhone" Title="Mobile" Width="120px" />
+                
+                @if (_isAdmin)
+                {
+                    <RadzenDataGridColumn TItem="WechatAccount" Property="owner.Email" Title="Owner" Width="200px" />
+                }
+
+                <RadzenDataGridColumn TItem="WechatAccount" Title="Actions" Width="100px">
+                    <Template Context="data">
+                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(args => DeleteAccount(data))" @onclick:stopPropagation="true" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private List<WechatAccount> _accounts = new();
+    private bool _isAdmin = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        _isAdmin = user.IsInRole("Admin");
+
+        await LoadData();
+    }
+
+    private async Task LoadData()
+    {
+        _accounts = await Store.LoadAllWeChatAccountsAsync();
+    }
+
+    private async Task DeleteAccount(WechatAccount account)
+    {
+        var result = await DialogService.Confirm("Are you sure you want to delete this account?", "Delete Account", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        if (result == true)
+        {
+            await Store.DeleteWeChatAccountAsync(account.accountId);
+            await LoadData();
+            NoticeService.Notify(NotificationSeverity.Success, "Account Deleted");
+        }
+    }
+}

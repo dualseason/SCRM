@@ -3,43 +3,60 @@
 @using SCRM.API.Models.Entities
 @using SCRM.SHARED.Models
 @using SCRM.SHARED.Models.Dtos
-@using AntDesign
+@using Radzen
+@using Radzen.Blazor
 @inject CrmStore Store
 @inject NavigationManager NavManager
-@inject INotificationService NoticeService
+@inject NotificationService NoticeService
+@inject DialogService DialogService
 @implements IDisposable
 
-<PageTitle>Contacts</PageTitle>
+<PageTitle>联系人管理</PageTitle>
 
 @if(Store.SelectedDevice == null) {
-    <Result Status="@AntDesign.ResultStatus.Error" Title="No Device Selected" SubTitle="Please select a device first.">
-        <Extra>
-            <Button Type="@AntDesign.ButtonType.Primary" OnClick="@(()=>NavManager.NavigateTo("/devices"))">Go to Devices</Button>
-        </Extra>
-    </Result>
+    <RadzenCard Class="rz-my-12 rz-mx-auto" Style="max-width: 400px; text-align: center;">
+        <RadzenIcon Icon="phonelink_off" Style="font-size: 3rem; color: var(--rz-danger);" />
+        <RadzenText TextStyle="TextStyle.H5" Class="rz-mt-4">未选择设备</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-4">请先在设备管理页面选择一个设备。</RadzenText>
+        <RadzenButton Text="前往设备管理" ButtonStyle="ButtonStyle.Primary" Click="@(()=>NavManager.NavigateTo("/devices"))" />
+    </RadzenCard>
 } else {
-    <Card Title="@($"Contacts for {Store.SelectedDevice.WeChatNick}")">
-         <div style="margin-bottom: 16px;">
-             <Button OnClick="Sync" Loading="@_loading">Sync Contacts</Button>
-         </div>
-         
-         <Table DataSource="@Store.Contacts" RowKey="x => x.Wxid" PageSize="10">
-             <Column @bind-Field="@context.Avatar" Title="Avatar">
-                 <Avatar Src="@context.Avatar" Icon="user" />
-             </Column>
-             <Column @bind-Field="@context.Nickname" Title="Nickname" Sortable />
-             <Column @bind-Field="@context.Remarks" Title="Remark" />
-             <Column @bind-Field="@context.Wxid" Title="Wxid" />
-             <Column @bind-Field="@context.Source" Title="Source" />
-             <Column @bind-Field="@context.LabelIds" Title="Labels" />
-             <ActionColumn Title="Action">
-                 <Button Type="@AntDesign.ButtonType.Primary" OnClick="()=>Chat(context)">Chat</Button>
-                 <Popconfirm Title="Are you sure delete this friend?" OnConfirm="()=>Delete(context)">
-                     <Button Danger>Delete</Button>
-                 </Popconfirm>
-             </ActionColumn>
-         </Table>
-    </Card>
+    <RadzenStack Gap="1rem">
+        <RadzenCard>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">联系人列表 (@Store.Contacts.Count) - @Store.SelectedDevice.weChatNick</RadzenText>
+                <RadzenButton Icon="sync" Text="同步通讯录" IsBusy="@_loading" Click="Sync" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+            </RadzenStack>
+        </RadzenCard>
+
+        <RadzenDataList Data="@Store.Contacts" TItem="Contact" AllowPaging="true" PageSize="10" WrapItems="true">
+            <Template Context="contact">
+                <RadzenCard Style="width: 100%; margin-bottom: 0.5rem;">
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem">
+                        <RadzenImage Path="@(string.IsNullOrEmpty(contact.avatar) ? "images/default-avatar.png" : contact.avatar)" Style="width: 50px; height: 50px; border-radius: 50%;" />
+                        <RadzenStack Gap="0" Style="flex: 1;">
+                            <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-mb-0">
+                                @contact.nickname
+                                @if(!string.IsNullOrEmpty(contact.remarks))
+                                {
+                                    <span style="color: grey; font-size: 0.8em; margin-left: 0.5rem;">(@contact.remarks)</span>
+                                }
+                            </RadzenText>
+                            <RadzenText TextStyle="TextStyle.Caption">ID: @contact.wxid</RadzenText>
+                            @if(!string.IsNullOrEmpty(contact.labelIds))
+                            {
+                                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-primary);">标签: @contact.labelIds</RadzenText>
+                            }
+                        </RadzenStack>
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
+                            <RadzenButton Icon="chat" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="()=>Chat(contact)" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="()=>Delete(contact)" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </RadzenCard>
+            </Template>
+        </RadzenDataList>
+    </RadzenStack>
 }
 
 @code {
@@ -47,7 +64,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-         Store.OnChange += StateHasChanged;
+         Store.OnChange += HandleChange;
          Store.OnNotification += HandleNotification;
          // Ensure contacts are loaded if device is selected
          if(Store.SelectedDevice != null && !Store.Contacts.Any()) {
@@ -56,10 +73,15 @@
              _loading = false;
          }
     }
+
+    private async void HandleChange()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
     
     public void Dispose()
     {
-        Store.OnChange -= StateHasChanged;
+        Store.OnChange -= HandleChange;
         Store.OnNotification -= HandleNotification;
     }
     
@@ -67,8 +89,6 @@
     {
         _loading = true;
         await Store.SyncContactsAsync();
-        // Loading state will persist until result returns if we tracked it in Store
-        // Here we just wait for the RPC invocation
         _loading = false;
     }
 
@@ -78,19 +98,26 @@
         NavManager.NavigateTo("/chat");
     }
 
-    private void Delete(Contact c)
+    private async Task Delete(Contact c)
     {
-        _ = Store.SelectContactAsync(c); // Set current for "DeleteCurrentContactAsync"
-        _ = Store.DeleteCurrentContactAsync();
+        var confirm = await DialogService.Confirm($"确定要删除好友 {c.nickname} 吗?", "删除好友", new ConfirmOptions() { OkButtonText = "确定", CancelButtonText = "取消" });
+        if (confirm == true)
+        {
+            await Store.SelectContactAsync(c); 
+            await Store.DeleteCurrentContactAsync();
+        }
     }
     
     private void HandleNotification(string msg, bool success)
     {
-        NoticeService.Open(new NotificationConfig()
-        {
-            Message = success ? "Success" : "Error",
-            Description = msg,
-            NotificationType = success ? AntDesign.NotificationType.Success : AntDesign.NotificationType.Error
+        _ = InvokeAsync(() => {
+            NoticeService.Notify(new NotificationMessage
+            {
+                Severity = success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                Summary = success ? "成功" : "错误",
+                Detail = msg,
+                Duration = 4000
+            });
         });
     }
 }

@@ -3,24 +3,22 @@
 @using SCRM.API.Models.Entities
 @using SCRM.SHARED.Models
 @using SCRM.SHARED.Models.Dtos
-@using AntDesign
+@using Radzen
+@using Radzen.Blazor
 @inject CrmStore Store
 @inject NavigationManager NavManager
-@inject INotificationService NoticeService
+@inject NotificationService NoticeService
+@inject DialogService DialogService
 @inject IJSRuntime JS
 @implements IDisposable
 
 <PageTitle>SCRM Unified IM</PageTitle>
 
 <style>
-    .layout-container { height: 100%; border: none; }
-    .device-sider { background: #fff; text-align: center; padding-top: 10px; overflow-y: auto; border-right: 1px solid #f0f0f0; }
-    .contact-sider { background: #fdfdfd; border-right: 1px solid #e8e8e8; overflow-y: auto; }
-    .chat-content { background: #fff; display: flex; flex-direction: column; overflow: hidden; height: 100%; }
-    
-    .device-item { cursor: pointer; padding: 10px 0; opacity: 0.8; transition: 0.3s; }
-    .device-item:hover { opacity: 1; background-color: #f5f5f5; }
-    .device-item.active { opacity: 1; border-left: 3px solid #1890ff; background: #e6f7ff; }
+    .layout-container { height: calc(100vh - 60px); border: none; display: flex; overflow: hidden; }
+    .device-sider { background: #fff; text-align: center; padding-top: 10px; overflow-y: auto; border-right: 1px solid #f0f0f0; width: 80px; flex-shrink: 0; }
+    .contact-sider { background: #fdfdfd; border-right: 1px solid #e8e8e8; overflow-y: auto; width: 300px; display: flex; flex-direction: column; flex-shrink: 0; }
+    .chat-content { background: #fff; display: flex; flex-direction: column; overflow: hidden; height: 100%; flex: 1; }
     
     .contact-item { cursor: pointer; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; transition: 0.2s; display: flex; align-items: center; }
     .contact-item:hover { background: #f5f5f5; }
@@ -37,27 +35,27 @@
     .msg-row.self .msg-bubble { background: #95ec69; border: 1px solid #7cd958; border-top-right-radius: 0; }
     
     .msg-pending { opacity: 0.6; }
-    .msg-status-icon { font-size: 12px; margin-left: 8px; color: #faad14; }
-
-    /* Ant Design Layout Fixes */
-    .ant-layout { height: 100%; }
+    
+    .tab-item { cursor: pointer; padding: 10px 15px; flex: 1; text-align: center; border-bottom: 2px solid transparent; transition: all 0.3s; color: #666; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; }
+    .tab-item:hover { color: var(--rz-primary); background: #fafafa; }
+    .tab-item.active { color: var(--rz-primary); border-bottom: 2px solid var(--rz-primary); background: var(--rz-base-200); }
 </style>
 
-<Layout Class="layout-container">
+<div class="layout-container">
     <!-- 1. Left Sider: Devices -->
-    <Sider Width="80" Class="device-sider" Theme="SiderTheme.Light">
+    <div class="device-sider">
         <SCRM.UI.Components.Shared.DeviceList OnDeviceSelected="OnDeviceSelectedInternal" />
-    </Sider>
+    </div>
 
     <!-- 2. Middle Sider: Contacts & Chats -->
-    <Sider Width="280" Class="contact-sider" Theme="SiderTheme.Light">
+    <div class="contact-sider">
         <!-- Tab Switcher -->
-        <div style="display: flex; border-bottom: 1px solid #f0f0f0; background: #fff;">
+        <div style="display: flex; border-bottom: 1px solid #f0f0f0; background: #fff; flex-shrink: 0;">
             <div class="tab-item @(_activeTab == "chats" ? "active" : "")" @onclick="@(() => _activeTab = "chats")">
-                <Icon Type="message" /> Chats
+                <RadzenIcon Icon="chat" /> Chats
             </div>
             <div class="tab-item @(_activeTab == "contacts" ? "active" : "")" @onclick="@(() => _activeTab = "contacts")">
-                <Icon Type="team" /> Contacts
+                <RadzenIcon Icon="contacts" /> Contacts
             </div>
         </div>
 
@@ -66,35 +64,38 @@
             <!-- Conversation List -->
              @if (Store.SelectedDevice == null)
              {
-                 <Empty Description="@("Select a Device")" Simple />
+                 <div class="rz-p-4 rz-text-align-center text-muted">Select a Device</div>
              }
              else if (Store.Conversations.Count == 0)
              {
-                 <Empty Description="@("No chats, sync contacts first")" Simple />
+                 <div class="rz-p-4 rz-text-align-center text-muted">No chats</div>
              }
              else
              {
-                 <div style="overflow-y: auto; height: calc(100% - 46px);">
+                 <div style="overflow-y: auto; flex: 1;">
                     @foreach (var conv in Store.Conversations)
                     {
-                        var isActive = Store.SelectedConversation?.Id == conv.Id;
+                        var isActive = Store.SelectedConversation?.id == conv.id;
                         <div class="contact-item @(isActive ? "active" : "")" @onclick="@(() => SelectConversation(conv))">
-                            <Badge Count="@conv.UnreadCount" Dot="@(conv.UnreadCount > 0)">
-                                <Avatar Src="@conv.DisplayAvatar" Icon="user" Shape="@AvatarShape.Square" />
-                            </Badge>
+                            <div style="position: relative;">
+                                <RadzenImage Path="@conv.displayAvatar" Style="width: 40px; height: 40px; border-radius: 4px;" />
+                                @if (conv.unreadCount > 0)
+                                {
+                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@(conv.unreadCount > 99 ? "99+" : conv.unreadCount.ToString())" Style="position: absolute; top: -5px; right: -5px;" />
+                                }
+                            </div>
                             <div style="margin-left: 10px; overflow: hidden; flex: 1;">
                                 <div style="display: flex; justify-content: space-between;">
                                     <span style="font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
-                                        @conv.DisplayName
+                                        @conv.displayName
                                     </span>
                                     <span style="font-size: 10px; color: #aaa;">
-                                        @FormatDate(conv.LastMessageTime)
+                                        @FormatDate(conv.lastMessageTime)
                                     </span>
                                 </div>
                                 <div style="font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    @(conv.ConversationType == 2 ? "[Group] " : "") 
-                                    @* todo: show last message content preview if available *@
-                                    Chat Session
+                                    @(conv.conversationType == 2 ? "[Group] " : "") 
+                                    @(string.IsNullOrEmpty(conv.lastMessageContent) ? "Chat Session" : conv.lastMessageContent)
                                 </div>
                             </div>
                         </div>
@@ -105,65 +106,68 @@
         else
         {
             <!-- Contact List -->
-            <div style="padding: 10px; border-bottom: 1px solid #d9d9d9;">
-                <Search Placeholder="Search Contacts..." OnSearch="OnSearchContact" EnterButton="@true" />
+            <div style="padding: 10px; border-bottom: 1px solid #d9d9d9; flex-shrink: 0;">
+                <RadzenTextBox Placeholder="Search Contacts..." @bind-Value="_searchText" Change="@OnSearchContact" Style="width: 100%;" />
             </div>
             
             @if (Store.SelectedDevice == null)
             {
-                <Empty Description="@("Select a Device")" Simple />
+                <div class="rz-p-4 rz-text-align-center text-muted">Select a Device</div>
             }
             else if (Store.Contacts.Count == 0)
             {
-                <Empty Description="@("Select a Device")" Simple>
-                    <Button Type="@AntDesign.ButtonType.Dashed" OnClick="SyncContacts">Sync Contacts</Button>
-                </Empty>
+                 <div class="rz-p-4 rz-text-align-center">
+                    <RadzenButton Text="Sync Contacts" ButtonStyle="ButtonStyle.Secondary" Click="SyncContacts" Size="ButtonSize.Small" />
+                 </div>
             }
             else
             {
-                <div style="overflow-y: auto; height: calc(100% - 98px);">
+                <div style="overflow-y: auto; flex: 1;">
                     @foreach (var contact in _filteredContacts)
                     {
-                        <div class="contact-item @(Store.SelectedContact?.Wxid == contact.Wxid ? "active" : "")" 
+                        <div class="contact-item @(Store.SelectedContact?.wxid == contact.wxid ? "active" : "")" 
                              @onclick="@(() => SelectContact(contact))">
-                            <Avatar Src="@contact.Avatar" Icon="user" />
+                            <RadzenImage Path="@(string.IsNullOrEmpty(contact.avatar) ? "images/default-avatar.png" : contact.avatar)" Style="width: 40px; height: 40px; border-radius: 50%;" />
                             <div style="margin-left: 10px; overflow: hidden;">
-                                <div style="font-weight: 500; font-size: 14px;">@(string.IsNullOrEmpty(contact.Remarks) ? contact.Nickname : contact.Remarks)</div>
-                                <div style="font-size: 12px; color: #888;">@contact.Nickname</div>
+                                <div style="font-weight: 500; font-size: 14px;">@(string.IsNullOrEmpty(contact.remarks) ? contact.nickname : contact.remarks)</div>
+                                <div style="font-size: 12px; color: #888;">@contact.nickname</div>
                             </div>
                         </div>
                     }
                 </div>
             }
         }
-    </Sider>
+    </div>
 
     <!-- 3. Right Content: Chat & Features -->
-    <Content Class="chat-content">
-        @if (Store.SelectedContact == null)
+    <div class="chat-content">
+        @if (Store.SelectedContact == null && Store.SelectedConversation == null)
         {
              @if (Store.SelectedDevice != null)
              {
                  <!-- Device Dashboard View when no contact selected -->
                  <div style="padding: 50px; text-align: center;">
-                     <h1>@Store.SelectedDevice.WeChatNick</h1>
+                     <h3>@Store.SelectedDevice.weChatNick</h3>
                      <p>Status: @(Store.SelectedDevice.isOnline ? "Online" : "Offline")</p>
-                     <Space>
-                        <Button Type="@AntDesign.ButtonType.Primary" OnClick="CaptureScreen">Capture Screen</Button>
-                        <Button OnClick="GoToMoments">Moments</Button>
-                     </Space>
+                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="1rem">
+                        <RadzenButton Text="Capture Screen" Click="CaptureScreen" ButtonStyle="ButtonStyle.Primary" />
+                        <RadzenButton Text="Moments" Click="GoToMoments" ButtonStyle="ButtonStyle.Secondary" />
+                     </RadzenStack>
                      
                      @if (!string.IsNullOrEmpty(Store.LastScreenShotUrl))
                      {
                          <div style="margin-top: 20px; border: 1px solid #eee; padding: 10px; border-radius: 8px;">
-                             <Image Src="@Store.LastScreenShotUrl" Width="300" />
+                             <RadzenImage Path="@Store.LastScreenShotUrl" Width="300" />
                          </div>
                      }
                  </div>
              }
              else
              {
-                 <Empty Description="@("Select a Device and Contact to start chatting")" />
+                 <div class="rz-p-12 rz-text-align-center">
+                    <RadzenIcon Icon="chat_bubble_outline" Style="font-size: 4rem; color: #ccc;" />
+                    <div class="rz-mt-4 text-muted">Select a Device and Contact/Chat to start</div>
+                 </div>
              }
         }
         else
@@ -171,34 +175,36 @@
             <!-- Chat Header -->
             <div class="chat-header">
                 <span style="font-size: 16px; font-weight: 600;">
-                    @(string.IsNullOrEmpty(Store.SelectedContact.Remarks) ? Store.SelectedContact.Nickname : Store.SelectedContact.Remarks)
+                    @{
+                        var name = Store.SelectedContact?.remarks ?? Store.SelectedContact?.nickname 
+                            ?? Store.SelectedConversation?.displayName ?? "Unknown";
+                    }
+                    @name
                 </span>
-                <Space>
-                    <Popconfirm Title="Are you sure delete this friend?" OnConfirm="DeleteFriend" OkText="Yes" CancelText="No">
-                        <Button Danger Type="@AntDesign.ButtonType.Text" Icon="delete" />
-                    </Popconfirm>
-                </Space>
+                <RadzenStack Orientation="Orientation.Horizontal">
+                    <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Text" Click="DeleteFriend_Click" />
+                </RadzenStack>
             </div>
 
             <!-- Chat Messages -->
             <div class="chat-messages" id="chat-box">
                 @foreach (var msg in Store.CurrentMessages)
                 {
-                    <div class="msg-row @(msg.Direction == 1 ? "self" : "other") @(msg.SendStatus == 1 ? "msg-pending" : "")">
-                        @if(msg.Direction != 1) {
-                            <Avatar Src="@Store.SelectedContact.Avatar" Icon="user" Style="margin-right: 10px;" />
+                    <div class="msg-row @(msg.direction == 1 ? "self" : "other") @(msg.sendStatus == 1 ? "msg-pending" : "")">
+                        @if(msg.direction != 1) {
+                            <RadzenImage Path="@(ContextAvatar())" Style="width:36px; height:36px; border-radius: 4px; margin-right: 10px;" />
                         }
                         
                         <div class="msg-bubble">
-                            @msg.Content
-                            @if (msg.SendStatus == 1)
+                            @msg.content
+                            @if (msg.sendStatus == 1)
                             {
-                                <Icon Type="sync" Spin Class="msg-status-icon" />
+                                <RadzenIcon Icon="sync" Style="font-size: 12px; margin-left: 8px; animation: rz-spin 1s infinite linear;" />
                             }
                         </div>
                         
-                        @if(msg.Direction == 1) {
-                             <Avatar Src="@Store.SelectedDevice.WeChatAvatar" Icon="user" Style="margin-left: 10px; background-color: #87d068;" />
+                        @if(msg.direction == 1) {
+                             <RadzenImage Path="@Store.SelectedDevice.weChatAvatar" Style="width:36px; height:36px; border-radius: 4px; margin-left: 10px; background-color: #87d068;" />
                         }
                     </div>
                 }
@@ -207,15 +213,15 @@
 
             <!-- Chat Input -->
             <div class="chat-input">
-                <TextArea @bind-Value="_msgContent" Rows="4" Bordered="false" Placeholder="Type a message..." 
-                          OnKeyPress="HandleKeyPress" />
+                <RadzenTextArea @bind-Value="_msgContent" Rows="4" Style="width: 100%; border: none; box-shadow: none;" Placeholder="Type a message..." 
+                          @onkeydown="HandleKeyPress" />
                 <div style="text-align: right; margin-top: 10px;">
-                    <Button Type="@AntDesign.ButtonType.Primary" OnClick="Send" Loading="@_sending">Send</Button>
+                    <RadzenButton Text="Send" Click="Send" IsBusy="@_sending" ButtonStyle="ButtonStyle.Primary" />
                 </div>
             </div>
         }
-    </Content>
-</Layout>
+    </div>
+</div>
 
 @code {
     private string _msgContent = "";
@@ -223,11 +229,18 @@
     private bool _sending = false;
     private string _activeTab = "chats"; // Default to Chats
     
+    // Helper to get avatar for current chat context
+    private string ContextAvatar()
+    {
+        if (Store.SelectedContact != null) return Store.SelectedContact.avatar ?? "images/default-avatar.png";
+        if (Store.SelectedConversation != null) return Store.SelectedConversation.displayAvatar ?? "images/default-avatar.png";
+        return "images/default-avatar.png";
+    }
+
     private List<Contact> _filteredContacts => string.IsNullOrWhiteSpace(_searchText) 
         ? Store.Contacts 
-        : Store.Contacts.Where(c => (c.Nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) 
-                                 || (c.Remarks?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
-
+        : Store.Contacts.Where(c => (c.nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false) 
+                                 || (c.remarks?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
     protected override async Task OnInitializedAsync()
     {
         Store.OnChange += HandleStoreChange;
@@ -274,20 +287,24 @@
     private async Task SelectContact(Contact contact)
     {
         await Store.SelectContactAsync(contact);
-        // todo: scroll to bottom
+    }
+    
+    private async Task SelectConversation(Conversation conv)
+    {
+        await Store.SelectConversationAsync(conv);
     }
 
     private async Task RefreshDevices()
     {
         await Store.LoadDevicesAsync();
-        NoticeService.Open(new NotificationConfig { Message = "Refreshed", NotificationType = NotificationType.Success });
+        NoticeService.Notify(NotificationSeverity.Success, "Refreshed");
     }
 
     private async Task SyncContacts()
     {
         if (Store.SelectedDevice == null) return;
         await Store.SyncContactsAsync();
-        NoticeService.Open(new NotificationConfig { Message = "Sync Command Sent", NotificationType = NotificationType.Info });
+        NoticeService.Notify(NotificationSeverity.Info, "Sync Command Sent");
     }
 
     private void OnSearchContact()
@@ -304,12 +321,12 @@
     {
         if (Store.SelectedDevice == null) return;
         await Store.RequestScreenShotAsync(Store.SelectedDevice.uuid);
-        NoticeService.Open(new NotificationConfig { Message = "Screenshot Requested", NotificationType = NotificationType.Info });
+        NoticeService.Notify(NotificationSeverity.Info, "Screenshot Requested");
     }
 
     private async Task Send()
     {
-        if (string.IsNullOrWhiteSpace(_msgContent) || Store.SelectedDevice == null || Store.SelectedContact == null) return;
+        if (string.IsNullOrWhiteSpace(_msgContent) || Store.SelectedDevice == null || (Store.SelectedContact == null && Store.SelectedConversation == null)) return;
         
         _sending = true;
         var result = await Store.SendMessageAsync(_msgContent);
@@ -319,35 +336,34 @@
         }
         else
         {
-            NoticeService.Open(new NotificationConfig { Message = "Failed to send", NotificationType = NotificationType.Error });
+            NoticeService.Notify(NotificationSeverity.Error, "Failed to send");
         }
         _sending = false;
     }
     
     private async Task HandleKeyPress(KeyboardEventArgs e)
     {
-        if (e.CtrlKey && e.Key == "Enter")
+        if (e.CtrlKey && (e.Key == "Enter" || e.Key == "NumpadEnter"))
         {
             await Send();
         }
     }
 
-    private async Task DeleteFriend()
+    private async Task DeleteFriend_Click()
     {
-        // ... (Reuse logic logic from Contacts)
          if (Store.SelectedDevice == null || Store.SelectedContact == null) return;
-         await Store.DeleteFriendAsync(Store.SelectedContact.Wxid);
-         NoticeService.Open(new NotificationConfig { Message = "Delete Command Sent", NotificationType = NotificationType.Success });
+         
+         var result = await DialogService.Confirm("Are you sure delete this friend?", "Delete Friend", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+         if (result == true)
+         {
+             await Store.DeleteFriendAsync(Store.SelectedContact.wxid);
+             NoticeService.Notify(NotificationSeverity.Success, "Delete Command Sent");
+         }
     }
 
     private void HandleNotification(string msg, bool success)
     {
-         _ = NoticeService.Open(new NotificationConfig 
-         { 
-             Message = success ? "Success" : "Error", 
-             Description = msg, 
-             NotificationType = success ? NotificationType.Success : NotificationType.Error 
-          });
+          NoticeService.Notify(success ? NotificationSeverity.Success : NotificationSeverity.Error, success ? "Success" : "Error", msg);
     }
 
     private async Task ScrollToBottom()
@@ -355,12 +371,6 @@
         try {
             await JS.InvokeVoidAsync("eval", "const el = document.getElementById('chat-box'); if(el) el.scrollTop = el.scrollHeight;");
         } catch {}
-    }
-
-    private async Task SelectConversation(Conversation conv)
-    {
-        await Store.SelectConversationAsync(conv);
-        // todo: scroll to bottom
     }
 
     private string FormatDate(DateTime dt)

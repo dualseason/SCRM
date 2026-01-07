@@ -13,11 +13,11 @@ public class LegacyWechatUser
     /// </summary>
     public long Id
     {
-        get { return WechatAccount?.AccountId ?? 0; }
+        get { return WechatAccount?.accountId ?? 0; }
         set
         {
             if (WechatAccount != null)
-                WechatAccount.AccountId = value;
+                WechatAccount.accountId = value;
         }
     }
 
@@ -35,11 +35,11 @@ public class LegacyWechatUser
     /// </summary>
     public string UserName
     {
-        get { return WechatAccount?.Nickname ?? string.Empty; }
+        get { return WechatAccount?.nickname ?? string.Empty; }
         set
         {
             if (WechatAccount != null)
-                WechatAccount.Nickname = value;
+                WechatAccount.nickname = value;
         }
     }
 
@@ -48,11 +48,11 @@ public class LegacyWechatUser
     /// </summary>
     public string? Email
     {
-        get { return WechatAccount?.MobilePhone; }
+        get { return WechatAccount?.mobilePhone; }
         set
         {
             if (WechatAccount != null)
-                WechatAccount.MobilePhone = value;
+                WechatAccount.mobilePhone = value;
         }
     }
 
@@ -71,11 +71,11 @@ public class LegacyWechatUser
     /// </summary>
     public bool IsActive
     {
-        get { return WechatAccount?.IsActive ?? false; }
+        get { return WechatAccount?.isActive ?? false; }
         set
         {
             if (WechatAccount != null)
-                WechatAccount.IsActive = value;
+                WechatAccount.isActive = value;
         }
     }
 
@@ -84,11 +84,11 @@ public class LegacyWechatUser
     /// </summary>
     public DateTime? CreatedAt
     {
-        get { return WechatAccount?.CreatedAt; }
+        get { return WechatAccount?.createdAt; }
         set
         {
             if (WechatAccount != null)
-                WechatAccount.CreatedAt = value;
+                WechatAccount.createdAt = value;
         }
     }
 
@@ -97,11 +97,11 @@ public class LegacyWechatUser
     /// </summary>
     public DateTime? UpdatedAt
     {
-        get { return WechatAccount?.UpdatedAt; }
+        get { return WechatAccount?.updatedAt; }
         set
         {
             if (WechatAccount != null)
-                WechatAccount.UpdatedAt = value;
+                WechatAccount.updatedAt = value;
         }
     }
 
@@ -110,11 +110,11 @@ public class LegacyWechatUser
     /// </summary>
     public DateTime? LastLoginAt
     {
-        get { return WechatAccount?.LastOnlineAt; }
+        get { return WechatAccount?.lastOnlineAt; }
         set
         {
             if (WechatAccount != null)
-                WechatAccount.LastOnlineAt = value;
+                WechatAccount.lastOnlineAt = value;
         }
     }
 
@@ -147,9 +147,9 @@ public class LegacyWechatUser
     {
         WechatAccount = new WechatAccount
         {
-            AccountId = userId,
-            Nickname = userName,
-            MobilePhone = email
+            accountId = userId,
+            nickname = userName,
+            mobilePhone = email
         };
     }
 

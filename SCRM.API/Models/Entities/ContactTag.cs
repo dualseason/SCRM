@@ -1,18 +1,52 @@
 ﻿namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 鑱旂郴浜烘爣绛捐〃
+/// 联系人标签实体
 /// </summary>
 public class ContactTag
 {
-    public int Id { get; set; }
-    public long WechatAccountId { get; set; }
-    public string TagName { get; set; }
-    public int LabelId { get; set; }
-    public string TagColor { get; set; }
-    public string TagDescription { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
-    public bool IsDeleted { get; set; }
-}
+    /// <summary>
+    /// 自增 ID
+    /// </summary>
+    public int id { get; set; }
 
+    /// <summary>
+    /// 所属微信账号 ID
+    /// </summary>
+    public long wechatAccountId { get; set; }
+
+    /// <summary>
+    /// 标签名称
+    /// </summary>
+    public string tagName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 微信端的标签 ID
+    /// </summary>
+    public int labelId { get; set; }
+
+    /// <summary>
+    /// 标签颜色
+    /// </summary>
+    public string tagColor { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 标签描述
+    /// </summary>
+    public string tagDescription { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// 更新时间
+    /// </summary>
+    public DateTime updatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// 是否已删除
+    /// </summary>
+    public bool isDeleted { get; set; }
+}

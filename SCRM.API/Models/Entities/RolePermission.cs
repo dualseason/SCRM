@@ -4,49 +4,65 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 角色权限关系表
+/// 角色与权限的关联实体类
 /// </summary>
 [Table("role_permissions")]
 public class RolePermission
 {
+    #region 核心属性
+
     /// <summary>
-    /// 角色权限关系ID
+    /// 角色权限关联 ID
     /// </summary>
     [Key]
-    public long RolePermId { get; set; }
+    [Column("RolePermId")]
+    public long rolePermId { get; set; }
 
     /// <summary>
-    /// 角色ID
+    /// 角色 ID
     /// </summary>
-    public long RoleId { get; set; }
+    [Column("RoleId")]
+    public long roleId { get; set; }
 
     /// <summary>
-    /// 权限ID
+    /// 权限 ID
     /// </summary>
-    public long PermissionId { get; set; }
+    [Column("PermissionId")]
+    public long permissionId { get; set; }
 
     /// <summary>
-    /// 是否授予
+    /// 是否已授予该权限
     /// </summary>
-    public bool IsGranted { get; set; }
+    [Column("IsGranted")]
+    public bool isGranted { get; set; }
 
     /// <summary>
-    /// 授予时间
+    /// 权限授予时间
     /// </summary>
-    public DateTime GrantedAt { get; set; }
+    [Column("GrantedAt")]
+    public DateTime grantedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    [Column("CreatedAt")]
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
+
+    #endregion
+
+    #region 导航属性
 
     /// <summary>
-    /// 导航属性：角色
+    /// 关联的角色实体
     /// </summary>
-    public virtual Role? Role { get; set; }
+    public virtual Role? role { get; set; }
 
     /// <summary>
-    /// 导航属性：权限
+    /// 关联的权限实体
     /// </summary>
-    public virtual Permission? Permission { get; set; }
+    public virtual Permission? permission { get; set; }
+
+    #endregion
 }
+
+

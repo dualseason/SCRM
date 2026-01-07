@@ -4,99 +4,117 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 应用版本表
+/// 应用版本实体
 /// </summary>
 [Table("app_versions")]
 public class AppVersion
 {
     /// <summary>
-    /// 版本ID
+    /// 版本 ID
     /// </summary>
     [Key]
-    public long VersionId { get; set; }
+    [Column("VersionId")]
+    public long versionId { get; set; }
 
     /// <summary>
-    /// 版本号（如1.0.0）
+    /// 版本号（如 1.0.0）
     /// </summary>
-    public string VersionNumber { get; set; } = string.Empty;
+    [Column("VersionNumber")]
+    public string versionNumber { get; set; } = string.Empty;
 
     /// <summary>
     /// 版本名称
     /// </summary>
-    public string? VersionName { get; set; }
+    [Column("VersionName")]
+    public string? versionName { get; set; }
 
     /// <summary>
-    /// 版本类型：1-稳定版 2-测试版 3-beta版 4-灰度版
+    /// 版本类型：1-稳定版, 2-测试版, 3-Beta 版, 4-灰度版
     /// </summary>
-    public short? VersionType { get; set; }
+    [Column("VersionType")]
+    public short? versionType { get; set; }
 
     /// <summary>
     /// 平台：Android/iOS/Windows/MacOS/Web
     /// </summary>
-    public string Platform { get; set; } = string.Empty;
+    [Column("Platform")]
+    public string platform { get; set; } = string.Empty;
 
     /// <summary>
     /// 下载地址
     /// </summary>
-    public string DownloadUrl { get; set; } = string.Empty;
+    [Column("DownloadUrl")]
+    public string downloadUrl { get; set; } = string.Empty;
 
     /// <summary>
     /// 更新说明
     /// </summary>
-    public string? ReleaseNotes { get; set; }
+    [Column("ReleaseNotes")]
+    public string? releaseNotes { get; set; }
 
     /// <summary>
     /// 文件大小（字节）
     /// </summary>
-    public long? FileSize { get; set; }
+    [Column("FileSize")]
+    public long? fileSize { get; set; }
 
     /// <summary>
     /// 文件哈希值
     /// </summary>
-    public string? FileHash { get; set; }
+    [Column("FileHash")]
+    public string? fileHash { get; set; }
 
     /// <summary>
-    /// 最低SDK版本
+    /// 最低 SDK 版本
     /// </summary>
-    public string? MinSdkVersion { get; set; }
+    [Column("MinSdkVersion")]
+    public string? minSdkVersion { get; set; }
 
     /// <summary>
     /// 最低操作系统版本
     /// </summary>
-    public string? MinOsVersion { get; set; }
+    [Column("MinOsVersion")]
+    public string? minOsVersion { get; set; }
 
     /// <summary>
     /// 是否强制更新
     /// </summary>
-    public bool ForcedUpdate { get; set; }
+    [Column("ForcedUpdate")]
+    public bool forcedUpdate { get; set; }
 
     /// <summary>
     /// 是否已发布
     /// </summary>
-    public bool IsReleased { get; set; }
+    [Column("IsReleased")]
+    public bool isReleased { get; set; }
 
     /// <summary>
     /// 是否已废弃
     /// </summary>
-    public bool IsDeprecated { get; set; }
+    [Column("IsDeprecated")]
+    public bool isDeprecated { get; set; }
 
     /// <summary>
     /// 下载次数
     /// </summary>
-    public long? DownloadCount { get; set; }
+    [Column("DownloadCount")]
+    public long? downloadCount { get; set; }
 
     /// <summary>
     /// 发布时间
     /// </summary>
-    public DateTime? ReleasedAt { get; set; }
+    [Column("ReleasedAt")]
+    public DateTime? releasedAt { get; set; }
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    [Column("CreatedAt")]
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
     /// 更新时间
     /// </summary>
-    public DateTime UpdatedAt { get; set; }
+    [Column("UpdatedAt")]
+    public DateTime updatedAt { get; set; } = DateTime.UtcNow;
 }

@@ -149,11 +149,11 @@ namespace SCRM.UI.Services
                         }
                         
                         // 关键修复：将 Account 保存到本地 DB以满足外键约束
-                        if (d.Accounts != null)
+                        if (d.accounts != null)
                         {
-                            foreach(var acc in d.Accounts)
+                            foreach(var acc in d.accounts)
                             {
-                                await _dbContext.WechatAccounts.SaveAsync(acc, acc.AccountId);
+                                await _dbContext.WechatAccounts.SaveAsync(acc, acc.accountId);
                             }
                         }
                     }
@@ -172,7 +172,23 @@ namespace SCRM.UI.Services
                 var updated = Devices.FirstOrDefault(d => d.uuid == SelectedDevice.uuid);
                 if (updated != null)
                 {
-                    SelectedDevice = updated;
+                    // 2025-01-05 修复：如果检测到 AccountId 发生变化 (例如切换了账号)，必须触发 SelectDeviceAsync 以重载联系人
+                    if (updated.wechatAccountId != SelectedDevice.wechatAccountId)
+                    {
+                        var oldId = SelectedDevice.wechatAccountId;
+                        var newId = updated.wechatAccountId;
+                        
+                        _logger.LogInformation("[CrmStore] 检测到设备 {Uuid} 账号变更 ({OldId} -> {NewId})，触发重载...", 
+                            updated.uuid, oldId, newId);
+                            
+                        // 更新引用只是第一步，关键是重新 Select 以刷新 Contacts/Conversations
+                        SelectedDevice = updated; 
+                        await SelectDeviceAsync(updated);
+                    }
+                    else
+                    {
+                        SelectedDevice = updated;
+                    }
                 }
             }
             
@@ -203,9 +219,9 @@ namespace SCRM.UI.Services
             // 1. 尝试从本地数据库 (IndexedDB) 加载联系人
             try 
             {
-                if (device.WechatAccountId.HasValue)
+                if (device.wechatAccountId.HasValue)
                 {
-                    var cachedContacts = await _dbContext.Contacts.GetByIndexAsync("wechatAccountId", device.WechatAccountId.Value);
+                    var cachedContacts = await _dbContext.Contacts.GetByIndexAsync("wechatAccountId", device.wechatAccountId.Value);
                     if (cachedContacts != null && cachedContacts.Any())
                     {
                         Contacts = cachedContacts;
@@ -222,17 +238,15 @@ namespace SCRM.UI.Services
             // 2. 如果本地没有数据，从服务器获取
             if (SelectedDevice != null)
             {
-                // 兜底逻辑：如果设备对象缺少 AccountId，尝试从关联集合中查找
-                long? accountId = device.WechatAccountId;
-                _logger.LogInformation("[CrmStore] 调试: 设备 UUID={Uuid}, WxId={WeChatId}, AccountId={AccountId}", device.uuid, device.WeChatId, accountId);
+                // 兜底逻辑：如果设备对象缺少 accountId，尝试从关联集合中查找
+                long? accountId = device.wechatAccountId;
+                _logger.LogInformation("[CrmStore] 调试: 设备 UUID={Uuid}, WxId={WeChatId}, AccountId={AccountId}", device.uuid, device.weChatId, accountId);
 
-                if (!accountId.HasValue && device.Accounts != null && device.Accounts.Any())
-                {
-                    accountId = device.Accounts.First().AccountId;
-                    // 更新设备对象缓存
-                    device.WechatAccountId = accountId;
-                    _logger.LogInformation("[CrmStore] 调试: 从 Accounts 集合中找到了 AccountId {AccountId}", accountId);
-                }
+                // 2025-01-05 安全修复：移除自动从 accounts 列表猜测 accountId 的逻辑。
+                // 如果 wechatAccountId 为空，说明服务端尚未推送最新的绑定关系，此时应该显示空白或等待同步，
+                // 而不是错误地加载旧账号的数据。
+                
+                // if (!accountId.HasValue && device.accounts != null && device.accounts.Any()) ... REMOVED
 
                 if (accountId.HasValue)
                 {
@@ -289,14 +303,14 @@ namespace SCRM.UI.Services
         public async Task SelectConversationAsync(Conversation conversation)
         {
             if (SelectedConversation == conversation) return;
-            if (SelectedDevice?.WechatAccountId == null) return;
+            if (SelectedDevice?.wechatAccountId == null) return;
             
             SelectedConversation = conversation;
             SelectedContact = null; // 互斥
             
             // 构造临时 Contact 对象用于界面显示 (兼容现有 Chat UI)
             // 如果该会话对应一个已知联系人，优先使用联系人详细信息
-            var existingContact = Contacts.FirstOrDefault(c => c.Wxid == conversation.ConversationWxid);
+            var existingContact = Contacts.FirstOrDefault(c => c.wxid == conversation.conversationWxid);
             if (existingContact != null)
             {
                 SelectedContact = existingContact;
@@ -306,10 +320,10 @@ namespace SCRM.UI.Services
                 // 为群聊或陌生人构造临时 Contact
                 SelectedContact = new Contact
                 {
-                    Wxid = conversation.ConversationWxid,
-                    Nickname = conversation.DisplayName,
-                    Avatar = conversation.DisplayAvatar,
-                    Remarks = conversation.DisplayName // 显示群名称
+                    wxid = conversation.conversationWxid,
+                    nickname = conversation.displayName,
+                    avatar = conversation.displayAvatar,
+                    remarks = conversation.displayName // 显示群名称
                 };
             }
 
@@ -317,7 +331,7 @@ namespace SCRM.UI.Services
             NotifyStateChanged();
 
             // 加载聊天历史
-            await LoadChatHistoryAsync(SelectedDevice.WechatAccountId.Value, conversation.ConversationWxid);
+            await LoadChatHistoryAsync(SelectedDevice.wechatAccountId.Value, conversation.conversationWxid);
         }
 
         private async Task LoadChatHistoryAsync(long accountId, string friendWxid)
@@ -336,7 +350,7 @@ namespace SCRM.UI.Services
                  var history = await _weChatService.GetChatHistoryAsync(accountId, friendWxid);
                  if (history.Any())
                  {
-                     var sortedList = history.OrderBy(m => m.CreatedAt).ToList();
+                     var sortedList = history.OrderBy(m => m.createdAt).ToList();
                      // Merge? Or just replace if remote is authority.
                      // For now, let's just use remote if available as it is more likely to be complete for history
                      CurrentMessages = sortedList; 
@@ -357,7 +371,7 @@ namespace SCRM.UI.Services
         {
              foreach(var c in contacts)
              {
-                 await _dbContext.Contacts.SaveAsync(c, c.Id); // 使用 ID 作为主键
+                 await _dbContext.Contacts.SaveAsync(c, c.id); // 使用 ID 作为主键
              }
         }
 
@@ -371,25 +385,25 @@ namespace SCRM.UI.Services
             SelectedContact = contact;
             NotifyStateChanged();
 
-            if (SelectedDevice != null && SelectedDevice.WechatAccountId.HasValue && SelectedContact != null)
+            if (SelectedDevice != null && SelectedDevice.wechatAccountId.HasValue && SelectedContact != null)
             {
                 // 清空旧聊天记录
                 CurrentMessages.Clear();
 
                 // 1. 尝试从本地数据库加载聊天记录
-                var dbMessages = await LoadChatHistoryFromDbAsync(contact.Wxid);
+                var dbMessages = await LoadChatHistoryFromDbAsync(SelectedContact.wxid);
                 if (dbMessages.Any())
                 {
                     CurrentMessages = dbMessages;
-                    _logger.LogInformation("[CrmStore] 从 DB 加载了 {Count} 条消息 (对象: {Wxid})", dbMessages.Count, contact.Wxid);
+                    _logger.LogInformation("[CrmStore] 从 DB 加载了 {Count} 条消息 (对象: {Wxid})", dbMessages.Count, SelectedContact.wxid);
                     NotifyStateChanged();
                 }
 
                 if (CurrentMessages.Count == 0)
                 {
                     // 2. 如果本地为空，从服务器拉取历史记录
-                    var history = await _weChatService.GetChatHistoryAsync(SelectedDevice.WechatAccountId.Value, contact.Wxid);
-                    var sortedList = history.OrderBy(m => m.CreatedAt).ToList();
+                    var history = await _weChatService.GetChatHistoryAsync(SelectedDevice.wechatAccountId.Value, SelectedContact.wxid);
+                    var sortedList = history.OrderBy(m => m.createdAt).ToList();
                     CurrentMessages = sortedList;
                     
                     // 3. 保存拉取到的消息到本地 DB
@@ -417,7 +431,7 @@ namespace SCRM.UI.Services
                  var outgoing = outgoingTask.Result;
                  
                  var combined = incoming.Concat(outgoing)
-                                        .OrderBy(m => m.CreatedAt)
+                                        .OrderBy(m => m.createdAt)
                                         .ToList();
                                         
                  return combined;
@@ -459,7 +473,7 @@ namespace SCRM.UI.Services
         {
              foreach(var m in messages)
              {
-                 await _dbContext.Messages.SaveAsync(m, m.MessageId);
+                 await _dbContext.Messages.SaveAsync(m, m.messageId);
              }
         }
         
@@ -477,7 +491,7 @@ namespace SCRM.UI.Services
 
             // 如果当前选中设备刚上线，触发自动操作
             // 根据 connectionId 匹配可能更准确
-            if (isOnline && SelectedDevice != null && (SelectedDevice.uuid == deviceId || SelectedDevice.ConnectionId == connectionId))
+            if (isOnline && SelectedDevice != null && (SelectedDevice.uuid == deviceId || SelectedDevice.connectionId == connectionId))
             {
                 _logger.LogInformation("[CrmStore] 设备上线，自动请求同步联系人 (连接ID: {ConnectionId})", connectionId);
                 // 调用 SignalR 通知手机上传通讯录
@@ -493,11 +507,24 @@ namespace SCRM.UI.Services
             Console.WriteLine($"[CrmStore] DEBUG: HandleContactsUpdated triggered for AccountId: {accountId}");
             _logger.LogInformation("[CrmStore] 收到联系人更新通知 (AccountId: {AccountId})", accountId);
             // 找到对应的设备
-            var device = Devices.FirstOrDefault(d => d.WechatAccountId == accountId);
+            var device = Devices.FirstOrDefault(d => d.wechatAccountId == accountId);
             if (device != null)
             {
                 // 后台静默重载联系人
                 _ = ReloadContactsForDeviceAsync(device);
+                
+                // [Fix] 同时重载会话列表，以确保昵称等信息同步更新
+                if (device.wechatAccountId.HasValue)
+                {
+                    _ = LoadConversationsAsync(device.wechatAccountId.Value).ContinueWith(t => 
+                    {
+                        if (t.IsCompletedSuccessfully)
+                        {
+                             _logger.LogInformation("[CrmStore] 联系人更新触发了会话列表刷新 (AccountId: {Id})", device.wechatAccountId);
+                             NotifyStateChanged();
+                        }
+                    });
+                }
             }
         }
 
@@ -508,28 +535,24 @@ namespace SCRM.UI.Services
         {
              try 
              {
-                 if (device.WechatAccountId.HasValue)
-                 {
-                     var result = await _weChatService.GetContactsAsync(device.WechatAccountId.Value);
-                     var list = result.ToList();
-                     
-                     // 更新本地数据库缓存
-                     await SaveContactsToDbAsync(list); 
-                     
-                     _logger.LogInformation("[CrmStore] 设备 {Uuid} 联系人后台更新完成: {Count} 条数据存入 DB。", device.uuid, list.Count);
-                     
-                     // 如果当前刚好选中此设备，立即刷新 UI
-                     if (SelectedDevice != null && SelectedDevice.uuid == device.uuid)
                      {
-                         Contacts = list;
-                         NotifyStateChanged();
+                         // 关键修复：仅当当前选中的设备与更新的设备一致时，才刷新 UI 绑定的 Contacts 列表
+                         // 防止后台设备 B 的更新覆盖前台设备 A 的画面
+                         if (SelectedDevice != null && SelectedDevice.uuid == device.uuid)
+                         {
+                             Contacts = (await _weChatService.GetContactsAsync(device.wechatAccountId.Value)).ToList();
+                             NotifyStateChanged();
+                         }
+                         else
+                         {
+                             _logger.LogInformation("[CrmStore] 后台设备 {Uuid} 联系人已更新，跳过 UI 刷新 (当前选中: {SelectedUuid})", device.uuid, SelectedDevice?.uuid);
+                         }
                      }
                  }
-             }
-             catch(Exception ex)
-             {
-                 _logger.LogError(ex, "[CrmStore] 重载联系人失败");
-             }
+                 catch(Exception ex)
+                 {
+                     _logger.LogError(ex, "[CrmStore] 重载联系人失败");
+                 }
         }
 
 
@@ -587,7 +610,7 @@ namespace SCRM.UI.Services
         {
              if (SelectedDevice != null && !string.IsNullOrEmpty(SelectedDevice.uuid) && SelectedContact != null)
              {
-                 await _weChatService.DeleteFriendAsync(SelectedDevice.uuid, SelectedContact.Wxid);
+                 await _weChatService.DeleteFriendAsync(SelectedDevice.uuid, SelectedContact.wxid);
              }
         }
 
@@ -620,63 +643,63 @@ namespace SCRM.UI.Services
              {
                  // 生成本地 TaskId 用于消息追踪
                  var taskId = DateTime.UtcNow.Ticks;
-                 var accountId = SelectedDevice.WechatAccountId ?? 0;
+                 var accountId = SelectedDevice.wechatAccountId ?? 0;
 
                  // 1. 确保 WechatAccount存在 (防止 FK 错误)
                  await EnsureAccountAsync(SelectedDevice);
                  
                  // 2. 确保会话存在 (防止 FK 错误)
-                 var conversation = await EnsureConversationAsync(accountId, SelectedContact.Wxid, SelectedContact.Nickname, SelectedContact.Avatar);
+                 var conversation = await EnsureConversationAsync(accountId, SelectedContact.wxid, SelectedContact.nickname, SelectedContact.avatar);
 
                  // 2. 创建本地消息 (Status = 发送中)
                  var msg = new Message
                  {
-                     MessageId = taskId, // 临时 ID
-                     SenderWxid = SelectedDevice.WechatNumber, 
-                     ReceiverWxid = SelectedContact.Wxid,
-                     Content = content,
-                     CreatedAt = DateTime.UtcNow,
-                     Direction = 1, // 发送方
-                     AccountId = accountId,
-                     ConversationId = conversation?.Id ?? 0,
-                     SendStatus = 1, // 1=发送中
-                     ClientMsgId = taskId.ToString()
+                     messageId = taskId, // 临时 ID
+                     senderWxid = SelectedDevice.wechatNumber, 
+                     receiverWxid = SelectedContact.wxid,
+                     content = content,
+                     createdAt = DateTime.UtcNow,
+                     direction = 1, // 发送方
+                     accountId = accountId,
+                     conversationId = conversation?.id ?? 0,
+                     sendStatus = 1, // 1=发送中
+                     clientMsgId = taskId.ToString()
                  };
                  
                  // 3. 立即更新 UI 和 本地存储
                  CurrentMessages.Add(msg);
                  NotifyStateChanged();
-                 _ = _dbContext.Messages.SaveAsync(msg, msg.MessageId); // 异步保存
+                 _ = _dbContext.Messages.SaveAsync(msg, msg.messageId); // 异步保存
                  
                  try 
                  {
                      // 4. 发送网络请求
-                     var result = await _weChatService.SendMessageAsync(SelectedDevice.uuid, SelectedContact.Wxid, content);
+                     var result = await _weChatService.SendMessageAsync(SelectedDevice.uuid, SelectedContact.wxid, content);
                      
-                     if (result.Success)
+                     if (result.success)
                      {
                          // 5. 发送成功 -> 更新状态
-                         msg.SendStatus = 2; // 2=已发送(等待服务器确认)
-                         // 注意：MsgSvrId 此时还未知，等待 HandleTaskResult 或 MessageReceived 更新
+                         msg.sendStatus = 2; // 2=已发送(等待服务器确认)
+                         // 注意：msgSvrId 此时还未知，等待 HandleTaskResult 或 MessageReceived 更新
                      }
                      else
                      {
                          // 6. 发送失败 -> 标记失败
-                         msg.SendStatus = 0; // 0=失败
-                         _logger.LogWarning("消息发送失败: {Msg}", result.Message);
+                         msg.sendStatus = 0; // 0=失败
+                         _logger.LogWarning("消息发送失败: {Msg}", result.message);
                      }
                  }
                  catch(Exception ex)
                  {
                      _logger.LogError(ex, "发送消息异常");
-                     msg.SendStatus = 0; // 失败
+                     msg.sendStatus = 0; // 失败
                  }
                  
                  // 更新本地 DB 状态
-                 _ = _dbContext.Messages.SaveAsync(msg, msg.MessageId);
+                 _ = _dbContext.Messages.SaveAsync(msg, msg.messageId);
                  NotifyStateChanged();
                  
-                 return msg.SendStatus != 0;
+                 return msg.sendStatus != 0;
              }
              return false;
         }
@@ -688,14 +711,14 @@ namespace SCRM.UI.Services
         {
             try
             {
-                if (device == null || !device.WechatAccountId.HasValue) return;
-                var accountId = device.WechatAccountId.Value;
-
+                if (device == null || !device.wechatAccountId.HasValue) return;
+                var accountId = device.wechatAccountId.Value;
+ 
                 var existing = await _dbContext.WechatAccounts.GetAsync(accountId);
                 if (existing != null) return;
                 
                 // 尝试从 Device object 找 Account
-                var account = device.Accounts?.FirstOrDefault(a => a.AccountId == accountId);
+                var account = device.accounts?.FirstOrDefault(a => a.accountId == accountId);
                 if (account != null)
                 {
                     await _dbContext.WechatAccounts.SaveAsync(account, accountId);
@@ -705,16 +728,16 @@ namespace SCRM.UI.Services
                 // 如果找不到，创建一个最小化的占位符? 
                 // 防止 FK 崩溃，但这可能会导致脏数据。
                 // 既然 Device 存在，应该能找到 Account。
-                _logger.LogWarning("EnsureAccountAsync: 无法在设备对象中找到 AccountId {Id}, 尝试创建一个临时记录...", accountId);
+                _logger.LogWarning("EnsureAccountAsync: 无法在设备对象中找到 accountId {Id}, 尝试创建一个临时记录...", accountId);
                 
                 var temp = new WechatAccount
                 {
-                    AccountId = accountId,
-                    Wxid = device.WeChatId ?? "unknown",
-                    Nickname = device.WeChatNick ?? "Unknown Device",
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
+                    accountId = accountId,
+                    wxid = device.weChatId ?? "unknown",
+                    nickname = device.weChatNick ?? "Unknown Device",
+                    createdAt = DateTime.UtcNow,
+                    updatedAt = DateTime.UtcNow,
+                    isDeleted = false
                 };
                 await _dbContext.WechatAccounts.SaveAsync(temp, accountId);
             }
@@ -739,20 +762,20 @@ namespace SCRM.UI.Services
                 
                 // 优化：假设 Converseation 表很小，或者有索引。
                 var all = await _dbContext.Conversations.GetAllAsync(); 
-                var existing = all.FirstOrDefault(c => c.WechatAccountId == accountId && c.ConversationWxid == talkerWxid); 
+                var existing = all.FirstOrDefault(c => c.wechatAccountId == accountId && c.conversationWxid == talkerWxid); 
                 
                 if (existing != null) return existing;
 
                 // 创建新会话
                 var newConv = new Conversation
                 {
-                    WechatAccountId = accountId,
-                    ConversationWxid = talkerWxid, // 用 Wxid 作为唯一标识
-                    DisplayName = talkerName,
-                    DisplayAvatar = avatar,
-                    CreatedAt = DateTime.UtcNow,
-                    UpdatedAt = DateTime.UtcNow,
-                    IsDeleted = false
+                    wechatAccountId = accountId,
+                    conversationWxid = talkerWxid, // 用 Wxid 作为唯一标识
+                    displayName = talkerName,
+                    displayAvatar = avatar,
+                    createdAt = DateTime.UtcNow,
+                    updatedAt = DateTime.UtcNow,
+                    isDeleted = false
                 };
                 
                 // 由于 SQLite 自增 ID，我们需要保存后获取 ID吗？
@@ -764,11 +787,11 @@ namespace SCRM.UI.Services
                 
                 // 重新获取以拿到 ID (如果 SaveAsync 不回填)
                 // 实际上 Blazor DB wrapper 不同实现行为不同。
-                // 假设它能工作。
+                // 假设它能 work。
                 
                 // 为了保险，再次查询
                 var verified = (await _dbContext.Conversations.GetAllAsync())
-                                .FirstOrDefault(c => c.WechatAccountId == accountId && c.ConversationWxid == talkerWxid);
+                                .FirstOrDefault(c => c.wechatAccountId == accountId && c.conversationWxid == talkerWxid);
                 return verified;
             }
             catch(Exception ex)
@@ -811,22 +834,22 @@ namespace SCRM.UI.Services
             
             // 1. 检查内存中是否已存在该消息 (通过 MsgSvrId 或 本地 TaskId)
             var existing = CurrentMessages.FirstOrDefault(m => 
-                (msgDto.MsgSvrId > 0 && m.MsgSvrId == msgDto.MsgSvrId) || 
-                (msgDto.TaskId > 0 && m.ClientMsgId == msgDto.TaskId.ToString()));
+                (msgDto.msgSvrId > 0 && m.msgSvrId == msgDto.msgSvrId) || 
+                (msgDto.taskId > 0 && m.clientMsgId == msgDto.taskId.ToString()));
 
             if (existing != null)
             {
                 // 如果是之前自己发的“自信更新”消息，现在更新为服务器确认状态
-                existing.MsgSvrId = msgDto.MsgSvrId;
-                existing.SendStatus = 3; // 发送成功/已同步
-                existing.UpdatedAt = DateTime.UtcNow;
+                existing.msgSvrId = msgDto.msgSvrId;
+                existing.sendStatus = 3; // 发送成功/已同步
+                existing.updatedAt = DateTime.UtcNow;
                 NotifyStateChanged();
-                await _dbContext.Messages.SaveAsync(existing, existing.MessageId);
+                await _dbContext.Messages.SaveAsync(existing, existing.messageId);
                 return;
             }
             
-            var accountId = SelectedDevice?.WechatAccountId ?? 0;
-            var friendId = msgDto.IsSelf ? msgDto.FriendId : msgDto.FriendId; // 始终是对方
+            var accountId = SelectedDevice?.wechatAccountId ?? 0;
+            var friendId = msgDto.isSelf ? msgDto.friendId : msgDto.friendId; // 始终是对方
 
             // 2. 确保会话存在
             var conversation = await EnsureConversationAsync(accountId, friendId, "", "");
@@ -834,33 +857,33 @@ namespace SCRM.UI.Services
             // 3. 构造新消息实体
             var msg = new Message
             {
-                MessageId = DateTime.UtcNow.Ticks, 
-                SenderWxid = msgDto.IsSelf ? "self" : msgDto.FriendId,
-                ReceiverWxid = msgDto.IsSelf ? msgDto.FriendId : "self",
-                Content = msgDto.Content,
-                CreatedAt = DateTime.UtcNow,
-                Direction = (short)(msgDto.IsSelf ? 1 : 2),
-                AccountId = accountId,
-                ConversationId = conversation?.Id ?? 0,
-                MsgSvrId = msgDto.MsgSvrId,
-                ChatType = (short)(msgDto.IsGroup ? 2 : 1),
-                SendStatus = 3
+                messageId = DateTime.UtcNow.Ticks, 
+                senderWxid = msgDto.isSelf ? "self" : msgDto.friendId,
+                receiverWxid = msgDto.isSelf ? msgDto.friendId : "self",
+                content = msgDto.content,
+                createdAt = DateTime.UtcNow,
+                direction = (short)(msgDto.isSelf ? 1 : 2),
+                accountId = accountId,
+                conversationId = conversation?.id ?? 0,
+                msgSvrId = msgDto.msgSvrId,
+                chatType = (short)(msgDto.isGroup ? 2 : 1),
+                sendStatus = 3
             };
             
             // 将 "self" 替换为真实的微信号
-            var currentAccount = SelectedDevice?.Accounts?.FirstOrDefault(a => a.AccountId == SelectedDevice.WechatAccountId);
-            if (msg.SenderWxid == "self" && currentAccount?.Wxid != null) 
-                msg.SenderWxid = currentAccount.Wxid;
-            if (msg.ReceiverWxid == "self" && currentAccount?.Wxid != null)
-                msg.ReceiverWxid = currentAccount.Wxid;
+            var currentAccount = SelectedDevice?.accounts?.FirstOrDefault(a => a.accountId == SelectedDevice.wechatAccountId);
+            if (msg.senderWxid == "self" && currentAccount?.wxid != null) 
+                msg.senderWxid = currentAccount.wxid;
+            if (msg.receiverWxid == "self" && currentAccount?.wxid != null)
+                msg.receiverWxid = currentAccount.wxid;
 
             // 仅当消息属于当前打开的对话框时，才添加到内存列表
-            if (SelectedContact != null && (msgDto.FriendId == SelectedContact.Wxid || (msgDto.IsSelf && msgDto.FriendId == SelectedContact.Wxid)))
+            if (SelectedContact != null && (msgDto.friendId == SelectedContact.wxid || (msgDto.isSelf && msgDto.friendId == SelectedContact.wxid)))
             {
                  CurrentMessages.Add(msg);
                  NotifyStateChanged();
             }
-            else if (msgDto.IsGroup && SelectedContact != null && msgDto.FriendId == SelectedContact.Wxid)
+            else if (msgDto.isGroup && SelectedContact != null && msgDto.friendId == SelectedContact.wxid)
             {
                  // 群消息匹配逻辑
                  CurrentMessages.Add(msg);
@@ -868,7 +891,7 @@ namespace SCRM.UI.Services
             }
             
             // 总是保存到本地数据库
-            await _dbContext.Messages.SaveAsync(msg, msg.MessageId);
+            await _dbContext.Messages.SaveAsync(msg, msg.messageId);
         }
 
         private void HandleWeChatStatusChanged(string wxid, string nick, bool isOnline)
@@ -900,12 +923,12 @@ namespace SCRM.UI.Services
 
         private void HandleTaskResultReceived(TaskResultDto result)
         {
-            string msg = result.Message;
+            string msg = result.message;
             if (string.IsNullOrEmpty(msg))
             {
-                msg = result.Success ? "任务执行成功" : "任务执行失败";
+                msg = result.success ? "任务执行成功" : "任务执行失败";
             }
-            OnNotification?.Invoke(msg, result.Success);
+            OnNotification?.Invoke(msg, result.success);
             NotifyStateChanged();
         }
 
@@ -926,6 +949,9 @@ namespace SCRM.UI.Services
         /// <summary>
         /// 加载朋友圈数据
         /// </summary>
+        /// <summary>
+        /// 加载朋友圈数据
+        /// </summary>
         public async Task LoadMomentsAsync()
         {
             if (SelectedDevice == null) 
@@ -935,15 +961,23 @@ namespace SCRM.UI.Services
                 return;
             }
 
-            // 从本地 DB 加载
+            // 1. 先从本地 DB 加载 (Fast)
             var list = await _dbContext.MomentsTimelines.GetAllAsync();
-            
-            // 按时间倒序，取前 20 条
-            CurrentMoments = list.OrderByDescending(x => x.CreateTime).Take(20).ToList();
-            NotifyStateChanged();
-            
-            // 可选：加载时自动触发同步
-            // await RequestMomentsSyncAsync(); 
+            if (list.Any())
+            {
+                CurrentMoments = list.OrderByDescending(x => x.createTime).Take(20).ToList();
+                NotifyStateChanged();
+            }
+
+            // 2. 从服务器拉取最新 (Fresh)
+            var remoteList = await _weChatService.GetMomentsTimelineAsync(SelectedDevice.uuid);
+            if (remoteList != null && remoteList.Any())
+            {
+                foreach (var dto in remoteList)
+                {
+                    HandleMomentReceived(dto); // Reuse logic to save and update UI
+                }
+            }
         }
 
         /// <summary>
@@ -954,28 +988,34 @@ namespace SCRM.UI.Services
             // 转换为实体对象
             var entity = new MomentsTimeline
             {
-                SnsId = dto.SnsId,
-                UserName = dto.UserName,
-                NickName = dto.NickName,
-                Content = dto.Content,
-                CreateTime = dto.CreateTime,
-                ImagesJson = System.Text.Json.JsonSerializer.Serialize(dto.Images),
-                CommentsJson = System.Text.Json.JsonSerializer.Serialize(dto.Comments),
-                LikesJson = System.Text.Json.JsonSerializer.Serialize(dto.Likes),
-                ReceivedAt = DateTime.UtcNow.Ticks,
-                OwnerWxid = SelectedDevice?.WeChatId 
+                snsId = dto.snsId,
+                userName = dto.userName,
+                nickName = dto.nickName,
+                content = dto.content,
+                createTime = dto.createTime,
+                imagesJson = System.Text.Json.JsonSerializer.Serialize(dto.images),
+                videoUrl = dto.videoUrl,
+                linkInfoJson = dto.link != null ? System.Text.Json.JsonSerializer.Serialize(dto.link) : null,
+                commentsJson = System.Text.Json.JsonSerializer.Serialize(dto.comments),
+                likesJson = System.Text.Json.JsonSerializer.Serialize(dto.likes),
+                receivedAt = DateTime.UtcNow.Ticks,
+                ownerWxid = SelectedDevice?.weChatId 
             };
 
             // 保存到本地 DB
-            _dbContext.MomentsTimelines.SaveAsync(entity, entity.SnsId);
+            _dbContext.MomentsTimelines.SaveAsync(entity, entity.snsId);
 
             // 更新 UI 列表 (去重)
-            var existing = CurrentMoments.FirstOrDefault(x => x.SnsId == entity.SnsId);
+            var existing = CurrentMoments.FirstOrDefault(x => x.snsId == entity.snsId);
             if (existing == null)
             {
+                // Insert based on time
+                // Simple approach: Insert at top if new, or search position. 
+                // Since mostly new, try top.
                 CurrentMoments.Insert(0, entity);
-                // 保持列表长度限制
-                if (CurrentMoments.Count > 50) CurrentMoments.RemoveAt(CurrentMoments.Count - 1);
+                
+                // Keep Sorted
+                CurrentMoments = CurrentMoments.OrderByDescending(x => x.createTime).Take(50).ToList();
             }
             
             NotifyStateChanged();
@@ -994,17 +1034,17 @@ namespace SCRM.UI.Services
                  
                  // 获取所有本地消息
                  var allMsgs = await _dbContext.Messages.GetAllAsync();
-                 var toDelete = allMsgs.Where(m => m.CreatedAt < threshold).ToList();
+                 var toDelete = allMsgs.Where(m => m.createdAt < threshold).ToList();
                  
                  foreach(var m in toDelete)
                  {
-                     await _dbContext.Messages.DeleteAsync(m.MessageId);
+                     await _dbContext.Messages.DeleteAsync(m.messageId);
                  }
                  
                  // 如果当前视图有被删除的消息，刷新UI
                  if (toDelete.Any())
                  {
-                     CurrentMessages.RemoveAll(m => m.CreatedAt < threshold);
+                     CurrentMessages.RemoveAll(m => m.createdAt < threshold);
                      NotifyStateChanged();
                  }
                  
@@ -1028,6 +1068,30 @@ namespace SCRM.UI.Services
             _weChatService.OnTaskResultReceived -= HandleTaskResultReceived;
             _weChatService.OnScreenShotReceived -= HandleScreenShotReceived;
             _weChatService.OnMomentReceived -= HandleMomentReceived;
+        }
+
+        // --- Management Methods (RBAC) ---
+
+        public async Task<List<SrClient>> LoadAllDevicesAsync()
+        {
+            var result = await _httpClient.GetFromJsonAsync<List<SrClient>>("api/devices");
+            return result ?? new List<SrClient>();
+        }
+
+        public async Task DeleteDeviceAsync(string uuid)
+        {
+            await _httpClient.DeleteAsync($"api/devices/{uuid}");
+        }
+
+        public async Task<List<WechatAccount>> LoadAllWeChatAccountsAsync()
+        {
+            var result = await _httpClient.GetFromJsonAsync<List<WechatAccount>>("api/wechataccounts");
+            return result ?? new List<WechatAccount>();
+        }
+
+        public async Task DeleteWeChatAccountAsync(long id)
+        {
+            await _httpClient.DeleteAsync($"api/wechataccounts/{id}");
         }
     }
 }

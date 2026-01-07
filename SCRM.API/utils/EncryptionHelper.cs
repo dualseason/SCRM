@@ -34,7 +34,7 @@ namespace SCRM.API.Utils
 
         private static byte[] DecryptRaw(byte[] data, byte[] keyBytes)
         {
-            using (DESCryptoServiceProvider des = new DESCryptoServiceProvider())
+            using (DES des = DES.Create())
             {
                 des.Key = keyBytes;
                 des.Mode = CipherMode.ECB;
@@ -64,7 +64,7 @@ namespace SCRM.API.Utils
 
         private static byte[] EncryptRaw(byte[] data, byte[] keyBytes)
         {
-            using (DESCryptoServiceProvider des = new DESCryptoServiceProvider())
+            using (DES des = DES.Create())
             {
                 des.Key = keyBytes;
                 des.Mode = CipherMode.ECB;

@@ -1,7 +1,6 @@
 syntax = "proto3";
 
-package  Jubo.JuLiao.IM.Wx.Proto;
-option csharp_namespace = "SCRM.SHARED.Proto";
+package Jubo.JuLiao.IM.Wx.Proto;
 
 message WeChatLocationTaskResultNoticeMessage {
   string WeChatId = 1;

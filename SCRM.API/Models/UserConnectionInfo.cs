@@ -2,13 +2,13 @@ namespace SCRM.Models
 {
     public class UserConnectionInfo
     {
-        public string UserId { get; set; } = string.Empty;
-        public string ConnectionId { get; set; } = string.Empty;
-        public string DeviceType { get; set; } = string.Empty;
-        public string DeviceInfo { get; set; } = string.Empty;
-        public string DeviceUuid { get; set; } = string.Empty;
-        public DateTime ConnectedAt { get; set; }
-        public bool IsOnline { get; set; } = true;
-        public DateTime LastActivityAt { get; set; }
+        public string userId { get; set; } = string.Empty;
+        public string connectionId { get; set; } = string.Empty;
+        public string deviceType { get; set; } = string.Empty;
+        public string deviceInfo { get; set; } = string.Empty;
+        public string deviceUuid { get; set; } = string.Empty;
+        public DateTime connectedAt { get; set; }
+        public bool isOnline { get; set; } = true;
+        public DateTime lastActivityAt { get; set; }
     }
 }

@@ -1,0 +1,241 @@
+@page "/settings"
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
+@inject ISystemConfigService ConfigService
+@inject NotificationService NotificationService
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+
+<RadzenStack Gap="1rem">
+    <RadzenText TextStyle="TextStyle.H4">全局系统设置 (System Settings)</RadzenText>
+    <RadzenText TextStyle="TextStyle.Body1">所有设置修改后将自动推送到在线客户端。请谨慎修改。</RadzenText>
+    
+    <RadzenTabs RenderMode="TabRenderMode.Client">
+        <Tabs>
+            <RadzenTabsItem Text="服务端设置 (Server Settings)">
+                <RadzenCard>
+                    <RadzenStack Gap="1.5rem">
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Socket 主机 (host)" Component="host" />
+                                <RadzenText TextStyle="TextStyle.Caption">客户端连接 Netty 的 IP</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenTextBox @bind-Value=@configModel.Host Name="host" Style="width: 100%" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Socket 端口 (server_port)" Component="server_port" />
+                                 <RadzenText TextStyle="TextStyle.Caption">客户端连接 Netty 的端口</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenNumeric @bind-Value=@configModel.ServerPort Name="server_port" Style="width: 100%" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="文件上传 URL (fileUpUrl)" Component="fileUpUrl" />
+                                <RadzenText TextStyle="TextStyle.Caption">用于上传截图/日志</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenTextBox @bind-Value=@configModel.FileUpUrl Name="fileUpUrl" Style="width: 100%" Placeholder="http://..." />
+                            </RadzenColumn>
+                        </RadzenRow>
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="API 基础 URL (apiBaseUrl)" Component="apiBaseUrl" />
+                                <RadzenText TextStyle="TextStyle.Caption">REST API 接口地址</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenTextBox @bind-Value=@configModel.ApiBaseUrl Name="apiBaseUrl" Style="width: 100%" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="自动更新 URL (autoUpdateUrl)" Component="autoUpdateUrl" />
+                                <RadzenText TextStyle="TextStyle.Caption">APK 更新检查地址</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenTextBox @bind-Value=@configModel.AutoUpdateUrl Name="autoUpdateUrl" Style="width: 100%" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="安卓客户端设置 (Client Settings)">
+                <RadzenCard>
+                    <RadzenStack Gap="1.5rem">
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="配置文件路径 (clientConfigPath)" Component="clientConfigPath" />
+                                 <RadzenText TextStyle="TextStyle.Caption">本地存储路径 (如 /sdcard/weke/config.json)</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenTextBox @bind-Value=@configModel.ClientConfigPath Name="clientConfigPath" Style="width: 100%" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="日志级别 (logLevel)" Component="logLevel" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenDropDown @bind-Value=@configModel.LogLevel Data=@(new [] {"DEBUG", "INFO", "WARN", "ERROR"}) Name="logLevel" Style="width: 100%" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="自动登录 (autoLogin)" Component="autoLogin" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.AutoLogin Name="autoLogin" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="自动下载图片 (autoPic)" Component="autoPic" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.AutoPic Name="autoPic" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="静默功能 (silentFunc)" Component="silentFunc" />
+                                <RadzenText TextStyle="TextStyle.Caption">隐藏通知栏图标</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                 <RadzenSwitch @bind-Value=@configModel.SilentFunc Name="silentFunc" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="强制运行 (forceRun)" Component="forceRun" />
+                                 <RadzenText TextStyle="TextStyle.Caption">尝试后台保活</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.ForceRun Name="forceRun" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="保持唤醒间隔 (keepWake)" Component="keepWake" />
+                                 <RadzenText TextStyle="TextStyle.Caption">分钟</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenNumeric @bind-Value=@configModel.KeepWake Name="keepWake" Style="width: 100%" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+    
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Class="rz-mt-2">
+        <RadzenButton Icon="save" Text="保存并推送所有配置" Click=@SaveAllConfigs ButtonStyle="ButtonStyle.Primary" IsBusy=@isSaving />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    private ConfigViewModel configModel = new();
+    private bool isSaving = false;
+    private List<SystemConfig> _rawData = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadConfigs();
+    }
+
+    private async Task LoadConfigs()
+    {
+        var configs = await ConfigService.GetConfigsAsync();
+        _rawData = configs.ToList();
+        
+        // Map to ViewModel
+        configModel.FileUpUrl = GetValue("fileUpUrl");
+        configModel.Host = GetValue("host");
+        configModel.ServerPort = GetInt("server_port", 42718);
+        configModel.ApiBaseUrl = GetValue("apiBaseUrl");
+        
+        configModel.AutoLogin = GetBool("autoLogin");
+        configModel.AutoPic = GetBool("autoPic");
+        configModel.SilentFunc = GetBool("silentFunc");
+        configModel.ForceRun = GetBool("forceRun");
+        configModel.KeepWake = GetInt("keepWake", 5);
+        
+        configModel.ClientConfigPath = GetValue("clientConfigPath");
+        configModel.LogLevel = GetValue("logLevel") ?? "INFO";
+        configModel.AutoUpdateUrl = GetValue("autoUpdateUrl");
+    }
+
+    private string? GetValue(string key) => _rawData.FirstOrDefault(c => c.key == key)?.value;
+    private bool GetBool(string key, bool def = false) => bool.TryParse(GetValue(key), out var v) ? v : def;
+    private int GetInt(string key, int def = 0) => int.TryParse(GetValue(key), out var v) ? v : def;
+
+    private async Task SaveAllConfigs()
+    {
+        isSaving = true;
+        try
+        {
+            await Update("fileUpUrl", configModel.FileUpUrl);
+            await Update("host", configModel.Host);
+            await Update("server_port", configModel.ServerPort.ToString());
+            await Update("apiBaseUrl", configModel.ApiBaseUrl);
+            
+            await Update("autoLogin", configModel.AutoLogin.ToString());
+            await Update("autoPic", configModel.AutoPic.ToString());
+            await Update("silentFunc", configModel.SilentFunc.ToString());
+            await Update("forceRun", configModel.ForceRun.ToString());
+            await Update("keepWake", configModel.KeepWake.ToString());
+            
+            await Update("clientConfigPath", configModel.ClientConfigPath);
+            await Update("logLevel", configModel.LogLevel);
+            await Update("autoUpdateUrl", configModel.AutoUpdateUrl);
+
+            NotificationService.Notify(NotificationSeverity.Success, "保存成功", "所有配置已更新并推送");
+            await LoadConfigs();
+        }
+        catch (Exception ex)
+        {
+             NotificationService.Notify(NotificationSeverity.Error, "保存失败", ex.Message);
+        }
+        finally
+        {
+            isSaving = false;
+        }
+    }
+
+    private async Task Update(string key, string? value)
+    {
+        if (value == null) return; // check null if needed, or allow empty string to clear
+        // Don't update if not changed? API handles side effects (Push), so maybe we DO want to update to trigger push.
+        // But for "Save All", pushing 12 times is noisy.
+        // Optimization: Check equality.
+        var oldVal = GetValue(key);
+        if (oldVal == value) return;
+
+        await ConfigService.UpdateConfigAsync(new SystemConfig { key = key, value = value, description = "Updated via Web Settings" });
+    }
+
+    class ConfigViewModel
+    {
+        public string? FileUpUrl { get; set; }
+        public string? Host { get; set; }
+        public int ServerPort { get; set; }
+        public string? ApiBaseUrl { get; set; }
+        
+        public bool AutoLogin { get; set; }
+        public bool AutoPic { get; set; }
+        public bool SilentFunc { get; set; }
+        public bool ForceRun { get; set; }
+        public int KeepWake { get; set; }
+        
+        public string? ClientConfigPath { get; set; }
+        public string? LogLevel { get; set; }
+        public string? AutoUpdateUrl { get; set; }
+    }
+}

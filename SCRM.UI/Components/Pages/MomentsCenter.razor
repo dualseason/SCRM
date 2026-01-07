@@ -2,53 +2,54 @@
 @using SCRM.UI.Services
 @using SCRM.API.Models.Entities
 @using SCRM.UI.Components.Shared
-@using AntDesign
+@using Radzen
+@using Radzen.Blazor
 @inject CrmStore Store
 @inject NavigationManager NavManager
 @implements IDisposable
 
-<PageTitle>Moments Center</PageTitle>
+<PageTitle>朋友圈</PageTitle>
 
-<style>
-    .moments-layout { height: 100vh; overflow: hidden; }
-    .device-sider { background: #2e2e2e; }
-    .feed-content { background: #f0f2f5; padding: 20px; overflow-y: auto; height: 100vh; }
-    .feed-container { max-width: 600px; margin: 0 auto; }
-</style>
-
-<Layout Class="moments-layout">
-    <Sider Width="80" Class="device-sider" Theme="SiderTheme.Dark">
+<div class="moments-layout" style="height: calc(100vh - 50px); display: flex; overflow: hidden;">
+    <div class="device-sider" style="width: 80px; background: #2e2e2e; flex-shrink: 0; overflow-y: auto;">
         <DeviceList OnDeviceSelected="OnDeviceSelected" />
-    </Sider>
+    </div>
 
-    <Content Class="feed-content">
-        <div class="feed-container">
+    <div class="feed-content" style="flex: 1; background: #f0f2f5; padding: 1rem; overflow-y: auto; height: 100%;">
+        <div class="feed-container" style="max-width: 600px; margin: 0 auto;">
             @if (Store.SelectedDevice == null)
             {
-                 <Empty Description="@("Select a Device to view Moments")" />
+                <RadzenCard Class="rz-p-5 rz-text-align-center">
+                    <RadzenIcon Icon="smartphone" Style="font-size: 3rem; color: var(--rz-text-disabled-color);" />
+                    <RadzenText TextStyle="TextStyle.Body1" Class="rz-mt-4">请选择一个设备以查看朋友圈</RadzenText>
+                </RadzenCard>
             }
             else
             {
-                <div style="margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
-                    <Title Level="4">@Store.SelectedDevice.WeChatNick's Moments</Title>
-                    <Button Type="@AntDesign.ButtonType.Primary" OnClick="SyncMoments">Sync Moments</Button>
-                </div>
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4">
+                     <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">@Store.SelectedDevice.weChatNick 的朋友圈</RadzenText>
+                     <RadzenButton Text="同步朋友圈" Icon="sync" Click="SyncMoments" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+                </RadzenStack>
 
                 @if (Store.CurrentMoments.Count == 0)
                 {
-                    <Empty Description="@("No moments loaded")" />
+                     <RadzenCard Class="rz-p-5 rz-text-align-center">
+                        <RadzenText TextStyle="TextStyle.Body1">暂无朋友圈数据，请点击“同步”</RadzenText>
+                    </RadzenCard>
                 }
                 else
                 {
+                    <RadzenStack Gap="1rem">
                     @foreach (var moment in Store.CurrentMoments)
                     {
                          <MomentsFeedItem Moment="@moment" />
                     }
+                    </RadzenStack>
                 }
             }
         </div>
-    </Content>
-</Layout>
+    </div>
+</div>
 
 @code {
     protected override void OnInitialized()

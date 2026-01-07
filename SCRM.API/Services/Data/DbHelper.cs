@@ -304,16 +304,16 @@ namespace SCRM.API.Services.Data
         public static async Task<WechatAccount?> SaveWechatAccount(this DbContext context, WechatAccount account)
         {
             // Note: WechatAccount Key is long
-            if (!GlobalCache.wechatAccounts.ContainsKey(account.AccountId))
+            if (!GlobalCache.wechatAccounts.ContainsKey(account.accountId))
             {
-                return await context.AddAtomicGeneric(account, account.AccountId, GlobalCache.wechatAccounts);
+                return await context.AddAtomicGeneric(account, account.accountId, GlobalCache.wechatAccounts);
             }
-            return await context.UpdateAtomicGeneric(account.AccountId, GlobalCache.wechatAccounts, c => c.CopyFrom(account));
+            return await context.UpdateAtomicGeneric(account.accountId, GlobalCache.wechatAccounts, c => c.CopyFrom(account));
         }
 
         public static async Task DeleteWechatAccount(this DbContext context, WechatAccount account)
         {
-            await context.DeleteAtomicGeneric(account.AccountId, GlobalCache.wechatAccounts);
+            await context.DeleteAtomicGeneric(account.accountId, GlobalCache.wechatAccounts);
         }
         // ==================== Contacts ====================
 
@@ -322,11 +322,11 @@ namespace SCRM.API.Services.Data
             // Direct DB Query - No Memory Cache due to large data size
             // Robustness: Deduplicate by Wxid in case DB contains legacy duplicates
             var rawList = await context.Set<Contact>()
-                .Where(c => c.WechatAccountId == accountId && !c.IsDeleted)
-                .OrderByDescending(c => c.CreatedAt) 
+                .Where(c => c.wechatAccountId == accountId && !c.isDeleted)
+                .OrderByDescending(c => c.createdAt) 
                 .ToListAsync();
 
-            return rawList.DistinctBy(c => c.Wxid).ToList();
+            return rawList.DistinctBy(c => c.wxid).ToList();
         }
 
         public static async Task SaveContacts(this DbContext context, long accountId, List<Contact> contacts)
@@ -338,7 +338,7 @@ namespace SCRM.API.Services.Data
             // This prevents duplicates when syncing the same friend multiple times.
             var bulkConfig = new BulkConfig 
             { 
-                UpdateByProperties = new List<string> { nameof(Contact.WechatAccountId), nameof(Contact.Wxid) },
+                UpdateByProperties = new List<string> { nameof(Contact.wechatAccountId), nameof(Contact.wxid) },
                 SetOutputIdentity = true,
                 BatchSize = 1000
             };
@@ -363,24 +363,24 @@ namespace SCRM.API.Services.Data
                         foreach (var contact in contacts)
                         {
                             var existing = await context.Set<Contact>()
-                                .FirstOrDefaultAsync(c => c.WechatAccountId == contact.WechatAccountId && c.Wxid == contact.Wxid);
+                                .FirstOrDefaultAsync(c => c.wechatAccountId == contact.wechatAccountId && c.wxid == contact.wxid);
 
                             if (existing != null)
                             {
                                 // Update existing
-                                existing.Avatar = contact.Avatar;
-                                existing.Nickname = contact.Nickname;
-                                existing.Remarks = contact.Remarks;
-                                existing.Description = contact.Description;
-                                existing.Gender = contact.Gender;
-                                existing.Province = contact.Province;
-                                existing.City = contact.City;
-                                existing.Phone = contact.Phone;
-                                existing.Signature = contact.Signature;
-                                existing.Source = contact.Source;
-                                existing.LabelIds = contact.LabelIds;
-                                existing.ContactType = contact.ContactType;
-                                existing.UpdatedAt = DateTime.UtcNow;
+                                existing.avatar = contact.avatar;
+                                existing.nickname = contact.nickname;
+                                existing.remarks = contact.remarks;
+                                existing.description = contact.description;
+                                existing.gender = contact.gender;
+                                existing.province = contact.province;
+                                existing.city = contact.city;
+                                existing.phone = contact.phone;
+                                existing.signature = contact.signature;
+                                existing.source = contact.source;
+                                existing.labelIds = contact.labelIds;
+                                existing.contactType = contact.contactType;
+                                existing.updatedAt = DateTime.UtcNow;
                                 context.Entry(existing).State = EntityState.Modified;
                             }
                             else

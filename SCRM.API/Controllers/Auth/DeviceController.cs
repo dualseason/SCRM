@@ -5,11 +5,15 @@ using SCRM.API.Models.Entities;
 using SCRM.Services.Data;
 using SCRM.Services;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace SCRM.Controllers.Auth
 {
+    /// <summary>
+    /// 设备管理控制器
+    /// </summary>
     [ApiController]
     [Route("api/device")]
     public class DeviceController : ControllerBase
@@ -25,35 +29,45 @@ namespace SCRM.Controllers.Auth
             _logger = logger;
         }
 
+        /// <summary>
+        /// 生成 VIP 激活码 (仅管理员)
+        /// </summary>
+        /// <param name="request">请求参数</param>
+        /// <returns>生成的激活码</returns>
         [HttpPost("generate_vip")]
-        [Authorize(Roles = "Admin,SuperAdmin")] // Only admins can generate keys
+        [Authorize(Roles = "Admin,SuperAdmin")]
         public async Task<IActionResult> GenerateVipKey([FromBody] GenerateVipKeyRequest request)
         {
             try
             {
-                var vipKey = Guid.NewGuid().ToString("N").Substring(0, 16).ToUpper(); // Simple 16-char key
+                var vipKey = Guid.NewGuid().ToString("N").Substring(0, 16).ToUpper();
                 
                 var newKey = new VipKey
                 {
-                    Uuid = vipKey,
-                    Type = request.Type, // 0=Month, etc.
-                    DurationDays = request.Days > 0 ? request.Days : 30,
-                    Status = 0, // Unused
-                    CreatedAt = DateTime.UtcNow
+                    uuid = vipKey,
+                    type = request.type,
+                    durationDays = request.days > 0 ? request.days : 30,
+                    status = 0, // 未使用
+                    createdAt = DateTime.UtcNow
                 };
 
                 _context.VipKeys.Add(newKey);
                 await _context.SaveChangesAsync();
 
-                _logger.LogInformation("Generated VIP Key: {VipKey}, Type: {Type}, Days: {Days}", vipKey, request.Type, newKey.DurationDays);
-                return Ok(new { Success = true, VipKey = vipKey });
+                _logger.LogInformation("已生成 VIP 激活码: {VipKey}, 类型: {Type}, 天数: {Days}", vipKey, request.type, newKey.durationDays);
+                return Ok(new { success = true, vipKey = vipKey });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating VIP key");
-                return StatusCode(500, new { Message = "Error generating VIP key" });
+                _logger.LogError(ex, "生成 VIP 激活码时出错");
+                return StatusCode(500, new { message = "生成 VIP 激活码失败" });
             }
         }
+
+        /// <summary>
+        /// 获取当前用户的所有设备
+        /// </summary>
+        /// <returns>设备列表</returns>
         [HttpGet]
         [Authorize]
         public async Task<ActionResult<IEnumerable<SrClient>>> GetDevices()
@@ -61,15 +75,24 @@ namespace SCRM.Controllers.Auth
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name;
             var isAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
 
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
             return await _authService.GetDevicesForUserAsync(userId, isAdmin);
         }
 
+        /// <summary>
+        /// 获取特定设备详情
+        /// </summary>
+        /// <param name="id">设备 UUID</param>
+        /// <returns>设备详情</returns>
         [HttpGet("{id}")]
         [Authorize]
         public async Task<ActionResult<SrClient>> GetDevice(string id)
         {
             var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.Identity?.Name;
             var isAdmin = User.IsInRole("SuperAdmin") || User.IsInRole("Admin");
+
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
             var client = await _authService.GetDeviceAsync(id, userId, isAdmin);
 
@@ -82,9 +105,19 @@ namespace SCRM.Controllers.Auth
         }
     }
 
+    /// <summary>
+    /// VIP 激活码生成请求
+    /// </summary>
     public class GenerateVipKeyRequest
     {
-        public int Days { get; set; } = 30;
-        public int Type { get; set; } = 0; // 0=Month, 1=Season, 2=Year, 3=Forever, 4=Day, 5=Week
+        /// <summary>
+        /// 有效天数
+        /// </summary>
+        public int days { get; set; } = 30;
+
+        /// <summary>
+        /// 激活码类型：0-月卡, 1-季卡, 2-年卡, 3-永久, 4-天卡, 5-周卡
+        /// </summary>
+        public int type { get; set; } = 0;
     }
 }

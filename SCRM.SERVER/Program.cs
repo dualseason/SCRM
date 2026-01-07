@@ -21,6 +21,8 @@ builder.Services.AddScoped<IClientTaskService, ClientTaskService>();
 
 builder.Services.AddScoped<WeChatService>();
 builder.Services.AddScoped<CrmStore>();
+builder.Services.AddScoped<ISystemConfigService, SystemConfigService>();
+builder.Services.AddScoped<IContactService, ContactService>(); // Add Contact Service
 builder.Services.AddRadzenComponents();
 
 builder.Services.AddBlazoredLocalStorage();

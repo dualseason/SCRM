@@ -9,9 +9,10 @@
     <Import_RootNamespace>SCRM.SHARED</Import_RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <Protobuf Include="$(MSBuildThisFileDirectory)proto\**\*.proto" GrpcServices="None" />
+    <Protobuf Include="$(MSBuildThisFileDirectory)proto\*.proto" GrpcServices="None" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Entities\*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\Dtos\*.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)Models\*.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)Models\Events\*.cs" />
   </ItemGroup>
 </Project>

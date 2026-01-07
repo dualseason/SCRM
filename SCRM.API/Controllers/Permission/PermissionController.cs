@@ -48,8 +48,8 @@ namespace SCRM.Controllers.Permission
             {
                 var permissions = await _authService.GetAllPermissionsAsync();
                 var grouped = permissions
-                    .GroupBy(p => p.Module)
-                    .ToDictionary(g => g.Key, g => g.OrderBy(p => p.SortOrder).ToList());
+                    .GroupBy(p => p.module)
+                    .ToDictionary(g => g.Key, g => g.OrderBy(p => p.sortOrder).ToList());
 
                 return Ok(new { Success = true, Data = grouped });
             }

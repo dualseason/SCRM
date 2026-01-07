@@ -4,79 +4,92 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 角色表
+/// 角色实体类
 /// </summary>
 [Table("roles")]
 public class Role
 {
+    #region 核心属性
+
     /// <summary>
     /// 角色ID
     /// </summary>
     [Key]
-    public long RoleId { get; set; }
+    public long roleId { get; set; }
 
     /// <summary>
     /// 角色名称
     /// </summary>
-    public string RoleName { get; set; } = string.Empty;
+    public string roleName { get; set; } = string.Empty;
 
     /// <summary>
-    /// 角色名称 别名 (与 RoleName 相同，用于兼容性)
+    /// 角色名称别名 (与 roleName 相同，用于兼容性)
     /// </summary>
-    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-    public string Name
+    [NotMapped]
+    public string name
     {
-        get { return RoleName; }
-        set { RoleName = value; }
+        get { return roleName; }
+        set { roleName = value; }
     }
 
     /// <summary>
     /// 角色等级：1-平台级 2-BOSS级 3-组长级 4-单账户级 5-临时金主级 6-临时认证级
     /// </summary>
-    public short RoleLevel { get; set; }
+    public short roleLevel { get; set; }
 
     /// <summary>
     /// 角色描述
     /// </summary>
-    public string? Description { get; set; }
+    public string? description { get; set; }
 
     /// <summary>
-    /// 是否系统角色
+    /// 是否系统内置角色
     /// </summary>
-    public bool IsSystem { get; set; }
+    public bool isSystem { get; set; }
 
     /// <summary>
-    /// 是否删除
+    /// 是否已逻辑删除
     /// </summary>
-    public bool IsDeleted { get; set; }
+    public bool isDeleted { get; set; }
 
     /// <summary>
-    /// 是否有效（IsActive 属性，值为 !IsDeleted）
+    /// 是否有效 (isActive 属性，其值为 !isDeleted)
     /// </summary>
-    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-    public bool IsActive
+    [NotMapped]
+    public bool isActive
     {
-        get { return !IsDeleted; }
-        set { IsDeleted = !value; }
+        get { return !isDeleted; }
+        set { isDeleted = !value; }
     }
+
+    #endregion
+
+    #region 时间戳
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    public DateTime createdAt { get; set; }
 
     /// <summary>
     /// 更新时间
     /// </summary>
-    public DateTime UpdatedAt { get; set; }
+    public DateTime updatedAt { get; set; }
+
+    #endregion
+
+    #region 导航属性
 
     /// <summary>
-    /// 导航属性：角色权限关系
+    /// 角色关联的权限列表
     /// </summary>
-    public virtual ICollection<RolePermission> RolePermissions { get; set; } = new List<RolePermission>();
+    public virtual ICollection<RolePermission> rolePermissions { get; set; } = new List<RolePermission>();
 
     /// <summary>
-    /// 导航属性：用户角色关系
+    /// 拥有该角色的用户列表
     /// </summary>
-    public virtual ICollection<UserRole> UserRoles { get; set; } = new List<UserRole>();
+    public virtual ICollection<UserRole> userRoles { get; set; } = new List<UserRole>();
+
+    #endregion
 }
+

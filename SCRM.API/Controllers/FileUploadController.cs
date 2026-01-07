@@ -11,6 +11,7 @@ namespace SCRM.API.Controllers
 {
     [ApiController]
     [Route("")]
+    [Microsoft.AspNetCore.Authorization.Authorize]
     public class FileUploadController : ControllerBase
     {
         private readonly IWebHostEnvironment _env;

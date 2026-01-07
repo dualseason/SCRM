@@ -1,19 +1,72 @@
-﻿namespace SCRM.API.Models.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 璇煶杞枃瀛楁棩蹇楄〃
+/// 语音转文字日志实体
 /// </summary>
+[Table("VoiceToTextLogs")]
 public class VoiceToTextLog
 {
-    public int Id { get; set; }
-    public int MessageId { get; set; }
-    public string VoiceUrl { get; set; }
-    public string TranscribedText { get; set; }
-    public int TranscribeStatus { get; set; }
-    public double Accuracy { get; set; }
-    public string ErrorMessage { get; set; }
-    public DateTime TranscribeTime { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    /// <summary>
+    /// 自增 ID
+    /// </summary>
+    [Column("Id")]
+    public int id { get; set; }
+
+    /// <summary>
+    /// 所属消息 ID
+    /// </summary>
+    [Column("MessageId")]
+    public int messageId { get; set; }
+
+    /// <summary>
+    /// 语音文件 URL
+    /// </summary>
+    [Column("VoiceUrl")]
+    public string voiceUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 转录后的文字内容
+    /// </summary>
+    [Column("TranscribedText")]
+    public string transcribedText { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 转录状态
+    /// </summary>
+    [Column("TranscribeStatus")]
+    public int transcribeStatus { get; set; }
+
+    /// <summary>
+    /// 准确率
+    /// </summary>
+    [Column("Accuracy")]
+    public double accuracy { get; set; }
+
+    /// <summary>
+    /// 错误信息
+    /// </summary>
+    [Column("ErrorMessage")]
+    public string errorMessage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 转录时间
+    /// </summary>
+    [Column("TranscribeTime")]
+    public DateTime transcribeTime { get; set; }
+
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    [Column("CreatedAt")]
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// 更新时间
+    /// </summary>
+    [Column("UpdatedAt")]
+    public DateTime updatedAt { get; set; } = DateTime.UtcNow;
 }
+
 

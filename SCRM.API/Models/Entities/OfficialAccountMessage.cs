@@ -1,19 +1,72 @@
-﻿namespace SCRM.API.Models.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 鍏紬鍙锋秷鎭褰曡〃
+/// 公众号消息记录实体
 /// </summary>
+[Table("OfficialAccountMessages")]
 public class OfficialAccountMessage
 {
-    public int Id { get; set; }
-    public int OfficialAccountId { get; set; }
-    public string MessageId { get; set; }
-    public int MessageType { get; set; }
-    public string MessageContent { get; set; }
-    public string SenderWxid { get; set; }
-    public int IsRead { get; set; }
-    public DateTime MessageTime { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    /// <summary>
+    /// 自增 ID
+    /// </summary>
+    [Column("Id")]
+    public int id { get; set; }
+
+    /// <summary>
+    /// 所属公众号 ID
+    /// </summary>
+    [Column("OfficialAccountId")]
+    public int officialAccountId { get; set; }
+
+    /// <summary>
+    /// 微信消息 ID
+    /// </summary>
+    [Column("MessageId")]
+    public string messageId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 消息类型
+    /// </summary>
+    [Column("MessageType")]
+    public int messageType { get; set; }
+
+    /// <summary>
+    /// 消息内容
+    /// </summary>
+    [Column("MessageContent")]
+    public string messageContent { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 发送者 WXID
+    /// </summary>
+    [Column("SenderWxid")]
+    public string senderWxid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否已读 (0-否, 1-是)
+    /// </summary>
+    [Column("IsRead")]
+    public int isRead { get; set; }
+
+    /// <summary>
+    /// 消息时间
+    /// </summary>
+    [Column("MessageTime")]
+    public DateTime messageTime { get; set; }
+
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    [Column("CreatedAt")]
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// 更新时间
+    /// </summary>
+    [Column("UpdatedAt")]
+    public DateTime updatedAt { get; set; } = DateTime.UtcNow;
 }
+
 

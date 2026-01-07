@@ -5,7 +5,7 @@ using SCRM.Services.Netty;
 using System;
 using System.Threading;
 using System.Threading.Tasks;
-using SCRM.SHARED.Proto;
+using Jubo.JuLiao.IM.Wx.Proto;
 using Google.Protobuf.WellKnownTypes;
 
 
@@ -115,10 +115,10 @@ namespace SCRM.Services
                     if (channel == null)
                     {
                         var allConns = await _connectionManager.GetAllConnectionsAsync();
-                        var connInfo = allConns.FirstOrDefault(c => c.DeviceInfo == targetId);
+                        var connInfo = allConns.FirstOrDefault(c => c.deviceInfo == targetId);
                         if (connInfo != null)
                         {
-                            channel = _connectionManager.GetChannel(connInfo.ConnectionId);
+                            channel = _connectionManager.GetChannel(connInfo.connectionId);
                         }
                     }
 
@@ -139,7 +139,7 @@ namespace SCRM.Services
                 var connections = await _connectionManager.GetAllConnectionsAsync();
                 foreach (var conn in connections)
                 {
-                    var channel = _connectionManager.GetChannel(conn.ConnectionId);
+                    var channel = _connectionManager.GetChannel(conn.connectionId);
                     if (channel != null && channel.Active)
                     {
                         await channel.WriteAndFlushAsync(transportMessage);
@@ -162,7 +162,7 @@ namespace SCRM.Services
         public async Task<int> GetConnectedClientsCountAsync()
         {
             var stats = _connectionManager.GetStatistics();
-            return await Task.FromResult(stats.TotalConnections);
+            return await Task.FromResult(stats.totalConnections);
         }
 
         public async Task<bool> IsNettyServerRunningAsync()

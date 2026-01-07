@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.DTOs;
 using SCRM.API.Models.Entities;
+using SCRM.SHARED.Models;
 using SCRM.API.Utils;
 using SCRM.Services;
 using SCRM.Services.Data;
@@ -22,12 +23,14 @@ namespace SCRM.Controllers.Auth
         private readonly ApplicationDbContext _context;
         private readonly AuthService _authService;
         private readonly Microsoft.Extensions.Logging.ILogger<PhoneController> _logger;
+        private readonly SCRM.Models.Configurations.NettySettings _nettySettings;
 
-        public PhoneController(ApplicationDbContext context, AuthService authService, Microsoft.Extensions.Logging.ILogger<PhoneController> logger)
+        public PhoneController(ApplicationDbContext context, AuthService authService, Microsoft.Extensions.Logging.ILogger<PhoneController> logger, Microsoft.Extensions.Options.IOptions<SCRM.Models.Configurations.NettySettings> options)
         {
             _context = context;
             _authService = authService;
             _logger = logger;
+            _nettySettings = options.Value;
         }
 
         private async Task<T> GetDecryptedBody<T>()
@@ -67,14 +70,15 @@ namespace SCRM.Controllers.Auth
 
             string clientUuid = HttpContext.Items["ClientUuid"]?.ToString();
             string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            _logger.LogInformation("[HTTP接入] 收到手机注册请求 - IP: {Ip}, 邮箱: {Email}", clientIp, request.userEmail);
 
             try
             {
-                if (string.IsNullOrEmpty(request.UserEmail))
+                if (string.IsNullOrEmpty(request.userEmail))
                 {
-                    if (!string.IsNullOrEmpty(request.RegCode) && request.RegCode.Contains("@"))
+                    if (!string.IsNullOrEmpty(request.regCode) && request.regCode.Contains("@"))
                     {
-                        request.UserEmail = request.RegCode;
+                        request.userEmail = request.regCode;
                     }
                     else
                     {
@@ -86,27 +90,27 @@ namespace SCRM.Controllers.Auth
                 // Note: User entity mapping might be complex, but we try to query by Email.
                 // If User.Email maps to WechatAccount.MobilePhone, this query effectively searches WechatAccounts.
                 // But we use _context.Users to be consistent with DbContext.
-                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.UserEmail);
+                var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.userEmail);
                 if (user == null)
                 {
                     return Ok(ApiResponse<UserAuthToken>.Fail(1, "用户不存在"));
                 }
 
                 // 2. Find or Create SrClient
-                var srClient = await _context.SrClients.Include(c => c.Accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
+                var srClient = await _context.SrClients.Include(c => c.accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
                 if (srClient == null)
                 {
                     srClient = new SrClient
                     {
                         uuid = clientUuid,
                         createdAt = DateTime.UtcNow,
-                        tcpHost = "192.168.1.226", // TODO: Get from config
-                        tcpPort = 8647,
+                        tcpHost = _nettySettings.Host,
+                        tcpPort = _nettySettings.Port,
                         status = 1,
                         isOnline = true,
                         lastLoginAt = DateTime.UtcNow,
                         ip = clientIp,
-                        device = new SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage()
+                        device = new Jubo.JuLiao.IM.Wx.Proto.PostDeviceInfoNoticeMessage()
                     };
                     _context.SrClients.Add(srClient);
                 }
@@ -119,8 +123,8 @@ namespace SCRM.Controllers.Auth
                 }
 
                 // 3. Bind Client to User
-                // We convert long Id to string because OwnerId is string?
-                srClient.OwnerId = user.Id.ToString();
+                // We convert long Id to string because ownerId is string?
+                srClient.ownerId = user.Id.ToString();
 
                 await _context.SaveChangesAsync();
 
@@ -132,6 +136,8 @@ namespace SCRM.Controllers.Auth
                     tcpHost = srClient.tcpHost,
                     tcpPort = srClient.tcpPort
                 };
+
+                _logger.LogInformation("[生成Token] 为客户端 {ClientUuid} 生成Token (UserId: {UserId})...", clientUuid, user.Id);
 
                 return Ok(ApiResponse<UserAuthToken>.Success(token));
             }
@@ -152,6 +158,7 @@ namespace SCRM.Controllers.Auth
             // Get Client UUID from Header (Validated by Filter)
             string clientUuid = HttpContext.Items["ClientUuid"].ToString();
             string clientIp = HttpContext.Connection.RemoteIpAddress?.ToString();
+            _logger.LogInformation("[HTTP接入] 收到手机登录请求 - IP: {Ip}, RegCode: {RegCode}, IMEI: {BMI}", clientIp, request.regCode, request.imei);
 
             try
             {
@@ -166,7 +173,7 @@ namespace SCRM.Controllers.Auth
                 if (!string.IsNullOrEmpty(clientUuid))
                 {
                     account = await _context.WechatAccounts
-                        .FirstOrDefaultAsync(u => u.ClientUuid == clientUuid && !u.IsDeleted);
+                        .FirstOrDefaultAsync(u => u.clientUuid == clientUuid && !u.isDeleted);
                 }
 
                 // 2. Fallback: Try to find by IMEI (Legacy/Migration)
@@ -176,21 +183,21 @@ namespace SCRM.Controllers.Auth
                     if (request.regCode == "AUTO_REG_CODE")
                     {
                         account = await _context.WechatAccounts
-                            .FirstOrDefaultAsync(u => u.WechatNumber == request.imei && !u.IsDeleted);
+                            .FirstOrDefaultAsync(u => u.wechatNumber == request.imei && !u.isDeleted);
 
                         if (account == null)
                         {
                             // Auto-create new account
                             account = new WechatAccount
                             {
-                                WechatNumber = request.imei,
-                                ClientUuid = clientUuid, // Bind UUID immediately
-                                Nickname = $"{request.hsman} {request.hstype}",
-                                CreatedAt = DateTime.UtcNow,
-                                UpdatedAt = DateTime.UtcNow,
-                                IsActive = true,
-                                Wxid = Guid.NewGuid().ToString("N"),
-                                VipExpiryDate = DateTime.UtcNow.AddDays(7)
+                                wechatNumber = request.imei,
+                                clientUuid = clientUuid, // Bind UUID immediately
+                                nickname = $"{request.hsman} {request.hstype}",
+                                createdAt = DateTime.UtcNow,
+                                updatedAt = DateTime.UtcNow,
+                                isActive = true,
+                                wxid = Guid.NewGuid().ToString("N"),
+                                vipExpiryDate = DateTime.UtcNow.AddDays(7)
                             };
                             _context.WechatAccounts.Add(account);
                             await _context.SaveChangesAsync();
@@ -198,23 +205,23 @@ namespace SCRM.Controllers.Auth
                         else
                         {
                             // Found by IMEI, but UUID was missing or different. Update it.
-                            if (!string.IsNullOrEmpty(clientUuid) && account.ClientUuid != clientUuid)
+                            if (!string.IsNullOrEmpty(clientUuid) && account.clientUuid != clientUuid)
                             {
-                                account.ClientUuid = clientUuid;
+                                account.clientUuid = clientUuid;
                                 await _context.SaveChangesAsync();
                             }
                         }
                     }
                     else
                     {
-                        // Regular Login with RegCode (Wxid)
+                        // Regular Login with RegCode (wxid)
                         account = await _context.WechatAccounts
-                            .FirstOrDefaultAsync(u => u.Wxid == request.regCode && !u.IsDeleted);
+                            .FirstOrDefaultAsync(u => u.wxid == request.regCode && !u.isDeleted);
                         
                         // If found, bind UUID
-                        if (account != null && !string.IsNullOrEmpty(clientUuid) && account.ClientUuid != clientUuid)
+                        if (account != null && !string.IsNullOrEmpty(clientUuid) && account.clientUuid != clientUuid)
                         {
-                            account.ClientUuid = clientUuid;
+                            account.clientUuid = clientUuid;
                             await _context.SaveChangesAsync();
                         }
                     }
@@ -226,15 +233,15 @@ namespace SCRM.Controllers.Auth
                 }
 
                 // Update device info
-                if (account.WechatNumber != request.imei)
+                if (account.wechatNumber != request.imei)
                 {
-                     account.WechatNumber = request.imei;
+                     account.wechatNumber = request.imei;
                 }
-                account.Nickname = $"{request.hsman} {request.hstype}";
-                account.LastOnlineAt = DateTime.UtcNow;
+                account.nickname = $"{request.hsman} {request.hstype}";
+                account.lastOnlineAt = DateTime.UtcNow;
                 
                 // Find or Create SrClient
-                var srClient = await _context.SrClients.Include(c => c.Accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
+                var srClient = await _context.SrClients.Include(c => c.accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
                 if (srClient == null)
                 {
                     srClient = new SrClient
@@ -245,7 +252,7 @@ namespace SCRM.Controllers.Auth
                     _context.SrClients.Add(srClient);
                 }
 
-                srClient.device = new SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage
+                srClient.device = new Jubo.JuLiao.IM.Wx.Proto.PostDeviceInfoNoticeMessage
                 {
                     IMEI = request.imei ?? "",
                     PhoneBrand = request.hsman ?? "",
@@ -255,14 +262,14 @@ namespace SCRM.Controllers.Auth
                 
                 if (!string.IsNullOrEmpty(request.packageName))
                 {
-                    srClient.device.AppInfos.Add(new SCRM.SHARED.Proto.PostDeviceInfoNoticeMessage.Types.DeviceAppInfoMessage
+                    srClient.device.AppInfos.Add(new Jubo.JuLiao.IM.Wx.Proto.PostDeviceInfoNoticeMessage.Types.DeviceAppInfoMessage
                     {
                         PackageName = request.packageName,
                         VerNumber = request.versionCode
                     });
                 }
-                srClient.tcpHost = "192.168.1.226";
-                srClient.tcpPort = 8647;
+                srClient.tcpHost = _nettySettings.Host;
+                srClient.tcpPort = _nettySettings.Port;
                 srClient.updatedAt = DateTime.UtcNow;
                 srClient.ip = clientIp;
                 srClient.lastLoginAt = DateTime.UtcNow;
@@ -270,9 +277,34 @@ namespace SCRM.Controllers.Auth
                 srClient.status = 1;
 
                 // Ensure account is in the list
-                if (!srClient.Accounts.Any(a => a.AccountId == account.AccountId))
+                if (!srClient.accounts.Any(a => a.accountId == account.accountId))
                 {
-                    srClient.Accounts.Add(account);
+                    srClient.accounts.Add(account);
+                }
+
+                // Generate Token
+                ApplicationUser? user = null;
+                if (!string.IsNullOrEmpty(srClient.ownerId))
+                {
+                    user = await _context.Users.FindAsync(srClient.ownerId);
+                }
+                
+                // Fallback: If no owner, try to find by RegCode if it's an email (Legacy)
+                if (user == null && request.regCode.Contains("@"))
+                {
+                     user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.regCode);
+                }
+
+                if (user is SCRM.SHARED.Models.ApplicationUser validUser)
+                {
+                    srClient.token = await _authService.GenerateTokenAsync(validUser);
+                     _logger.LogInformation("[生成Token] Login Success. Token generated for User: {UserId}", validUser.Id);
+                }
+                else
+                {
+                    _logger.LogWarning("[Login] User not found for Client: {ClientUuid}. Token generation skipped.", clientUuid);
+                    // Optional: Create a temporary guest user? Or fail? 
+                    // For now, let's log warning. If Client needs token, this will fail TCP.
                 }
 
                 await _context.SaveChangesAsync();
@@ -316,7 +348,7 @@ namespace SCRM.Controllers.Auth
                 }
 
                 var account = await _context.WechatAccounts
-                    .FirstOrDefaultAsync(u => u.Wxid == request.regCode && !u.IsDeleted);
+                    .FirstOrDefaultAsync(u => u.wxid == request.regCode && !u.isDeleted);
 
                 if (account == null)
                 {
@@ -326,9 +358,9 @@ namespace SCRM.Controllers.Auth
                 var srClient = new SrClient
                 {
                     uuid = "VALIDATION_SUCCESS",
-                    tcpHost = "192.168.1.226",
-                    tcpPort = 8647,
-                    Accounts = new List<WechatAccount> { account }
+                    tcpHost = _nettySettings.Host,
+                    tcpPort = _nettySettings.Port,
+                    accounts = new List<WechatAccount> { account }
                 };
 
                 return Ok(ApiResponse<SrClient>.Success(srClient));

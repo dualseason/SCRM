@@ -1,17 +1,60 @@
-﻿namespace SCRM.API.Models.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 灏忕▼搴忓叧娉ㄤ簨浠舵棩蹇楄〃
+/// 小程序关注事件日志实体
 /// </summary>
+[Table("MiniprogramFollowLogs")]
 public class MiniprogramFollowLog
 {
-    public int Id { get; set; }
-    public int MiniprogramAccountId { get; set; }
-    public string FollowerWxid { get; set; }
-    public int EventType { get; set; }
-    public string EventReason { get; set; }
-    public DateTime EventTime { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    /// <summary>
+    /// 自增 ID
+    /// </summary>
+    [Column("Id")]
+    public int id { get; set; }
+
+    /// <summary>
+    /// 所属小程序 ID
+    /// </summary>
+    [Column("MiniprogramAccountId")]
+    public int miniprogramAccountId { get; set; }
+
+    /// <summary>
+    /// 关注者 WXID
+    /// </summary>
+    [Column("FollowerWxid")]
+    public string followerWxid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 事件类型 (如：关注、取消关注)
+    /// </summary>
+    [Column("EventType")]
+    public int eventType { get; set; }
+
+    /// <summary>
+    /// 事件原因
+    /// </summary>
+    [Column("EventReason")]
+    public string eventReason { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 事件发生时间
+    /// </summary>
+    [Column("EventTime")]
+    public DateTime eventTime { get; set; }
+
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    [Column("CreatedAt")]
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// 更新时间
+    /// </summary>
+    [Column("UpdatedAt")]
+    public DateTime updatedAt { get; set; } = DateTime.UtcNow;
 }
+
 

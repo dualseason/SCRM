@@ -15,12 +15,14 @@ using SCRM.Models.Configurations;
 
 namespace SCRM.Controllers.Auth
 {
+    /// <summary>
+    /// 身份验证控制器
+    /// </summary>
     [ApiController]
     [Route("api/auth")]
     public class AuthController : ControllerBase
     {
         private readonly Microsoft.Extensions.Logging.ILogger<AuthController> _logger;
-
         private readonly ApplicationDbContext _context;
         private readonly AuthService _authService;
         private readonly UserManager<ApplicationUser> _userManager;
@@ -40,92 +42,104 @@ namespace SCRM.Controllers.Auth
             _logger = logger;
         }
 
+        /// <summary>
+        /// 用户登录
+        /// </summary>
+        /// <param name="request">登录请求</param>
+        /// <returns>身份令牌响应</returns>
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
             try
             {
-                if (string.IsNullOrEmpty(request.UserName) || string.IsNullOrEmpty(request.Password))
+                if (string.IsNullOrEmpty(request.userName) || string.IsNullOrEmpty(request.password))
                 {
-                    return BadRequest(new { Message = "用户名和密码不能为空" });
+                    return BadRequest(new { message = "用户名和密码不能为空" });
                 }
 
-                var user = await _userManager.FindByNameAsync(request.UserName);
-                if (user == null || !await _userManager.CheckPasswordAsync(user, request.Password))
+                var user = await _userManager.FindByNameAsync(request.userName);
+                if (user == null || !await _userManager.CheckPasswordAsync(user, request.password))
                 {
-                    return Unauthorized(new { Message = "用户名或密码错误" });
+                    return Unauthorized(new { message = "用户名或密码错误" });
                 }
 
                 var tokenResponse = await _authService.GenerateTokenResponseAsync(user);
                 
-                // Populate TCP Configuration
-                tokenResponse.TcpHost = _nettySettings.Host;
-                tokenResponse.TcpPort = _nettySettings.Port;
+                // 填充 TCP 配置
+                tokenResponse.tcpHost = _nettySettings.Host;
+                tokenResponse.tcpPort = _nettySettings.Port;
 
-                _logger.LogInformation("User {UserName} logged in successfully", request.UserName);
-                return Ok(new { Success = true, Data = tokenResponse });
+                _logger.LogInformation("用户 {UserName} 登录成功", request.userName);
+                return Ok(new { success = true, data = tokenResponse });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during login for user {UserName}", request.UserName);
-                return StatusCode(500, new { Message = "登录过程中发生错误" });
+                _logger.LogError(ex, "用户 {UserName} 登录过程中发生错误", request.userName);
+                return StatusCode(500, new { message = "登录过程中发生错误" });
             }
         }
 
+        /// <summary>
+        /// 刷新身份令牌
+        /// </summary>
+        /// <param name="request">刷新令牌请求</param>
+        /// <returns>新的身份令牌响应</returns>
         [HttpPost("refresh")]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             try
             {
-                if (string.IsNullOrEmpty(request.UserId) || string.IsNullOrEmpty(request.RefreshToken))
+                if (string.IsNullOrEmpty(request.userId) || string.IsNullOrEmpty(request.refreshToken))
                 {
-                    return BadRequest(new { Message = "用户ID和刷新令牌不能为空" });
+                    return BadRequest(new { message = "用户ID和刷新令牌不能为空" });
                 }
 
-                var isValidRefreshToken = _authService.ValidateRefreshTokenAsync(request.UserId, request.RefreshToken);
+                var isValidRefreshToken = _authService.ValidateRefreshTokenAsync(request.userId, request.refreshToken);
                 if (!isValidRefreshToken)
                 {
-                    return Unauthorized(new { Message = "无效的刷新令牌" });
+                    return Unauthorized(new { message = "无效的刷新令牌" });
                 }
 
-                var user = await _userManager.FindByIdAsync(request.UserId);
+                var user = await _userManager.FindByIdAsync(request.userId);
                 if (user == null)
                 {
-                    // Try legacy user
-                    if (long.TryParse(request.UserId, out var legacyUserId))
-                        {
+                    // 尝试旧版用户
+                    if (long.TryParse(request.userId, out var legacyUserId))
+                    {
                         var legacyUser = await _context.LegacyWechatUsers.FirstOrDefaultAsync(u => u.Id == legacyUserId && u.IsActive);
                         if (legacyUser != null)
                         {
-                                var legacyTokenResponse = await _authService.GenerateTokenResponseAsync(legacyUser);
-                                // Populate TCP Configuration
-                                legacyTokenResponse.TcpHost = _nettySettings.Host;
-                                legacyTokenResponse.TcpPort = _nettySettings.Port;
-                                return Ok(new { Success = true, Data = legacyTokenResponse });
+                            var legacyTokenResponse = await _authService.GenerateTokenResponseAsync(legacyUser);
+                            legacyTokenResponse.tcpHost = _nettySettings.Host;
+                            legacyTokenResponse.tcpPort = _nettySettings.Port;
+                            return Ok(new { success = true, data = legacyTokenResponse });
                         }
                     }
-                    return Unauthorized(new { Message = "用户不存在或已被禁用" });
+                    return Unauthorized(new { message = "用户不存在或已被禁用" });
                 }
 
                 var tokenResponse = await _authService.GenerateTokenResponseAsync(user);
                 
-                // Populate TCP Configuration
-                tokenResponse.TcpHost = _nettySettings.Host;
-                tokenResponse.TcpPort = _nettySettings.Port;
+                tokenResponse.tcpHost = _nettySettings.Host;
+                tokenResponse.tcpPort = _nettySettings.Port;
 
-                _logger.LogInformation("Token refreshed for user {UserId}", request.UserId);
-                return Ok(new { Success = true, Data = tokenResponse });
+                _logger.LogInformation("用户 {UserId} 的令牌已刷新", request.userId);
+                return Ok(new { success = true, data = tokenResponse });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during token refresh for user {UserId}", request.UserId);
-                return StatusCode(500, new { Message = "刷新令牌过程中发生错误" });
+                _logger.LogError(ex, "用户 {UserId} 刷新令牌过程中发生错误", request.userId);
+                return StatusCode(500, new { message = "刷新令牌过程中发生错误" });
             }
         }
 
+        /// <summary>
+        /// 退出登录
+        /// </summary>
+        /// <returns>退出结果</returns>
         [HttpPost("logout")]
         [Authorize]
-        public async Task<IActionResult> Logout()
+        public IActionResult Logout()
         {
             try
             {
@@ -133,18 +147,22 @@ namespace SCRM.Controllers.Auth
                 if (userIdClaim != null)
                 {
                     _authService.RevokeRefreshTokenAsync(userIdClaim.Value);
-                    _logger.LogInformation("User {UserId} logged out", userIdClaim.Value);
+                    _logger.LogInformation("用户 {UserId} 已退出登录", userIdClaim.Value);
                 }
 
-                return Ok(new { Success = true, Message = "退出登录成功" });
+                return Ok(new { success = true, message = "退出登录成功" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error during logout");
-                return StatusCode(500, new { Message = "退出登录过程中发生错误" });
+                _logger.LogError(ex, "退出登录时发生错误");
+                return StatusCode(500, new { message = "退出登录过程中发生错误" });
             }
         }
 
+        /// <summary>
+        /// 获取当前用户信息
+        /// </summary>
+        /// <returns>用户信息</returns>
         [HttpGet("profile")]
         [Authorize]
         public async Task<IActionResult> GetProfile()
@@ -154,64 +172,69 @@ namespace SCRM.Controllers.Auth
                 var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
                 if (userIdClaim == null)
                 {
-                    return Unauthorized(new { Message = "无效的用户信息" });
+                    return Unauthorized(new { message = "无效的用户信息" });
                 }
 
                 var user = await _userManager.FindByIdAsync(userIdClaim.Value);
                 if (user != null)
                 {
-                        return Ok(new { Success = true, Data = new {
-                        Id = user.Id,
-                        UserName = user.UserName,
-                        Email = user.Email,
-                        // Add other properties as needed
-                        }});
+                    return Ok(new { success = true, data = new {
+                        id = user.Id,
+                        userName = user.UserName,
+                        email = user.Email,
+                    }});
                 }
 
-                // Legacy fallback
+                // 旧版兼容逻辑
                 if (long.TryParse(userIdClaim.Value, out var userId))
                 {
                     var legacyUser = await _context.WechatAccounts
-                        .Where(u => u.AccountId == userId)
+                        .Where(u => u.accountId == userId)
                         .Select(u => new
                         {
-                            Id = u.AccountId,
-                            UserName = u.Wxid,
-                            Email = (string)null,
-                            FirstName = u.Nickname,
-                            LastName = (string)null,
-                            PhoneNumber = u.MobilePhone,
-                            IsActive = u.IsActive,
-                            LastLoginAt = u.LastOnlineAt,
-                            u.CreatedAt
+                            id = u.accountId,
+                            userName = u.wxid,
+                            email = (string?)null,
+                            firstName = u.nickname,
+                            lastName = (string?)null,
+                            phoneNumber = u.mobilePhone,
+                            isActive = u.isActive,
+                            lastLoginAt = u.lastOnlineAt,
+                            u.createdAt
                         })
                         .FirstOrDefaultAsync();
 
                     if (legacyUser != null)
                     {
-                        return Ok(new { Success = true, Data = legacyUser });
+                        return Ok(new { success = true, data = legacyUser });
                     }
                 }
 
-                return NotFound(new { Message = "用户不存在" });
+                return NotFound(new { message = "用户不存在" });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting user profile");
-                return StatusCode(500, new { Message = "获取用户信息过程中发生错误" });
+                _logger.LogError(ex, "获取用户信息时出错");
+                return StatusCode(500, new { message = "获取用户信息过程中发生错误" });
             }
         }
     }
 
+    /// <summary>
+    /// 登录请求对象
+    /// </summary>
     public class LoginRequest
     {
-        public string UserName { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
+        public string userName { get; set; } = string.Empty;
+        public string password { get; set; } = string.Empty;
     }
 
+    /// <summary>
+    /// 刷新令牌请求对象
+    /// </summary>
     public class RefreshTokenRequest
     {
-        public string UserId { get; set; } = string.Empty;
-        public string RefreshToken { get; set; } = string.Empty;
+        public string userId { get; set; } = string.Empty;
+        public string refreshToken { get; set; } = string.Empty;
     }
 }

@@ -1,0 +1,45 @@
+  正在确定要还原的项目…
+  所有项目均是最新的，无法还原。
+E:\fan\work\code\vs\SCRM\SCRM.API\Controllers\ClientTaskController.cs(4,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Hubs\ClientHub.cs(12,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(3,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Data\ApplicationDbContext.cs(5,7): warning CS0105: “SCRM.SHARED.Models”的 using 指令以前在此命名空间中出现过 [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\NettyMessageService.cs(8,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\MessageRouter.cs(19,7): warning CS0105: “SCRM.API.Models.Entities”的 using 指令以前在此命名空间中出现过 [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\NettyMessageHandler.cs(2,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\ProtobufDecoder.cs(5,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\ProtobufEncoder.cs(5,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(97,145): error CS0246: 未能找到类型或命名空间名“EnumContentType”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(191,131): error CS0246: 未能找到类型或命名空间名“EnumChatRoomAction”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(250,109): error CS0246: 未能找到类型或命名空间名“EnumPhoneAction”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(97,175): error CS0103: 当前上下文中不存在名称“EnumContentType” [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Data\ApplicationDbContext.cs(20,28): warning CS0114: “ApplicationDbContext.Roles”隐藏继承的成员“IdentityDbContext<ApplicationUser, IdentityRole, string, IdentityUserClaim<string>, IdentityUserRole<string>, IdentityUserLogin<string>, IdentityRoleClaim<string>, IdentityUserToken<string>>.Roles”。若要使当前成员重写该实现，请添加关键字 override。否则，添加关键字 new。 [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Data\ApplicationDbContext.cs(22,32): warning CS0114: “ApplicationDbContext.UserRoles”隐藏继承的成员“IdentityDbContext<ApplicationUser, IdentityRole, string, IdentityUserClaim<string>, IdentityUserRole<string>, IdentityUserLogin<string>, IdentityRoleClaim<string>, IdentityUserToken<string>>.UserRoles”。若要使当前成员重写该实现，请添加关键字 override。否则，添加关键字 new。 [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\ProtobufEncoder.cs(13,57): error CS0246: 未能找到类型或命名空间名“TransportMessage”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\ProtobufEncoder.cs(15,72): error CS0246: 未能找到类型或命名空间名“TransportMessage”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+
+生成失败。
+
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Data\ApplicationDbContext.cs(5,7): warning CS0105: “SCRM.SHARED.Models”的 using 指令以前在此命名空间中出现过 [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\MessageRouter.cs(19,7): warning CS0105: “SCRM.API.Models.Entities”的 using 指令以前在此命名空间中出现过 [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Data\ApplicationDbContext.cs(20,28): warning CS0114: “ApplicationDbContext.Roles”隐藏继承的成员“IdentityDbContext<ApplicationUser, IdentityRole, string, IdentityUserClaim<string>, IdentityUserRole<string>, IdentityUserLogin<string>, IdentityRoleClaim<string>, IdentityUserToken<string>>.Roles”。若要使当前成员重写该实现，请添加关键字 override。否则，添加关键字 new。 [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Data\ApplicationDbContext.cs(22,32): warning CS0114: “ApplicationDbContext.UserRoles”隐藏继承的成员“IdentityDbContext<ApplicationUser, IdentityRole, string, IdentityUserClaim<string>, IdentityUserRole<string>, IdentityUserLogin<string>, IdentityRoleClaim<string>, IdentityUserToken<string>>.UserRoles”。若要使当前成员重写该实现，请添加关键字 override。否则，添加关键字 new。 [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Controllers\ClientTaskController.cs(4,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Hubs\ClientHub.cs(12,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(3,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\NettyMessageService.cs(8,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\NettyMessageHandler.cs(2,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\ProtobufDecoder.cs(5,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\ProtobufEncoder.cs(5,19): error CS0234: 命名空间“SCRM.SHARED”中不存在类型或命名空间名“Proto”(是否缺少程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(97,145): error CS0246: 未能找到类型或命名空间名“EnumContentType”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(191,131): error CS0246: 未能找到类型或命名空间名“EnumChatRoomAction”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(250,109): error CS0246: 未能找到类型或命名空间名“EnumPhoneAction”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\ClientTaskService.cs(97,175): error CS0103: 当前上下文中不存在名称“EnumContentType” [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\ProtobufEncoder.cs(13,57): error CS0246: 未能找到类型或命名空间名“TransportMessage”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+E:\fan\work\code\vs\SCRM\SCRM.API\Services\Netty\ProtobufEncoder.cs(15,72): error CS0246: 未能找到类型或命名空间名“TransportMessage”(是否缺少 using 指令或程序集引用?) [E:\fan\work\code\vs\SCRM\SCRM.API\SCRM.API.csproj]
+    4 个警告
+    13 个错误
+
+已用时间 00:00:03.11
+
+有可用的工作负载更新。有关详细信息，请运行 `dotnet workload list`。

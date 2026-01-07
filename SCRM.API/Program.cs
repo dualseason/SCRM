@@ -9,6 +9,7 @@ using SCRM.Services.Events;
 using SCRM.Services;
 using SCRM.Models.Configurations;
 using SCRM.Services.Netty;
+using SCRM.API.Services;
 
 using System.Text;
 using Serilog;
@@ -146,7 +147,7 @@ public partial class Program
                     
                     // Console.WriteLine($"[Auth] Processing Request: {path}, TokenQuery: {accessToken}");
 
-                    if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/hubs") || path.StartsWithSegments("/fileUpload")))
                     {
                         context.Token = accessToken;
                         // Console.WriteLine("[Auth] Token extracted from QueryString for SignalR.");
@@ -183,6 +184,7 @@ public partial class Program
         builder.Services.AddSingleton<NettyServer>();
         builder.Services.AddSingleton<NettyMessageService>();
         builder.Services.AddSingleton<ClientTaskService>();
+        builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
         builder.Services.AddHostedService<NettyMessageService>(provider => provider.GetRequiredService<NettyMessageService>());        
         builder.Services.AddHostedService<EventForwardingService>(); // Forward events to SignalR
@@ -200,8 +202,18 @@ public partial class Program
             });
         });
 
-        builder.Services.AddSignalR();
-        builder.Services.AddControllers();
+        builder.Services.AddSignalR()
+            .AddJsonProtocol(options =>
+            {
+                options.PayloadSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+            });
+        builder.Services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+                options.JsonSerializerOptions.PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase;
+                options.JsonSerializerOptions.PropertyNameCaseInsensitive = true;
+            });
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         builder.Services.AddEndpointsApiExplorer();
         /*

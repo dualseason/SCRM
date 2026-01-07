@@ -112,11 +112,12 @@ namespace SCRM.UI.Services
                 OnTaskResultReceived?.Invoke(dto);
             });
 
-            _hubConnection.On<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>("MomentReceived", (dto) =>
+            _hubConnection.On<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>("MomentTimelineReceived", (dto) =>
             {
                 OnMomentReceived?.Invoke(dto);
             });
 
+            // ... start connection block starts here in original ...
             try
             {
                 await _hubConnection.StartAsync();
@@ -127,6 +128,20 @@ namespace SCRM.UI.Services
             {
                 Console.WriteLine($"SignalR Connection Failed: {ex.Message}");
                 // Consider throwing or handling gracefully
+            }
+        }
+
+        public async Task<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>> GetMomentsTimelineAsync(string deviceUuid, int page = 1)
+        {
+            if (_hubConnection == null || _hubConnection.State != HubConnectionState.Connected) return Enumerable.Empty<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>();
+            try
+            {
+                return await _hubConnection.InvokeAsync<IEnumerable<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>>("GetMomentsTimeline", deviceUuid, page);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Error] GetMomentsTimelineAsync failed: {ex.Message}");
+                return Enumerable.Empty<SCRM.SHARED.Models.Dtos.MomentsTimelineDto>();
             }
         }
 // ... (existing methods omitted for brevity in replace logic, matching indentation)
@@ -517,19 +532,19 @@ namespace SCRM.UI.Services
 
     public class ReceiveMessageDto
     {
-        public string FriendId { get; set; } // 会话窗口ID (Wxid/@chatroom)
-        public string Content { get; set; }  // 消息内容
-        public bool IsSelf { get; set; }     // 是否是自己发出的
-        public long MsgSvrId { get; set; }   // 微信消息服务器ID
-        public bool IsGroup { get; set; }    // 是否群聊
-        public long TaskId { get; set; }     // 任务关联ID
+        public string friendId { get; set; } // 会话窗口ID (Wxid/@chatroom)
+        public string content { get; set; }  // 消息内容
+        public bool isSelf { get; set; }     // 是否是自己发出的
+        public long msgSvrId { get; set; }   // 微信消息服务器ID
+        public bool isGroup { get; set; }    // 是否群聊
+        public long taskId { get; set; }     // 任务关联ID
     }
 
     public class TaskResultDto
     {
-        public long TaskId { get; set; }
-        public bool Success { get; set; }
-        public string Message { get; set; }
-        public string DeviceUuid { get; set; }
+        public long taskId { get; set; }
+        public bool success { get; set; }
+        public string message { get; set; }
+        public string deviceUuid { get; set; }
     }
 }

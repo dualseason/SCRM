@@ -4,89 +4,108 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 用户角色表
+/// 用户角色关联实体类
 /// </summary>
 [Table("user_roles")]
 public class UserRole
 {
+    #region 核心属性
+
     /// <summary>
-    /// 用户角色ID
+    /// 用户角色关联 ID
     /// </summary>
     [Key]
-    public long UserRoleId { get; set; }
+    [Column("UserRoleId")]
+    public long userRoleId { get; set; }
 
     /// <summary>
-    /// 用户账号ID
+    /// 用户账号 ID
     /// </summary>
-    public long AccountId { get; set; }
+    [Column("AccountId")]
+    public long accountId { get; set; }
 
     /// <summary>
-    /// 用户ID 别名 (与 AccountId 相同，用于兼容性)
+    /// 用户 ID 别名 (与 accountId 相同，用于兼容性)
     /// </summary>
-    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-    public long UserId
+    [NotMapped]
+    public long userId
     {
-        get { return AccountId; }
-        set { AccountId = value; }
+        get { return accountId; }
+        set { accountId = value; }
     }
 
     /// <summary>
-    /// 角色ID
+    /// 角色 ID
     /// </summary>
-    public long RoleId { get; set; }
+    [Column("RoleId")]
+    public long roleId { get; set; }
 
     /// <summary>
-    /// 分配者账号ID
+    /// 分配该角色的管理者账号 ID
     /// </summary>
-    public long? AssignedBy { get; set; }
+    [Column("AssignedBy")]
+    public long? assignedBy { get; set; }
 
     /// <summary>
     /// 分配时间
     /// </summary>
-    public DateTime AssignedAt { get; set; }
+    [Column("AssignedAt")]
+    public DateTime assignedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
-    /// 过期时间
+    /// 角色权限过期时间
     /// </summary>
-    public DateTime? ExpiresAt { get; set; }
+    [Column("ExpiresAt")]
+    public DateTime? expiresAt { get; set; }
 
     /// <summary>
-    /// 是否有效
+    /// 此关联是否有效
     /// </summary>
-    public bool IsActive { get; set; }
+    [Column("IsActive")]
+    public bool isActive { get; set; } = true;
 
     /// <summary>
     /// 创建时间
     /// </summary>
-    public DateTime CreatedAt { get; set; }
+    [Column("CreatedAt")]
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
     /// 更新时间
     /// </summary>
-    public DateTime UpdatedAt { get; set; }
+    [Column("UpdatedAt")]
+    public DateTime updatedAt { get; set; } = DateTime.UtcNow;
+
+    #endregion
+
+    #region 导航属性
 
     /// <summary>
-    /// 导航属性：用户账号
+    /// 关联的用户微信账号
     /// </summary>
-    public virtual WechatAccount? Account { get; set; }
+    public virtual WechatAccount? account { get; set; }
 
     /// <summary>
-    /// 导航属性：用户 别名 (与 Account 相同，用于兼容性)
+    /// 用户账号别名 (与 account 相同，用于兼容性)
     /// </summary>
-    [System.ComponentModel.DataAnnotations.Schema.NotMapped]
-    public virtual WechatAccount? User
+    [NotMapped]
+    public virtual WechatAccount? user
     {
-        get { return Account; }
-        set { Account = value; }
+        get { return account; }
+        set { account = value; }
     }
 
     /// <summary>
-    /// 导航属性：角色
+    /// 关联的角色实体
     /// </summary>
-    public virtual Role? Role { get; set; }
+    public virtual Role? role { get; set; }
 
     /// <summary>
-    /// 导航属性：分配者账号
+    /// 分配者所属的微信账号实体
     /// </summary>
-    public virtual WechatAccount? AssignedByAccount { get; set; }
+    public virtual WechatAccount? assignedByAccount { get; set; }
+
+    #endregion
 }
+
+

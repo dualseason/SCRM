@@ -3,62 +3,80 @@
 @using SCRM.API.Models.Entities
 @using SCRM.SHARED.Models
 @using SCRM.SHARED.Models.Dtos
-@using AntDesign
+@using Radzen
+@using Radzen.Blazor
 @inject CrmStore Store
-@inject INotificationService NoticeService
+@inject NotificationService NoticeService
 @implements IDisposable
 
-<PageTitle>Device Management</PageTitle>
+<PageTitle>设备管理</PageTitle>
 
-<Card Title="Connected Devices">
-    <Table DataSource="@Store.Devices" RowKey="x => x.uuid" TItem="SrClient">
-        <Column @bind-Field="@context.uuid" Title="UUID" />
-        <Column @bind-Field="@context.WeChatNick" Title="WeChat Nick" />
-        <Column @bind-Field="@context.isOnline" Title="Status">
-            <Tag Color="@(context.isOnline ? "green" : "red")">
-                @(context.isOnline ? "Online" : "Offline")
-            </Tag>
-        </Column>
-        <Column @bind-Field="@context.lastLoginAt" Title="Last Seen" Format="yyyy-MM-dd HH:mm:ss" />
-        <ActionColumn Title="Action">
-            <Button Type="@AntDesign.ButtonType.Primary" OnClick="()=>SelectDevice(context)">Select</Button>
-        </ActionColumn>
-    </Table>
-</Card>
+<RadzenStack Gap="1rem">
+    <RadzenText TextStyle="TextStyle.H5">设备列表</RadzenText>
+    
+    <RadzenDataList Data="@Store.Devices" TItem="SrClient" AllowPaging="true" PageSize="10" WrapItems="true">
+        <Template Context="device">
+            <RadzenCard Style="width: 100%; max-width: 400px; margin-bottom: 1rem;">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                        @if (!string.IsNullOrEmpty(device.weChatId))
+                        {
+                            <RadzenIcon Icon="wechat" IconColor="@Colors.Success" />
+                            <RadzenText TextStyle="TextStyle.Subtitle2">@device.weChatNick</RadzenText>
+                        }
+                        else
+                        {
+                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color: var(--rz-danger)">未登录</RadzenText>
+                        }
+                    </RadzenStack>
+                    <RadzenBadge BadgeStyle="@(device.isOnline ? BadgeStyle.Success : BadgeStyle.Danger)" Text="@(device.isOnline ? "在线" : "离线")" />
+                </RadzenStack>
+                
+                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color); margin-top: 0.5rem;">UUID: @device.uuid</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color)">在线时间: @(device.lastLoginAt?.ToString("yyyy-MM-dd HH:mm:ss"))</RadzenText>
+
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Style="margin-top: 1rem;">
+                    <RadzenButton Text="管理" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@(() => SelectDevice(device))" />
+                    <RadzenButton Icon="camera_alt" Text="截屏" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(() => CaptureScreen(device))" />
+                </RadzenStack>
+            </RadzenCard>
+        </Template>
+    </RadzenDataList>
+</RadzenStack>
 
 @if(Store.SelectedDevice != null) {
-  <Card Title="@($"Control: {Store.SelectedDevice.WeChatNick ?? "Unknown"}")" Style="margin-top: 20px;">
-       <Space>
-           <SpaceItem>
-               <Button Type="@AntDesign.ButtonType.Primary" OnClick="Store.RequestScreenShotAsync">Capture Screen</Button>
-           </SpaceItem>
-           <SpaceItem>
-               <Button OnClick="Store.SyncContactsAsync">Sync Contacts</Button>
-           </SpaceItem>
-       </Space>
-       
-       <Divider />
+  <RadzenCard Style="margin-top: 20px;">
+       <RadzenText TextStyle="TextStyle.H6">设备控制: @(Store.SelectedDevice.weChatNick ?? "未登录")</RadzenText>
+       <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Style="margin-top: 1rem;">
+           <RadzenButton Icon="camera_alt" Text="截屏" ButtonStyle="ButtonStyle.Primary" Click="@(() => CaptureScreen(Store.SelectedDevice))" />
+           <RadzenButton Icon="sync" Text="同步联系人" ButtonStyle="ButtonStyle.Secondary" Click="@Store.SyncContactsAsync" />
+       </RadzenStack>
        
        @if(!string.IsNullOrEmpty(Store.LastScreenShotUrl)) {
-           <div style="margin-top:10px;">
-               <p>Last Screenshot:</p>
-               <Image Src="@Store.LastScreenShotUrl" Width="300" />
+           <div style="margin-top:1rem;">
+               <RadzenText TextStyle="TextStyle.Subtitle2">最新截屏:</RadzenText>
+               <RadzenImage Path="@Store.LastScreenShotUrl" Style="width: 100%; max-width: 300px; margin-top: 0.5rem; border: 1px solid #eee;" />
            </div>
        }
-  </Card>
+  </RadzenCard>
 }
 
 @code {
     protected override async Task OnInitializedAsync()
     {
-        Store.OnChange += async () => await InvokeAsync(StateHasChanged);
-        Store.OnNotification += async (msg, success) => await InvokeAsync(() => HandleNotification(msg, success));
+        Store.OnChange += HandleChange;
+        Store.OnNotification += HandleNotification;
         await Store.InitializeAsync();
+    }
+
+    private async void HandleChange()
+    {
+        await InvokeAsync(StateHasChanged);
     }
 
     public void Dispose()
     {
-        Store.OnChange -= StateHasChanged;
+        Store.OnChange -= HandleChange;
         Store.OnNotification -= HandleNotification;
     }
 
@@ -66,14 +84,26 @@
     {
         _ = Store.SelectDeviceAsync(dev);
     }
+
+    private async Task CaptureScreen(SrClient dev)
+    {
+        if (Store.SelectedDevice?.uuid != dev.uuid)
+        {
+            await Store.SelectDeviceAsync(dev);
+        }
+        await Store.RequestScreenShotAsync();
+    }
     
     private void HandleNotification(string msg, bool success)
     {
-        NoticeService.Open(new NotificationConfig()
-        {
-            Message = success ? "Success" : "Error",
-            Description = msg,
-            NotificationType = success ? AntDesign.NotificationType.Success : AntDesign.NotificationType.Error
+        _ = InvokeAsync(() => {
+            NoticeService.Notify(new NotificationMessage
+            {
+                Severity = success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                Summary = success ? "成功" : "错误",
+                Detail = msg,
+                Duration = 4000
+            });
         });
     }
 }

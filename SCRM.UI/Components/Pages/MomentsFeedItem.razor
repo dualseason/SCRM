@@ -1,17 +1,18 @@
 @using SCRM.API.Models.Entities
 @using SCRM.SHARED.Models
-@using AntDesign
+@using Radzen
+@using Radzen.Blazor
 
-<Card Bordered="false" Style="margin-bottom: 20px; border-radius: 8px;">
+<RadzenCard Style="margin-bottom: 20px; border-radius: 8px;">
     <div style="display: flex;">
-        <Avatar Size="@("large")" Icon="user" Src="@(string.IsNullOrEmpty(Moment.UserName) ? "" : "")" Style="background-color: #87d068; flex-shrink: 0;" />
+        <RadzenImage Path="@(string.IsNullOrEmpty(Moment.userName) ? "" : "")" Style="width: 50px; height: 50px; background-color: #87d068; flex-shrink: 0; border-radius: 50%;" />
         <div style="margin-left: 15px; flex: 1;">
             <div style="font-weight: bold; color: #576b95; margin-bottom: 5px;">
-                @(string.IsNullOrEmpty(Moment.NickName) ? Moment.UserName : Moment.NickName)
+                @(string.IsNullOrEmpty(Moment.nickName) ? Moment.userName : Moment.nickName)
             </div>
             
             <div style="font-size: 15px; margin-bottom: 10px; white-space: pre-wrap;">
-                @Moment.Content
+                @Moment.content
             </div>
 
             <!-- Images Grid -->
@@ -21,18 +22,39 @@
                     @foreach (var img in Images)
                     {
                         <div class="image-item">
-                            <Image Src="@img" Width="100%" Height="100%" Style="object-fit: cover;" />
+                            <RadzenImage Path="@img" Style="width: 100%; height: 100%; object-fit: cover;" Click="(args) => OpenImage(img)" />
                         </div>
                     }
                 </div>
             }
 
+            <!-- Video -->
+            @if (!string.IsNullOrEmpty(VideoUrl))
+            {
+                <div style="margin-top: 10px; max-width: 300px;">
+                    <video controls src="@VideoUrl" style="width: 100%; border-radius: 4px; background: #000;"></video>
+                </div>
+            }
+
+            <!-- Link Card -->
+            @if (Link != null)
+            {
+                 <div style="margin-top: 10px; background: #f2f2f2; padding: 5px; display: flex; align-items: center; border-radius: 4px; cursor: pointer;" onclick="window.open('@Link.url', '_blank')">
+                     <div style="width: 40px; height: 40px; background: #ddd; margin-right: 10px;">
+                         <img src="@Link.thumb" style="width: 100%; height: 100%; object-fit: cover;" />
+                     </div>
+                     <div style="flex: 1; font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                         @Link.title
+                     </div>
+                 </div>
+            }
+
             <div style="margin-top: 10px; color: #999; font-size: 12px; display: flex; justify-content: space-between;">
-                <span>@GetTimeAgo(Moment.CreateTime)</span>
+                <span>@GetTimeAgo(Moment.createTime)</span>
                 <!-- Actions -->
                 <div>
-                     <Icon Type="message" Theme="@AntDesign.IconThemeType.Outline" />
-                     <Icon Type="heart" Theme="@AntDesign.IconThemeType.Outline" Style="margin-left: 15px;" />
+                     <RadzenIcon Icon="chat_bubble_outline" Style="cursor: pointer;" />
+                     <RadzenIcon Icon="favorite_border" Style="margin-left: 15px; cursor: pointer;" />
                 </div>
             </div>
 
@@ -43,21 +65,21 @@
                      @if(Likes.Any())
                      {
                          <div style="color: #576b95; font-size: 12px; margin-bottom: 5px;">
-                             <Icon Type="heart" Theme="@AntDesign.IconThemeType.Outline" /> @string.Join(", ", Likes.Select(l => l.NickName))
+                             <RadzenIcon Icon="favorite_border" Style="font-size: 12px; vertical-align: middle;" /> @string.Join(", ", Likes.Select(l => l.nickName))
                          </div>
                      }
                      
                      @foreach(var c in Comments)
                      {
                          <div style="font-size: 12px;">
-                             <span style="color: #576b95; font-weight: bold;">@c.AuthorName:</span> @c.Content
+                             <span style="color: #576b95; font-weight: bold;">@c.authorName:</span> @c.content
                          </div>
                      }
                  </div>
             }
         </div>
     </div>
-</Card>
+</RadzenCard>
 
 <style>
     .moments-images-grid {
@@ -79,6 +101,8 @@
     public MomentsTimeline Moment { get; set; }
 
     private List<string> Images = new();
+    private string VideoUrl;
+    private SCRM.SHARED.Models.Dtos.MomentLinkDto Link;
     private List<SCRM.SHARED.Models.Dtos.MomentCommentDto> Comments = new();
     private List<SCRM.SHARED.Models.Dtos.MomentLikeDto> Likes = new();
 
@@ -88,14 +112,19 @@
         {
             try
             {
-                if (!string.IsNullOrEmpty(Moment.ImagesJson))
-                    Images = System.Text.Json.JsonSerializer.Deserialize<List<string>>(Moment.ImagesJson) ?? new();
+                if (!string.IsNullOrEmpty(Moment.imagesJson))
+                    Images = System.Text.Json.JsonSerializer.Deserialize<List<string>>(Moment.imagesJson) ?? new();
                 
-                if (!string.IsNullOrEmpty(Moment.CommentsJson))
-                    Comments = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentCommentDto>>(Moment.CommentsJson) ?? new();
+                VideoUrl = Moment.videoUrl;
+
+                if (!string.IsNullOrEmpty(Moment.linkInfoJson))
+                     Link = System.Text.Json.JsonSerializer.Deserialize<SCRM.SHARED.Models.Dtos.MomentLinkDto>(Moment.linkInfoJson);
+
+                if (!string.IsNullOrEmpty(Moment.commentsJson))
+                    Comments = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentCommentDto>>(Moment.commentsJson) ?? new();
                 
-                if (!string.IsNullOrEmpty(Moment.LikesJson))
-                    Likes = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(Moment.LikesJson) ?? new();
+                if (!string.IsNullOrEmpty(Moment.likesJson))
+                    Likes = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(Moment.likesJson) ?? new();
             }
             catch
             {
@@ -106,18 +135,17 @@
 
     private string GetTimeAgo(long timestamp)
     {
-        // Simple formatter
-        var dt = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp); // Assuming seconds? Or Ticks?
-        // Wait, Ticks usually means .NET Ticks. But WeChat typically uses seconds.
-        // Let's assume seconds if < 10000000000, else Ticks.
-        // My entity uses CreateTime. If it comes from WeChat, it's likely seconds.
-        // If I write DateTime.UtcNow.Ticks, it is huge.
-        // Let's assume it is seconds for now as is standard for unix timestamp.
-        if (timestamp > 3000000000L) // More than year 2065 in seconds, must be ticks or ms
+        var dt = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timestamp);
+        if (timestamp > 3000000000L) // Support ms/ticks if needed
         {
-             dt = new DateTime(timestamp); // Ticks
+             dt = new DateTime(timestamp); 
         }
         
         return dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
+    }
+
+    private void OpenImage(string src)
+    {
+        // Placeholder for potentially opening a lightbox
     }
 }

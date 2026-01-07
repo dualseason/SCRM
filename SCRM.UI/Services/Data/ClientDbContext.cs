@@ -33,7 +33,7 @@ namespace SCRM.UI.Services.Data
             // On client side, we don't need the Owner (ApplicationUser) relationship.
             modelBuilder.Ignore<ApplicationUser>();
             modelBuilder.Ignore<SrClient>();
-            modelBuilder.Entity<WechatAccount>().Ignore(w => w.Owner);
+            modelBuilder.Entity<WechatAccount>().Ignore(w => w.owner);
         }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)

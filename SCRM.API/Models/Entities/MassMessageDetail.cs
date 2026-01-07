@@ -1,18 +1,66 @@
-﻿namespace SCRM.API.Models.Entities;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+
+namespace SCRM.API.Models.Entities;
 
 /// <summary>
-/// 缇ゅ彂娑堟伅璇︽儏琛?
+/// 群发消息明细实体
 /// </summary>
+[Table("MassMessageDetails")]
 public class MassMessageDetail
 {
-    public int Id { get; set; }
-    public int MassMessageId { get; set; }
-    public string RecipientWxid { get; set; }
-    public int SendStatus { get; set; }
-    public string ErrorMessage { get; set; }
-    public int RetryCount { get; set; }
-    public DateTime SentTime { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime UpdatedAt { get; set; }
+    /// <summary>
+    /// 自增 ID
+    /// </summary>
+    [Column("Id")]
+    public int id { get; set; }
+
+    /// <summary>
+    /// 所属群发消息 ID
+    /// </summary>
+    [Column("MassMessageId")]
+    public int massMessageId { get; set; }
+
+    /// <summary>
+    /// 接收者 WXID
+    /// </summary>
+    [Column("RecipientWxid")]
+    public string recipientWxid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 发送状态
+    /// </summary>
+    [Column("SendStatus")]
+    public int sendStatus { get; set; }
+
+    /// <summary>
+    /// 错误信息
+    /// </summary>
+    [Column("ErrorMessage")]
+    public string errorMessage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 重试次数
+    /// </summary>
+    [Column("RetryCount")]
+    public int retryCount { get; set; }
+
+    /// <summary>
+    /// 发送时间
+    /// </summary>
+    [Column("SentTime")]
+    public DateTime sentTime { get; set; }
+
+    /// <summary>
+    /// 创建时间
+    /// </summary>
+    [Column("CreatedAt")]
+    public DateTime createdAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// 更新时间
+    /// </summary>
+    [Column("UpdatedAt")]
+    public DateTime updatedAt { get; set; } = DateTime.UtcNow;
 }
+
 
