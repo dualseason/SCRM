@@ -55,6 +55,13 @@ public class SrClient : ICacheable<SrClient>
     public bool isOnline { get; set; }
 
     /// <summary>
+    /// 设备专属配置 (JSON格式)
+    /// 用于覆盖全局默认配置
+    /// </summary>
+    [Column("custom_configs", TypeName = "jsonb")]
+    public string? customConfigs { get; set; }
+
+    /// <summary>
     /// 设备状态
     /// </summary>
     [Column("status")]
