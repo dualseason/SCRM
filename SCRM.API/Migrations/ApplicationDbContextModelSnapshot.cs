@@ -2837,6 +2837,10 @@ namespace SCRM.API.Migrations
                         .HasColumnName("created_at")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
+                    b.Property<string>("customConfigs")
+                        .HasColumnType("jsonb")
+                        .HasColumnName("custom_configs");
+
                     b.Property<string>("device")
                         .IsRequired()
                         .HasColumnType("jsonb")
@@ -3505,6 +3509,17 @@ namespace SCRM.API.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SCRM.API.Models.Entities.Contact", b =>
+                {
+                    b.HasOne("SCRM.API.Models.Entities.WechatAccount", "Account")
+                        .WithMany()
+                        .HasForeignKey("wechatAccountId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Account");
+                });
+
             modelBuilder.Entity("SCRM.API.Models.Entities.LegacyWechatUser", b =>
                 {
                     b.HasOne("SCRM.API.Models.Entities.WechatAccount", "WechatAccount")
@@ -3600,13 +3615,15 @@ namespace SCRM.API.Migrations
 
             modelBuilder.Entity("SCRM.API.Models.Entities.WechatAccount", b =>
                 {
-                    b.HasOne("SCRM.API.Models.Entities.SrClient", null)
+                    b.HasOne("SCRM.API.Models.Entities.SrClient", "Client")
                         .WithMany("accounts")
                         .HasForeignKey("clientUuid");
 
                     b.HasOne("SCRM.SHARED.Models.ApplicationUser", "owner")
                         .WithMany("WechatAccounts")
                         .HasForeignKey("ownerId");
+
+                    b.Navigation("Client");
 
                     b.Navigation("owner");
                 });

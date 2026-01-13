@@ -132,11 +132,14 @@ public class SrClient : ICacheable<SrClient>
     [Column("updated_at")]
     public DateTime updatedAt { get; set; } = DateTime.UtcNow;
 
+
     /// <summary>
     /// 鉴权 Token (非持久化)
     /// </summary>
     [NotMapped]
     public string? token { get; set; }
+
+
 
     public string GetId() => uuid;
 

@@ -13,13 +13,17 @@
              <div style="position: relative; display: inline-block;">
                 @if(!string.IsNullOrEmpty(srClient.weChatAvatar))
                 {
-                    <RadzenImage Path="@srClient.weChatAvatar" Style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;" />
+                    <RadzenImage Path="@srClient.weChatAvatar" Style="@($"width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid {(srClient.isOnline ? "#52c41a" : "#d9d9d9")}; padding: 2px;")" />
                 }
                 else
                 {
-                    <RadzenIcon Icon="smartphone" Style="font-size: 24px; width: 40px; height: 40px; background-color: #d9d9d9; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white;" />
+                    <RadzenIcon Icon="smartphone" Style="@($"font-size: 24px; width: 40px; height: 40px; background-color: #d9d9d9; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; border: 2px solid {(srClient.isOnline ? "#52c41a" : "#d9d9d9")};")" />
                 }
-                <span style="position: absolute; bottom: 0; right: 0; width: 10px; height: 10px; border-radius: 50%; border: 2px solid white; background-color: @(srClient.isOnline ? "#52c41a" : "#bfbfbf");"></span>
+                <!-- Task: WeChat Login Status Dot -->
+                @{
+                    bool isWeChatOnline = srClient.accounts != null && srClient.accounts.Any(a => a.accountStatus == 1);
+                }
+                <span style="position: absolute; bottom: 0; right: 0; width: 12px; height: 12px; border-radius: 50%; border: 2px solid white; background-color: @(isWeChatOnline ? "#52c41a" : "#ff4d4f");" title="@(isWeChatOnline ? "WeChat Online" : "WeChat Offline")"></span>
              </div>
              <div style="font-size: 10px; color: #666; margin-top: 5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 5px;">
                 @(!string.IsNullOrEmpty(srClient.device?.PhoneModel) ? srClient.device.PhoneModel : (srClient.device?.PhoneBrand ?? "Device"))

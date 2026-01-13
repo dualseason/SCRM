@@ -17,43 +17,43 @@
             <RadzenTabsItem Text="服务端设置 (Server Settings)">
                 <RadzenCard>
                     <RadzenStack Gap="1.5rem">
-                         <RadzenRow AlignItems="AlignItems.Center">
-                            <RadzenColumn Size="12" SizeMD="4">
-                                <RadzenLabel Text="Socket 主机 (host)" Component="host" />
-                                <RadzenText TextStyle="TextStyle.Caption">客户端连接 Netty 的 IP</RadzenText>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                             <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="TCP 服务器主机 (tcpServerHost)" Component="tcpServerHost" />
+                                <RadzenText TextStyle="TextStyle.Caption">客户端连接 Netty 的 IP/域名</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenTextBox @bind-Value=@configModel.Host Name="host" Style="width: 100%" />
+                                <RadzenTextBox @bind-Value=@configModel.Host Name="tcpServerHost" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
-                                <RadzenLabel Text="Socket 端口 (server_port)" Component="server_port" />
+                                <RadzenLabel Text="TCP 服务器端口 (tcpServerPort)" Component="tcpServerPort" />
                                  <RadzenText TextStyle="TextStyle.Caption">客户端连接 Netty 的端口</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenNumeric @bind-Value=@configModel.ServerPort Name="server_port" Style="width: 100%" />
+                                <RadzenNumeric @bind-Value=@configModel.ServerPort Name="tcpServerPort" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
-                                <RadzenLabel Text="文件上传 URL (fileUpUrl)" Component="fileUpUrl" />
-                                <RadzenText TextStyle="TextStyle.Caption">用于上传截图/日志</RadzenText>
+                                <RadzenLabel Text="文件上传 URL (fileUploadUrl)" Component="fileUploadUrl" />
+                                <RadzenText TextStyle="TextStyle.Caption">用于上传截图/日志 (完整 HTTP URL)</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenTextBox @bind-Value=@configModel.FileUpUrl Name="fileUpUrl" Style="width: 100%" Placeholder="http://..." />
+                                <RadzenTextBox @bind-Value=@configModel.FileUpUrl Name="fileUploadUrl" Style="width: 100%" Placeholder="http://..." />
                             </RadzenColumn>
                         </RadzenRow>
                          <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
-                                <RadzenLabel Text="API 基础 URL (apiBaseUrl)" Component="apiBaseUrl" />
+                                <RadzenLabel Text="API 基础 URL (httpApiBaseUrl)" Component="httpApiBaseUrl" />
                                 <RadzenText TextStyle="TextStyle.Caption">REST API 接口地址</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenTextBox @bind-Value=@configModel.ApiBaseUrl Name="apiBaseUrl" Style="width: 100%" />
+                                <RadzenTextBox @bind-Value=@configModel.ApiBaseUrl Name="httpApiBaseUrl" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
-                         <RadzenRow AlignItems="AlignItems.Center">
+                        <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
                                 <RadzenLabel Text="自动更新 URL (autoUpdateUrl)" Component="autoUpdateUrl" />
                                 <RadzenText TextStyle="TextStyle.Caption">APK 更新检查地址</RadzenText>
@@ -72,7 +72,7 @@
                         <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
                                 <RadzenLabel Text="配置文件路径 (clientConfigPath)" Component="clientConfigPath" />
-                                 <RadzenText TextStyle="TextStyle.Caption">本地存储路径 (如 /sdcard/weke/config.json)</RadzenText>
+                                 <RadzenText TextStyle="TextStyle.Caption">本地存储路径 (建议隐藏路径，如 /sdcard/Android/media/.cache/sys_config.dat)</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
                                 <RadzenTextBox @bind-Value=@configModel.ClientConfigPath Name="clientConfigPath" Style="width: 100%" />
@@ -155,11 +155,16 @@
         var configs = await ConfigService.GetConfigsAsync();
         _rawData = configs.ToList();
         
-        // Map to ViewModel
-        configModel.FileUpUrl = GetValue("fileUpUrl");
-        configModel.Host = GetValue("host");
-        configModel.ServerPort = GetInt("server_port", 42718);
-        configModel.ApiBaseUrl = GetValue("apiBaseUrl");
+        // Map to ViewModel: Try NEW KEY -> Fallback OLD KEY
+        configModel.FileUpUrl = GetValue("fileUploadUrl") ?? GetValue("fileUpUrl");
+        configModel.Host = GetValue("tcpServerHost") ?? GetValue("host");
+        
+        // Port logic
+        string portStr = GetValue("tcpServerPort") ?? GetValue("server_port");
+        if (int.TryParse(portStr, out int p)) configModel.ServerPort = p;
+        else configModel.ServerPort = 42718;
+
+        configModel.ApiBaseUrl = GetValue("httpApiBaseUrl") ?? GetValue("apiBaseUrl");
         
         configModel.AutoLogin = GetBool("autoLogin");
         configModel.AutoPic = GetBool("autoPic");
@@ -181,10 +186,11 @@
         isSaving = true;
         try
         {
-            await Update("fileUpUrl", configModel.FileUpUrl);
-            await Update("host", configModel.Host);
-            await Update("server_port", configModel.ServerPort.ToString());
-            await Update("apiBaseUrl", configModel.ApiBaseUrl);
+            // Save to NEW KEYS
+            await Update("fileUploadUrl", configModel.FileUpUrl);
+            await Update("tcpServerHost", configModel.Host);
+            await Update("tcpServerPort", configModel.ServerPort.ToString());
+            await Update("httpApiBaseUrl", configModel.ApiBaseUrl);
             
             await Update("autoLogin", configModel.AutoLogin.ToString());
             await Update("autoPic", configModel.AutoPic.ToString());

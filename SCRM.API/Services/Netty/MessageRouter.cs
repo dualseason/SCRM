@@ -1,5 +1,6 @@
 using Jubo.JuLiao.IM.Wx.Proto;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading.Tasks;
 using DotNetty.Transport.Channels;
@@ -459,15 +460,36 @@ namespace SCRM.Services.Netty
 
                 await context.WriteAndFlushAsync(response);
 
+
                 // --- 3. [Early Config Push] (TCP Based) ---
                 try 
                 {
                     _logger.LogInformation("[Config] Pushing early configuration via TCP...");
                     var nettySettings = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<NettySettings>>().Value;
                     
-                    // Fetch configs from DB
+                    // 1. Fetch Global Configs from DB
                     var configs = await dbContext.SystemConfigs.ToListAsync();
                     var configMap = configs.ToDictionary(c => c.key, c => c.value);
+
+                    // 2. Fetch Device Specific Configs (SrClient)
+                    Dictionary<string, string> deviceConfigs = new Dictionary<string, string>();
+                    if (!string.IsNullOrEmpty(account.clientUuid))
+                    {
+                        var srClient = await dbContext.SrClients.FirstOrDefaultAsync(c => c.uuid == account.clientUuid);
+                        if (srClient != null && !string.IsNullOrEmpty(srClient.customConfigs))
+                        {
+                            try 
+                            {
+                                var temp = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(srClient.customConfigs);
+                                if (temp != null) deviceConfigs = temp;
+                                _logger.LogInformation("[Config] Loaded {Count} device specific configs for {Uuid}", deviceConfigs.Count, account.clientUuid);
+                            }
+                            catch(Exception ex) 
+                            {
+                                _logger.LogWarning("[Config] Failed to parse customConfigs for client {Uuid}: {Ex}", account.clientUuid, ex.Message);
+                            }
+                        }
+                    }
 
                     string token = "";
                     if (authReq.AuthType == DeviceAuthReqMessage.Types.EnumAuthType.InternalCode && !string.IsNullOrEmpty(credential) && credential.Contains("|"))
@@ -475,46 +497,58 @@ namespace SCRM.Services.Netty
                         token = credential.Split('|')[0];
                     }
 
-                    // Prepare Dictionaries
+                    // Prepare Dictionaries to Send
                     var strConfs = new Dictionary<string, string>();
                     var boolConfs = new Dictionary<string, bool>();
                     var intConfs = new Dictionary<string, int>();
 
-                    // 1. Handle fileUpUrl (Fallback if not in DB)
-                    if (configMap.TryGetValue("fileUpUrl", out string? fileUpUrl))
+                    // --- Helper: Get Config with Merge Logic (Device > Global > Default) ---
+                    string GetConf(string key, string defVal) 
                     {
-                        strConfs["fileUpUrl"] = fileUpUrl;
-                    }
-                    else
-                    {
-                        strConfs["fileUpUrl"] = $"http://{nettySettings.Host}:{nettySettings.HttpPort}/fileUpload?access_token={token}";
+                        if (deviceConfigs.TryGetValue(key, out string? val) && !string.IsNullOrEmpty(val)) return val;
+                        if (configMap.TryGetValue(key, out val) && !string.IsNullOrEmpty(val)) return val;
+                        return defVal;
                     }
 
-                    // 2. Map other known keys
-                    // Strings
-                    foreach(var key in new[] { "host", "portstr", "clientConfigPath", "logLevel", "apiBaseUrl", "autoUpdateUrl" })
+                    // 3. Map Core Network Configs (New Keys)
+                    // Defaults
+                    string defHost = nettySettings.Host;
+                    string defPort = nettySettings.Port.ToString();
+                    string defFileUp = $"http://{nettySettings.Host}:{nettySettings.HttpPort}/fileUpload?access_token={token}";
+                    string defApiBase = $"http://{nettySettings.Host}:{nettySettings.HttpPort}/api";
+
+                    // Host & Port
+                    strConfs["tcpServerHost"] = GetConf("tcpServerHost", GetConf("host", defHost)); // Support legacy 'host' override
+                    strConfs["tcpServerPort"] = GetConf("tcpServerPort", GetConf("server_port", defPort)); 
+
+                    // HTTP URLs
+                    strConfs["fileUploadUrl"] = GetConf("fileUploadUrl", GetConf("fileUpUrl", defFileUp));
+                    strConfs["httpApiBaseUrl"] = GetConf("httpApiBaseUrl", GetConf("apiBaseUrl", defApiBase));
+
+                    // 4. Map other keys (Auto-Merge)
+                    // List of all other keys we support
+                    var stringKeys = new[] { "clientConfigPath", "logLevel", "autoUpdateUrl" };
+                    foreach(var key in stringKeys) strConfs[key] = GetConf(key, "");
+
+                    var boolKeys = new[] { "autoLogin", "autoPic", "fastSend", "silentFunc", "forceRun" };
+                    foreach(var key in boolKeys) 
                     {
-                        if (configMap.TryGetValue(key, out string? val)) strConfs[key] = val;
+                        string val = GetConf(key, "");
+                        if (bool.TryParse(val, out bool bVal)) boolConfs[key] = bVal;
                     }
 
-                    // Bools
-                    foreach(var key in new[] { "autoLogin", "autoPic", "fastSend", "silentFunc", "forceRun" })
+                    var intKeys = new[] { "keepWake" }; // server_port handled above
+                    foreach(var key in intKeys) 
                     {
-                        if (configMap.TryGetValue(key, out string? val) && bool.TryParse(val, out bool bVal)) 
-                            boolConfs[key] = bVal;
-                    }
-
-                    // Ints
-                    foreach(var key in new[] { "keepWake", "server_port" })
-                    {
-                        if (configMap.TryGetValue(key, out string? val) && int.TryParse(val, out int iVal)) 
-                            intConfs[key] = iVal;
+                         string val = GetConf(key, "");
+                         if (int.TryParse(val, out int iVal)) intConfs[key] = iVal;
                     }
                     
                     // Uses existing SetConfigTask (1382) which handles key-value pairs
                     await _clientTaskService.SendSetConfigTaskAsync(context.Channel.Id.AsLongText(), boolConfs, intConfs, strConfs);
-                    _logger.LogInformation("[Config] Pushed configuration. Keys: {Keys}", string.Join(",", strConfs.Keys.Concat(boolConfs.Keys).Concat(intConfs.Keys)));
+                    _logger.LogInformation("[Config] Pushed configuration. tcpHost={H}, tcpPort={P}, fileUp={F}", strConfs["tcpServerHost"], strConfs["tcpServerPort"], strConfs["fileUploadUrl"]);
                 }
+
 
                 catch (Exception ex)
                 {
