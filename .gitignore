@@ -264,3 +264,6 @@ azure-pipelines.yml
 secrets.json
 *.md
 doc/
+*.txt
+.agent/
+.vs/

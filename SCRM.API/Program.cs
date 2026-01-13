@@ -18,6 +18,8 @@ using SCRM.Shared.Core;
 using SCRM.API.Hubs;
 using Microsoft.AspNetCore.Identity;
 using SCRM.SHARED.Models;
+using SCRM.Shared.Interfaces;
+using SCRM.API.Services;
 
 public partial class Program
 {
@@ -186,6 +188,19 @@ public partial class Program
         builder.Services.AddSingleton<ClientTaskService>();
         builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
+        // Blazor Server Services
+        builder.Services.AddRazorPages();
+        builder.Services.AddServerSideBlazor();
+        builder.Services.AddScoped<SCRM.UI.Services.CrmStore>(); // Required for Blazor Server Injection
+
+        // SCRM Architecture v5 Services (Skeleton)
+        builder.Services.AddScoped<ICrmService, CrmService>();
+        // Event Aggregator must be Singleton to share state
+        builder.Services.AddSingleton<CrmEventAggregator>();
+        builder.Services.AddSingleton<ICrmEvents>(sp => sp.GetRequiredService<CrmEventAggregator>());
+        builder.Services.AddSingleton<ICrmEventPublisher>(sp => sp.GetRequiredService<CrmEventAggregator>());
+
+
         builder.Services.AddHostedService<NettyMessageService>(provider => provider.GetRequiredService<NettyMessageService>());        
         builder.Services.AddHostedService<EventForwardingService>(); // Forward events to SignalR
         builder.Services.AddHostedService<SCRM.Services.Automation.AutomationService>(); // C&C Automation (Auto-Reply, etc.)
@@ -280,10 +295,11 @@ public partial class Program
             // app.UseSwaggerUI();
             
             // Redirect root to Swagger UI -- DISABLED
-            app.MapGet("/", async context =>
-            {
-                await context.Response.WriteAsync("SCRM API Running");
-            });
+            // Redirect root to Swagger UI -- DISABLED
+            // app.MapGet("/", async context =>
+            // {
+            //     await context.Response.WriteAsync("SCRM API Running");
+            // });
         }
 
         // Enable CORS
@@ -310,6 +326,8 @@ public partial class Program
             app.UseStaticFiles(); 
         }
 
+        app.UseRouting();
+
         // Add Health Check middleware
         app.UseMiddleware<HealthCheckMiddleware>();
 
@@ -328,6 +346,10 @@ public partial class Program
         
         // Map SignalR Hubs
         app.MapHub<ClientHub>("/hubs/client");
+        
+        // Map Blazor Hub (Architecture v5)
+        app.MapBlazorHub();
+        app.MapFallbackToPage("/_Host");
 
         // Initialize Seed Data
         using (var scope = app.Services.CreateScope())
