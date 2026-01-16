@@ -270,3 +270,4 @@ secrets.json
 *.md
 /tmpclaude*tmpclaude-*/
 tmp*/
+/tmpclaude*
