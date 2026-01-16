@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
 using SCRM.Services.Data;
 using SCRM.Services;
+using SCRM.API.Services.Core;
 using System;
 using System.Collections.Generic;
 using System.Linq;

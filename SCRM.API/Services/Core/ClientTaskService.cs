@@ -5,9 +5,19 @@ using SCRM.Services;
 using System;
 using System.Threading.Tasks;
 
-namespace SCRM.Services
+namespace SCRM.API.Services.Core
 {
 
+    /// <summary>
+    /// 客户端任务服务
+    /// <para>负责向客户端(手机端)发送指令并处理同步/异步响应。</para>
+    /// <para>核心功能：</para>
+    /// <list type="bullet">
+    /// <item>封装 Protobuf 消息构造与发送逻辑</item>
+    /// <item>提供 SendTaskAndWaitAsync 机制，支持等待客户端的 TaskResultNotice 响应</item>
+    /// <item>管理并行任务状态 (PendingTasks)</item>
+    /// </list>
+    /// </summary>
     public class ClientTaskService
     {
         private readonly NettyMessageService _nettyMessageService;

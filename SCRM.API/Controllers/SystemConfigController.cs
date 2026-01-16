@@ -13,13 +13,13 @@ namespace SCRM.API.Controllers
     [Authorize] // 只有登录用户可以管理配置
     public class SystemConfigController : ControllerBase
     {
-        private readonly ApplicationDbContext _context;
+        private readonly SCRM.UI.Services.ISystemConfigService _configService;
         private readonly INettyService _nettyService;
         private readonly ILogger<SystemConfigController> _logger;
 
-        public SystemConfigController(ApplicationDbContext context, INettyService nettyService, ILogger<SystemConfigController> logger)
+        public SystemConfigController(SCRM.UI.Services.ISystemConfigService configService, INettyService nettyService, ILogger<SystemConfigController> logger)
         {
-            _context = context;
+            _configService = configService;
             _nettyService = nettyService;
             _logger = logger;
         }
@@ -28,14 +28,14 @@ namespace SCRM.API.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<SystemConfig>>> GetSystemConfigs()
         {
-            return await _context.SystemConfigs.OrderBy(c => c.key).ToListAsync();
+            return Ok(await _configService.GetConfigsAsync());
         }
 
         // GET: api/SystemConfig/key/{key}
         [HttpGet("key/{key}")]
         public async Task<ActionResult<SystemConfig>> GetSystemConfigByKey(string key)
         {
-            var systemConfig = await _context.SystemConfigs.FirstOrDefaultAsync(c => c.key == key);
+            var systemConfig = await _configService.GetConfigByKeyAsync(key);
 
             if (systemConfig == null)
             {
@@ -54,33 +54,14 @@ namespace SCRM.API.Controllers
                 return BadRequest("Key is required");
             }
 
-            var existingConfig = await _context.SystemConfigs.FirstOrDefaultAsync(c => c.key == config.key);
-            bool isUpdate = false;
-
-            if (existingConfig != null)
-            {
-                existingConfig.value = config.value;
-                existingConfig.description = config.description ?? existingConfig.description;
-                existingConfig.updatedAt = DateTime.UtcNow;
-                isUpdate = true;
-            }
-            else
-            {
-                config.updatedAt = DateTime.UtcNow;
-                _context.SystemConfigs.Add(config);
-            }
-
-            await _context.SaveChangesAsync();
+            // Update via Service
+            config.updatedAt = DateTime.UtcNow;
+            await _configService.UpdateConfigAsync(config);
             
             // Side Effects: Push configuration to clients
             await PushConfigToClients(config.key, config.value);
 
-            if (isUpdate)
-            {
-                return Ok(existingConfig);
-            }
-
-            return CreatedAtAction("GetSystemConfigByKey", new { key = config.key }, config);
+            return Ok(config);
         }
 
         private async Task PushConfigToClients(string key, string value)
@@ -131,14 +112,15 @@ namespace SCRM.API.Controllers
                 // 只有当实际上有配置在消息中时才发送
                 if (msg.StrConfs.Count > 0 || msg.BoolConfs.Count > 0 || msg.IntConfs.Count > 0)
                 {
-                    _logger.LogInformation("Pushing config update for {Key} to all clients", key);
+                    _logger.LogInformation("[配置更新] 正在广播配置更新 {Key} 给所有客户端...", key);
                     // 广播发送 "ConfigPushNotice"
                     await _nettyService.SendMessageToNettyAsync(msg, "ConfigPushNotice");
+                    _logger.LogInformation("[配置更新] 配置广播成功 {Key}", key);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error pushing config update for {Key}", key);
+                _logger.LogError(ex, "[配置更新] 广播失败 {Key}", key);
             }
         }
     }

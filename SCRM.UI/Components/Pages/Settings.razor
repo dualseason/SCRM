@@ -62,6 +62,15 @@
                                 <RadzenTextBox @bind-Value=@configModel.AutoUpdateUrl Name="autoUpdateUrl" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="Token 有效期 (分钟)" Component="tokenExpiryMinutes" />
+                                <RadzenText TextStyle="TextStyle.Caption">默认 180 天 (259200 分钟)</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenNumeric @bind-Value=@configModel.TokenExpiryMinutes Name="tokenExpiryMinutes" Style="width: 100%" Min="1" />
+                            </RadzenColumn>
+                        </RadzenRow>
                     </RadzenStack>
                 </RadzenCard>
             </RadzenTabsItem>
@@ -172,6 +181,7 @@
         configModel.ForceRun = GetBool("forceRun");
         configModel.KeepWake = GetInt("keepWake", 5);
         
+        configModel.TokenExpiryMinutes = GetInt("tokenExpiryMinutes", 259200);
         configModel.ClientConfigPath = GetValue("clientConfigPath");
         configModel.LogLevel = GetValue("logLevel") ?? "INFO";
         configModel.AutoUpdateUrl = GetValue("autoUpdateUrl");
@@ -201,6 +211,7 @@
             await Update("clientConfigPath", configModel.ClientConfigPath);
             await Update("logLevel", configModel.LogLevel);
             await Update("autoUpdateUrl", configModel.AutoUpdateUrl);
+            await Update("tokenExpiryMinutes", configModel.TokenExpiryMinutes.ToString());
 
             NotificationService.Notify(NotificationSeverity.Success, "保存成功", "所有配置已更新并推送");
             await LoadConfigs();
@@ -243,5 +254,6 @@
         public string? ClientConfigPath { get; set; }
         public string? LogLevel { get; set; }
         public string? AutoUpdateUrl { get; set; }
+        public int TokenExpiryMinutes { get; set; }
     }
 }

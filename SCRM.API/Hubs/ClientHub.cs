@@ -7,6 +7,7 @@ using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
 using SCRM.SHARED.Models.Dtos;
 using SCRM.Services;
+using SCRM.API.Services.Core;
 using SCRM.Services.Data;
 using SCRM.API.Services.Data;
 using Jubo.JuLiao.IM.Wx.Proto;
@@ -18,14 +19,14 @@ namespace SCRM.API.Hubs
     public class ClientHub : Hub
     {
         private readonly SCRM.Services.Data.ApplicationDbContext _context;
-        private readonly SCRM.Services.ConnectionManager _connectionManager;
-        private readonly SCRM.Services.ClientTaskService _clientTaskService;
+        private readonly ConnectionManager _connectionManager;
+        private readonly ClientTaskService _clientTaskService;
         private readonly AuthService _authService;
 
         public ClientHub(
             SCRM.Services.Data.ApplicationDbContext context, 
-            SCRM.Services.ConnectionManager connectionManager, 
-            SCRM.Services.ClientTaskService clientTaskService, 
+            ConnectionManager connectionManager, 
+            ClientTaskService clientTaskService, 
             AuthService authService)
         {
             _context = context;

@@ -7,6 +7,7 @@ using System.Net;
 using System.Threading.Tasks;
 using SCRM.Shared.Core;
 using SCRM.Services;
+using SCRM.API.Services.Core;
 using Microsoft.Extensions.Options;
 using SCRM.Models.Configurations;
 

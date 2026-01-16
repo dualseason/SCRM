@@ -10,6 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using System;
+using SCRM.API.Services.Core;
 
 namespace SCRM.Services.Automation
 {

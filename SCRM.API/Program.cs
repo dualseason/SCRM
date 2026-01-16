@@ -8,8 +8,10 @@ using SCRM.API.Models.DTOs;
 using SCRM.Services.Events;
 using SCRM.Services;
 using SCRM.Models.Configurations;
+using SCRM.API.Services.Core;
 using SCRM.Services.Netty;
-using SCRM.API.Services;
+using SCRM.API.Services.Core;
+using SCRM.API.Services.Events;
 
 using System.Text;
 using Serilog;
@@ -78,6 +80,8 @@ public partial class Program
 
         // 绑定到 Host
         builder.Host.UseSerilog();
+
+
 
         // Add services to the container.
         builder.Services.AddMemoryCache();
@@ -188,7 +192,7 @@ public partial class Program
         builder.Services.AddSingleton<MessageRouter>();
         builder.Services.AddSingleton<NettyServer>();
         builder.Services.AddSingleton<NettyMessageService>();
-        builder.Services.AddSingleton<SCRM.Services.ClientTaskService>();
+        builder.Services.AddSingleton<SCRM.API.Services.Core.ClientTaskService>();
         builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
         // Blazor Server Services
@@ -202,8 +206,8 @@ public partial class Program
         builder.Services.AddScoped<Radzen.TooltipService>();
         builder.Services.AddScoped<Radzen.ContextMenuService>();
         
-        // System Config Service (Direct DB Access)
-        builder.Services.AddScoped<ISystemConfigService, ServerSystemConfigService>();
+        // System Config Service (JSON File Based)
+        builder.Services.AddSingleton<ISystemConfigService, JsonFileConfigService>();
         
         // Device Command Service (Direct SignalR Hub Access)
         builder.Services.AddScoped<ServerDeviceCommandService>();
@@ -231,7 +235,12 @@ public partial class Program
         
         // Netty Handlers (Scoped)
         builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.AuthMessageHandler>();
-builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.TaskMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.TaskMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.SystemMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.ChatMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.ContactMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.GroupMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.MomentsMessageHandler>();
         
         builder.Services.AddHostedService<SCRM.Services.Automation.AutomationService>(); // C&C Automation (Auto-Reply, etc.)
         builder.Services.AddHostedService<SCRM.API.Services.Maintenance.IndexCleanupService>(); // Auto-fix zombie indexes

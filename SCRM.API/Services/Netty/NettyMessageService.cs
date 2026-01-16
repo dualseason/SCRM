@@ -2,6 +2,7 @@ using System.Linq;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using SCRM.Services.Netty;
+using SCRM.API.Services.Core;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

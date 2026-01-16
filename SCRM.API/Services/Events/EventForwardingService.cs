@@ -5,8 +5,10 @@ using SCRM.API.Hubs;
 using System.Threading;
 using System.Threading.Tasks;
 using SCRM.API.Models.Events;
+using SCRM.Shared.Interfaces;
+using SCRM.Services.Events;
 
-namespace SCRM.Services.Events
+namespace SCRM.API.Services.Events
 {
     public class EventForwardingService : BackgroundService
     {

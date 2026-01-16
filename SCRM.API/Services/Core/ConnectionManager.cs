@@ -9,12 +9,19 @@ using SCRM.Models;
 using DotNetty.Transport.Channels;
 
 
-namespace SCRM.Services
+namespace SCRM.API.Services.Core
 {
     /// <summary>
     /// 连接管理器
-    /// 负责全站 WebSocket/TCP 连接的生命周期管理，包括映射 
-    /// ConnectionId -> UserInfo, User -> ConnectionIds, DeviceUuid -> ConnectionId
+    /// <para>核心单例服务，负责全站 WebSocket/TCP 连接的生命周期管理与索引。</para>
+    /// <para>主要索引维度：</para>
+    /// <list type="bullet">
+    /// <item>ConnectionId -> ConnectionInfo (主索引)</item>
+    /// <item>UserId -> Set of ConnectionIds (用户多端登录支持)</item>
+    /// <item>DeviceType -> Set of ConnectionIds (设备类型广播支持)</item>
+    /// <item>DeviceUuid -> ConnectionId (设备唯一标识反查)</item>
+    /// </list>
+    /// <para>同时维护 Netty Channel 实例的引用，用于实际数据发送。</para>
     /// </summary>
     public class ConnectionManager
     {
@@ -94,6 +101,14 @@ namespace SCRM.Services
                 userId, connectionId, deviceType);
 
             return Task.CompletedTask;
+        }
+
+        /// <summary>
+        /// 检查连接是否有效
+        /// </summary>
+        public bool IsConnected(string connectionId)
+        {
+            return _connections.ContainsKey(connectionId);
         }
 
         /// <summary>

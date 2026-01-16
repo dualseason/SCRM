@@ -5,6 +5,7 @@ using SCRM.Models.Constants;
 using SCRM.Services.Data;
 using SCRM.API.Models.Entities;
 using SCRM.Services;
+using SCRM.API.Services.Core;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;

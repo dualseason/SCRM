@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SCRM.Services.Data;
 using SCRM.API.Models.Entities;
 using SCRM.Services;
+using SCRM.API.Services.Core;
 using System;
 using System.Linq;
 using System.Security.Claims;

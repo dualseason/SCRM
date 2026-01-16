@@ -5,7 +5,9 @@ using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
 using SCRM.API.Utils;
 using SCRM.Services;
+using SCRM.API.Services.Core;
 using SCRM.Services.Data;
+using SCRM.UI.Services;
 using SCRM.API.Filters;
 using System;
 using System.IO;
@@ -24,13 +26,15 @@ namespace SCRM.Controllers.Auth
         private readonly AuthService _authService;
         private readonly Microsoft.Extensions.Logging.ILogger<PhoneController> _logger;
         private readonly SCRM.Models.Configurations.NettySettings _nettySettings;
+        private readonly ISystemConfigService _configService;
 
-        public PhoneController(ApplicationDbContext context, AuthService authService, Microsoft.Extensions.Logging.ILogger<PhoneController> logger, Microsoft.Extensions.Options.IOptions<SCRM.Models.Configurations.NettySettings> options)
+        public PhoneController(ApplicationDbContext context, AuthService authService, Microsoft.Extensions.Logging.ILogger<PhoneController> logger, Microsoft.Extensions.Options.IOptions<SCRM.Models.Configurations.NettySettings> options, ISystemConfigService configService)
         {
             _context = context;
             _authService = authService;
             _logger = logger;
             _nettySettings = options.Value;
+            _configService = configService;
         }
 
         private async Task<T> GetDecryptedBody<T>()
@@ -275,6 +279,53 @@ namespace SCRM.Controllers.Auth
                 srClient.lastLoginAt = DateTime.UtcNow;
                 srClient.isOnline = true;
                 srClient.status = 1;
+
+                // [Fix] Inject System Configs into customConfigs so client gets them immediately
+                // Convert List<SystemConfig> to Dictionary<string, object> for serialization
+                // Or just a simple wrapper if client expects specific format. 
+                // Assuming client parses customConfigs as a dictionary or checks for specific keys.
+                // We'll mimic the PushConfig format roughly - a dictionary of Key/Value
+                try 
+                {
+                    var configs = await _configService.GetConfigsAsync();
+                    var configDict = configs.ToDictionary(c => c.key, c => (object)c.value);
+                    
+                    // Specific mapping if needed (e.g. key aliases)
+                    // The client likely merges `customConfigs` into its settings.
+                    // We must ensure integers are integers if client JSON parser is strict.
+                    var typedConfig = new Dictionary<string, object>();
+                    foreach(var cfg in configs)
+                    {
+                        string k = cfg.key;
+                        string confVal = cfg.value;
+                         if (k == "fileUploadUrl") typedConfig["fileUpUrl"] = confVal;
+                         else if (k == "tcpServerPort") typedConfig["server_port"] = int.Parse(confVal);
+                         else if (k == "httpApiBaseUrl") typedConfig["apiBaseUrl"] = confVal;
+                         else if (k == "keepWake" || k == "tokenExpiryMinutes") 
+                         {
+                             if(int.TryParse(confVal, out int iVal)) typedConfig[k] = iVal;
+                             else typedConfig[k] = confVal;
+                         }
+                         else if (k == "autoLogin" || k == "autoPic" || k == "silentFunc" || k == "forceRun")
+                         {
+                             if(bool.TryParse(confVal, out bool bVal)) typedConfig[k] = bVal;
+                             else typedConfig[k] = confVal;
+                         }
+                         else typedConfig[k] = confVal;
+                    }
+                    
+                    // Add Netty settings as fallback
+                    if (!typedConfig.ContainsKey("server_port")) typedConfig["server_port"] = _nettySettings.Port;
+                    if (!typedConfig.ContainsKey("tcpServerHost")) typedConfig["tcpServerHost"] = _nettySettings.Host;
+
+                    srClient.customConfigs = JsonSerializer.Serialize(typedConfig);
+                    _logger.LogInformation("[HTTP登录] 已将系统配置植入 customConfigs 下发给客户端 (包含 keepWake={KeepWake})", typedConfig.ContainsKey("keepWake") ? typedConfig["keepWake"] : "N/A");
+                }
+                catch (Exception ex)
+                {
+                     _logger.LogError(ex, "[HTTP登录] 配置植入失败");
+                }
+
 
                 // Ensure account is in the list
                 if (!srClient.accounts.Any(a => a.accountId == account.accountId))

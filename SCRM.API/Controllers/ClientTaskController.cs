@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SCRM.Services;
+using SCRM.API.Services.Core;
 using System.Threading.Tasks;
 using Jubo.JuLiao.IM.Wx.Proto;
 

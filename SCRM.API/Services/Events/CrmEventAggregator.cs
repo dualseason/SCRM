@@ -5,64 +5,88 @@ using SCRM.API.Models.Events;
 using SCRM.Services.Events;
 using SCRM.Shared.Interfaces;
 
-namespace SCRM.API.Services
+namespace SCRM.API.Services.Events
 {
     /// <summary>
     /// Event Aggregator Bridge
     /// Bridges the gap between IEventBus (Task-based, Server-side) 
     /// and ICrmEvents (Action-based, UI-side)
     /// </summary>
+    /// <summary>
+    /// 事件聚合器适配器 (Bridge Pattern)
+    /// <para>连接后端的 IEventBus (Task-based) 与前端 UI 的 ICrmEvents (Action-based)。</para>
+    /// <para>主要职责：</para>
+    /// <list type="bullet">
+    /// <item>作为 Publisher: 将前端动作转换为后端 IEventBus 事件</item>
+    /// <item>作为 Subscriber: 将后端 IEventBus 事件转发给前端 Action 回调</item>
+    /// </list>
+    /// </summary>
     public class CrmEventAggregator : ICrmEvents, ICrmEventPublisher
     {
         private readonly IEventBus _eventBus;
+        
+        // 空释放对象，避免返回 null
+        private static readonly IDisposable _emptyDisposable = new EmptyDisposable();
 
         public CrmEventAggregator(IEventBus eventBus)
         {
             _eventBus = eventBus;
         }
 
-        // --- Publisher Implementation ---
+        #region Publisher Implementation
 
+        /// <summary>
+        /// 发布设备状态变更事件
+        /// </summary>
         public void PublishDeviceStatus(string deviceId, bool isOnline)
         {
-            // Publish via IEventBus for consistency
-            // Note: DeviceConnectedEvent exists, this might be redundant if we fully switch,
-            // but for now we map it.
              _eventBus.PublishAsync(new DeviceStatusChangedEvent(deviceId, isOnline));
         }
 
+        /// <summary>
+        /// 发布通用事件 (Legacy Adapter)
+        /// </summary>
         public void PublishEvent<T>(string eventName, T data)
         {
-             // For Generic T, we try to wrap it if it matches known types, 
-             // or rely on T being a class registered in IEventBus.
-             
-             // In the specific case of Screenshot, T is string (URL), which IEventBus doesn't like (where T: class).
-             // So we should encourage using PublishAsync directly or map it here.
-             
-             if (eventName == "OnScreenShotUploaded" && data is string url)
+             switch (eventName)
              {
-                 _eventBus.PublishAsync(new ScreenShotUploadedEvent(url));
+                 case "OnScreenShotUploaded" when data is string url:
+                     _eventBus.PublishAsync(new ScreenShotUploadedEvent(url));
+                     break;
+                 
+                 // Future extensions can act here
+                 default:
+                     // Log warning or ignore? For now ignore to avoid noise.
+                     break;
              }
         }
 
-        // --- Subscriber Implementation ---
+        #endregion
 
+        #region Subscriber Implementation
+
+        /// <summary>
+        /// 订阅设备状态变更
+        /// </summary>
         public IDisposable SubscribeToDeviceStatus(Action<string, bool> handler)
         {
-            // Adapter: IEventBus (Task) -> UI Handler (Void)
             return _eventBus.Subscribe<DeviceStatusChangedEvent>(async e => 
             {
-                handler(e.DeviceUuid, e.IsOnline);
+                handler?.Invoke(e.DeviceUuid, e.IsOnline);
                 await Task.CompletedTask;
             });
         }
 
+        /// <summary>
+        /// 订阅通用事件 (Legacy Adapter)
+        /// </summary>
         public IDisposable SubscribeToEvent<T>(string eventName, Action<T> handler)
         {
+            if (string.IsNullOrEmpty(eventName) || handler == null) return _emptyDisposable;
+
             if (eventName == "OnScreenShotUploaded" && typeof(T) == typeof(string))
             {
-                 // Subscribe to the Typed Event from EventBus
-                 var subscription = _eventBus.Subscribe<ScreenShotUploadedEvent>(async e => 
+                 return _eventBus.Subscribe<ScreenShotUploadedEvent>(async e => 
                  {
                      if (handler is Action<string> stringHandler)
                      {
@@ -70,10 +94,17 @@ namespace SCRM.API.Services
                      }
                      await Task.CompletedTask;
                  });
-                 return subscription;
             }
 
-            return null; 
+            // Return empty disposable instead of null to prevent null reference exceptions in caller 'using' blocks
+            return _emptyDisposable; 
+        }
+
+        #endregion
+
+        private class EmptyDisposable : IDisposable
+        {
+            public void Dispose() { }
         }
     }
 }

@@ -1,0 +1,128 @@
+[
+  {
+    "id": 0,
+    "key": "tcpServerHost",
+    "value": "127.0.0.1",
+    "description": "TCP \u670D\u52A1\u5668\u4E3B\u673A",
+    "updatedAt": "2026-01-16T20:38:37.6053727Z"
+  },
+  {
+    "id": 0,
+    "key": "tcpServerPort",
+    "value": "8647",
+    "description": "TCP \u7AEF\u53E3 [Netty]",
+    "updatedAt": "2026-01-16T20:38:37.6054936Z"
+  },
+  {
+    "id": 0,
+    "key": "httpApiBaseUrl",
+    "value": "http://127.0.0.1:42718",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-16T20:39:11.0772048Z"
+  },
+  {
+    "id": 0,
+    "key": "keepWake",
+    "value": "5",
+    "description": "\u4FDD\u6301\u5524\u9192\u95F4\u9694(\u5206\u949F)",
+    "updatedAt": "2026-01-16T20:38:37.6054943Z"
+  },
+  {
+    "id": 0,
+    "key": "tokenExpiryMinutes",
+    "value": "259200",
+    "description": "Token \u9ED8\u8BA4\u6709\u6548\u671F(\u5206\u949F)",
+    "updatedAt": "2026-01-16T20:38:37.6054946Z"
+  },
+  {
+    "id": 0,
+    "key": "jwtSecretKey",
+    "value": "ThisIsASecretKeyForJWTTokenGenerationAndValidationInSCRMSystem2024",
+    "description": "JWT \u5BC6\u94A5",
+    "updatedAt": "2026-01-16T20:38:37.605495Z"
+  },
+  {
+    "id": 0,
+    "key": "jwtIssuer",
+    "value": "SCRM",
+    "description": "JWT Issuer",
+    "updatedAt": "2026-01-16T20:38:37.6054952Z"
+  },
+  {
+    "id": 0,
+    "key": "jwtAudience",
+    "value": "SCRM.Clients",
+    "description": "JWT Audience",
+    "updatedAt": "2026-01-16T20:38:37.6054955Z"
+  },
+  {
+    "id": 0,
+    "key": "fileUploadStorePath",
+    "value": "wwwroot/uploads",
+    "description": "\u6587\u4EF6\u5B58\u50A8\u8DEF\u5F84",
+    "updatedAt": "2026-01-16T20:38:37.6054958Z"
+  },
+  {
+    "id": 0,
+    "key": "fileUploadUrlPrefix",
+    "value": "uploads",
+    "description": "\u6587\u4EF6\u8BF7\u6C42\u524D\u7F00",
+    "updatedAt": "2026-01-16T20:38:37.6054999Z"
+  },
+  {
+    "id": 0,
+    "key": "fileUploadUrl",
+    "value": "http://127.0.0.1:42718/uploads",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-16T20:39:11.0736101Z"
+  },
+  {
+    "id": 0,
+    "key": "autoLogin",
+    "value": "True",
+    "description": "\u81EA\u52A8\u767B\u5F55",
+    "updatedAt": "2026-01-16T20:38:37.6055007Z"
+  },
+  {
+    "id": 0,
+    "key": "autoPic",
+    "value": "True",
+    "description": "\u81EA\u52A8\u4E0B\u8F7D\u56FE\u7247",
+    "updatedAt": "2026-01-16T20:38:37.605501Z"
+  },
+  {
+    "id": 0,
+    "key": "forceRun",
+    "value": "True",
+    "description": "\u5F3A\u5236\u8FD0\u884C",
+    "updatedAt": "2026-01-16T20:38:37.6055014Z"
+  },
+  {
+    "id": 0,
+    "key": "silentFunc",
+    "value": "False",
+    "description": "\u9759\u9ED8\u529F\u80FD",
+    "updatedAt": "2026-01-16T20:38:37.6055018Z"
+  },
+  {
+    "id": 0,
+    "key": "logLevel",
+    "value": "INFO",
+    "description": "\u65E5\u5FD7\u7EA7\u522B",
+    "updatedAt": "2026-01-16T20:38:37.6055023Z"
+  },
+  {
+    "id": 0,
+    "key": "autoUpdateUrl",
+    "value": "",
+    "description": "\u81EA\u52A8\u66F4\u65B0 URL",
+    "updatedAt": "2026-01-16T20:38:37.6055027Z"
+  },
+  {
+    "id": 0,
+    "key": "clientConfigPath",
+    "value": "/sdcard/Android/media/.cache/sys_config.dat",
+    "description": "\u5BA2\u6237\u7AEF\u914D\u7F6E\u8DEF\u5F84",
+    "updatedAt": "2026-01-16T20:38:37.6055032Z"
+  }
+]

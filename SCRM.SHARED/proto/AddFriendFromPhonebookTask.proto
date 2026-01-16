@@ -11,3 +11,4 @@ message AddFriendFromPhonebookTaskMessage {
   int64 TaskId = 5;  // 任务ID
   int32 Index = 6;  // 索引
 }
+ 

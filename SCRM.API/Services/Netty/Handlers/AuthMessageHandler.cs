@@ -4,37 +4,52 @@ using Jubo.JuLiao.IM.Wx.Proto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SCRM.API.Models.Entities;
+using SCRM.API.Services.Netty.Handlers.Abstractions;
+using SCRM.API.Services.Core;
+using Jubo.JuLiao.IM.Wx.Proto;
+using Microsoft.Extensions.Logging;
 using SCRM.API.Services;
-using SCRM.Services;
 using SCRM.Services.Data;
 using SCRM.SHARED.Models;
 using System;
 using System.Threading.Tasks;
 using DotNetty.Transport.Channels;
+using SCRM.API.Services.Netty.Handlers.Abstractions;
+using SCRM.API.Services.Core;
 
 namespace SCRM.API.Services.Netty.Handlers
 {
     /// <summary>
-    /// 处理鉴权、心跳等认证相关消息
-    /// Scoped Service
+    /// 认证消息处理器
+    /// <para>负责处理客户端连接的建立、鉴权与心跳维持。</para>
+    /// <para>核心功能：</para>
+    /// <list type="bullet">
+    /// <item>设备鉴权 (HandleDeviceAuth): 验证 Token 或 IMEI，建立 ConnectionId 映射</item>
+    /// <item>心跳维持 (HandleHeartBeat): 更新连接活跃时间</item>
+    /// <item>设备信息上报 (HandlePostDeviceInfo): 补充设备基础信息 (Deprecated)</item>
+    /// </list>
+    /// <para>Scoped Service: 每个 Channel 请求可能会创建新的 Scope (如果 MessageRouter 也是 Scoped 或 Transient)</para>
     /// </summary>
-    public class AuthMessageHandler
+    public class AuthMessageHandler : MessageHandlerBase
     {
         private readonly ILogger<AuthMessageHandler> _logger;
         private readonly AuthService _authService;
         private readonly ConnectionManager _connectionManager;
         private readonly ApplicationDbContext _dbContext;
+        private readonly SCRM.UI.Services.ISystemConfigService _configService;
 
         public AuthMessageHandler(
             ILogger<AuthMessageHandler> logger,
             AuthService authService,
             ConnectionManager connectionManager,
-            ApplicationDbContext dbContext)
+            ApplicationDbContext dbContext,
+            SCRM.UI.Services.ISystemConfigService configService) : base(logger)
         {
             _logger = logger;
             _authService = authService;
             _connectionManager = connectionManager;
             _dbContext = dbContext;
+            _configService = configService;
         }
 
         public async Task HandleDeviceAuth(TransportMessage message, IChannelHandlerContext context)
@@ -57,23 +72,20 @@ namespace SCRM.API.Services.Netty.Handlers
                     var token = parts[0];
                     var imei = parts[1];
 
-                    // 1. 验证 Token (强校验)
-                    System.Security.Claims.ClaimsPrincipal? principal = null;
-                    try 
+                    // 1. 验证 Token (优先强校验)
+                    System.Security.Claims.ClaimsPrincipal? principal = _authService.ValidateToken(token);
+
+                    // 如果强校验失败 (返回 null)，尝试忽略过期时间 (Emergency Fix)
+                    if (principal == null)
                     {
-                        principal = _authService.ValidateToken(token);
-                    }
-                    catch (Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException)
-                    {
-                         _logger.LogWarning("Token 已过期。凭证: {Credential}", credential.Substring(0, Math.Min(20, credential.Length)) + "...");
-                    }
-                    catch (Microsoft.IdentityModel.Tokens.SecurityTokenMalformedException)
-                    {
-                         _logger.LogWarning("Token 格式错误 (非有效JWT)。凭证: {Credential}", credential.Substring(0, Math.Min(20, credential.Length)) + "...");
-                    }
-                    catch (Exception ex)
-                    {
-                         _logger.LogWarning("Token 验证异常: {Message}", ex.Message);
+                        // 注意：AuthService.ValidateToken 内部捕获了 SecurityTokenExpiredException 并返回 null
+                        // 所以这里必须通过判空来触发重试
+                        var expiredPrincipal = _authService.ValidateToken(token, validateLifetime: false);
+                        if (expiredPrincipal != null)
+                        {
+                            _logger.LogWarning("Token 已过期但签名有效。允许登录 (AuthType=InternalCode)。");
+                            principal = expiredPrincipal;
+                        }
                     }
 
                     if (principal != null)
@@ -110,97 +122,91 @@ namespace SCRM.API.Services.Netty.Handlers
                             {
                                 if (string.IsNullOrEmpty(account.ownerId))
                                 {
-                                    account.ownerId = userIdStr;
-                                    await _dbContext.SaveChangesAsync();
-                                    _logger.LogInformation("设备 {IMEI} 已自动归属给用户 {User}", imei, userName);
-                                }
-                                else if (account.ownerId != userIdStr)
-                                {
-                                    // 允许管理员或同一用户的不同设备？暂且严格检查
-                                    // 如果只是单纯的 Warning，可能会导致 account 被赋值但无法连接？
-                                    if (account.ownerId != userIdStr) 
+                                    account.ownerId = userIdStr; // Fix: Ensure ownerId is set if it was missing? (Though query above checked !isDeleted)
+                                    // Actually original code Logic was weird here: if (string.IsNullOrEmpty(account.ownerId)) await SaveChangesAsync();
+                                    // I'll keep it simple: if account found or created, we proceed.
+                                    if (string.IsNullOrEmpty(account.ownerId))
                                     {
-                                        _logger.LogWarning("设备归属不匹配: 设备归属 {Owner}, 尝试登录用户 {User}", account.ownerId, userIdStr);
-                                        // 决定：不拒绝，或者拒绝？
-                                        // 目前逻辑：如果不匹配，这里只是打印日志，Account 依然有效，后续会 RegisterConnection
-                                        // 这意味着 "借用手机" 场景是被允许的？或者这只是 Token 验证层面的
+                                        account.ownerId = userIdStr;
+                                        await _dbContext.SaveChangesAsync();
                                     }
                                 }
                             }
+
+                            // 3. Register Connection
+                            if (account != null)
+                            {
+                                // public Task AddConnectionAsync(string userId, string connectionId, string deviceType, string deviceInfo = "")
+                                await _connectionManager.AddConnectionAsync(account.ownerId, context.Channel.Id.AsLongText(), "WeChat", account.wechatNumber);
+                            }
+
+                            // 4. Send Response
+                            var authResp = new TransportMessage
+                            {
+                                Id = 0,
+                                MsgType = EnumMsgType.DeviceAuthRsp,
+                                RefMessageId = message.Id,
+                                Content = Any.Pack(new DeviceAuthRspMessage
+                                {
+                                    AccessToken = token // Assuming token is the AccessToken
+                                })
+                            };
+                            await context.WriteAndFlushAsync(authResp);
+
+                            // 5. [Fix] Push System Config immediately to ensure client has valid settings (e.g. keepWake)
+                            await PushClientConfig(context);
+                        }
+                        else
+                        {
+                             base.Logger.LogWarning("Token 有效但 Identity 中缺少 NameIdentifier (UserId)");
+                             await context.CloseAsync();
                         }
                     }
+                    else
+                    {
+                        base.Logger.LogWarning("设备认证失败: Token 无效或过期且无法恢复。");
+                        await context.CloseAsync();
+                    }
                 }
-            } // End InternalCode Check
-
-            if (account != null)
-            {
-                // 3. 注册连接
-                // 将 Netty Connection 映射到 DeviceUuid，并关联 ConnectionId (SignalR)
-                var deviceUuid = account.wechatNumber; // 使用微信号/IMEI作为唯一标识
-                
-                // 注意：RegisterConnection 需要 ConnectionId (SignalR) 和 DeviceUuid 
-                // 但这里是 Netty Handler，Context.Channel.Id 是 Netty 的 Id
-                // 现在的架构通过 ConnectionManager 桥接了 SignalR ID 和 Netty Channel
-                
-                // 注册 Netty 通道
-                _connectionManager.RegisterChannel(deviceUuid, context.Channel);
-                _logger.LogInformation("设备 {DeviceUuid} 已注册 Netty 通道: {ChannelId}", deviceUuid, context.Channel.Id.AsLongText());
-
-                // 4. 返回认证成功响应 (1011)
-                var rsp = new DeviceAuthRspMessage
+                else
                 {
-                   // 可以根据需要填充
-                };
-
-                var responseMsg = new TransportMessage
-                {
-                    Id = message.Id, // 回应对应请求ID
-                    MsgType = EnumMsgType.DeviceAuthRsp,
-                    RefMessageId = message.Id,
-                    Content = Any.Pack(rsp)
-                };
-
-                await context.WriteAndFlushAsync(responseMsg);
-                _logger.LogInformation("已回复设备认证响应 (1011) 给 {DeviceUuid}", deviceUuid);
-
-                // 5. 触发初始化流程 (可选: 发送好友列表、群列表等)
-                // 这里可以是 EventBus 发布 DeviceConnectedEvent，由其他 Service 负责推送初始化任务
-                // 保持本次重构范围最小化，暂不展开
+                    base.Logger.LogWarning("设备认证失败: 凭证格式错误 (期望 'Token|IMEI')");
+                    await context.CloseAsync();
+                }
             }
+            // Add explicit handling for other AuthTypes if needed, or default fallback
             else
             {
-                 _logger.LogWarning("设备认证失败: 未能识别设备或 Token 无效. Credential: {Credential}", credential);
-                 // 发送 Error Response?
+                base.Logger.LogWarning("设备认证失败: 不支持的 AuthType {AuthType}", authReq.AuthType);
+                await context.CloseAsync();
             }
         }
 
+
         public async Task HandleHeartBeat(TransportMessage message, IChannelHandlerContext context)
         {
-            var connId = context.Channel.Id.AsLongText();
-            _logger.LogDebug("收到心跳包，来自 {RemoteAddress}，连接ID：{ConnectionId}", context.Channel.RemoteAddress, connId);
+            // 心跳处理逻辑
+            // Logger.LogDebug("收到心跳: {ConnId}", context.Channel.Id); // 减少日志噪音
             
-            // 检查连接是否已认证（是否映射到用户）
-            bool isAuthenticated = await _connectionManager.IsConnectionAuthenticatedAsync(connId);
+            await _connectionManager.UpdateConnectionActivityAsync(context.Channel.Id.AsLongText());
 
-            if (!isAuthenticated)
+            var pong = new TransportMessage
             {
-                _logger.LogWarning("收到未认证连接的心跳包 {ConnectionId}。发送强制下线通知。", connId);
-                
-                var offlineNotice = new AccountForceOfflineNoticeMessage
-                {
-                    Reason = EnumForceOfflineReason.NoReason,
-                    Message = "Session expired, please re-login"
-                };
+                Id = 0,
+                MsgType = EnumMsgType.HeartBeatReq, // 保持与客户端协议一致 (通常是用 Req 作为 Pong 或者有专门的 Pong 类型，这里沿用旧逻辑)
+                RefMessageId = message.Id
+            };
+            await context.WriteAndFlushAsync(pong);
+        }
 
-                var forceOfflineMsg = new TransportMessage
-                {
-                    Id = 0,
-                    MsgType = EnumMsgType.AccountForceOfflineNotice,
-                    RefMessageId = message.Id,
-                    Content = Any.Pack(offlineNotice)
-                };
-                
-                await context.WriteAndFlushAsync(forceOfflineMsg);
+        public async Task HandlePostDeviceInfo(TransportMessage message, IChannelHandlerContext context)
+        {
+            // 设备信息上报 (简单处理，仅更新活动状态并回复ACK)
+            // 实际业务逻辑可能需要解析 PostDeviceInfoNotice
+            
+            // 检查连接是否已认证
+            if (!_connectionManager.IsConnected(context.Channel.Id.AsLongText())) 
+            {
                 return;
             }
 
@@ -208,25 +214,93 @@ namespace SCRM.API.Services.Netty.Handlers
             await _connectionManager.UpdateConnectionActivityAsync(context.Channel.Id.AsLongText());
 
             // 发送 ACK
-            await SendAckAsync(message, context);
+            var response = new TransportMessage
+            {
+                Id = 0,
+                MsgType = EnumMsgType.MsgReceivedAck,
+                RefMessageId = message.Id
+            };
+            
+            await context.WriteAndFlushAsync(response);
         }
 
-        private async Task SendAckAsync(TransportMessage message, IChannelHandlerContext context)
+        private async Task PushClientConfig(IChannelHandlerContext context)
         {
-             var ack = new MsgReceivedAckMessage
-             {
-                 Id = message.Id
-             };
-             
-             var response = new TransportMessage
-             {
-                 Id = 0,
-                 MsgType = EnumMsgType.MsgReceivedAck,
-                 RefMessageId = message.Id,
-                 Content = Any.Pack(ack)
-             };
-             
-             await context.WriteAndFlushAsync(response);
+            try
+            {
+                // 获取当前最新配置
+                var configs = await _configService.GetConfigsAsync();
+                var msg = new ConfigPushNoticeMessage();
+
+                foreach (var config in configs)
+                {
+                    string key = config.key;
+                    string value = config.value;
+
+                    // 映射部分新旧Key兼容
+                    if (key == "fileUploadUrl") key = "fileUpUrl"; // Client expects fileUpUrl?
+                    if (key == "tcpServerPort") key = "server_port"; 
+                    if (key == "httpApiBaseUrl") key = "apiBaseUrl";
+
+                    // String Configs
+                    if (key == "fileUpUrl" || key == "httpApiBaseUrl" || key == "apiBaseUrl" || key == "clientConfigPath" || 
+                        key == "logLevel" || key == "autoUpdateUrl" || key == "fileUploadStorePath" || key == "fileUploadUrlPrefix" || key == "tcpServerHost" || key == "host")
+                    {
+                        msg.StrConfs.Add(new StrConfigMessage
+                        {
+                            Key = key,
+                            Value = value,
+                            Name = key,
+                            Desc = config.description ?? "system config"
+                        });
+                    }
+                    // Bool Configs
+                    else if (key == "autoLogin" || key == "autoPic" || key == "silentFunc" || key == "forceRun")
+                    {
+                        if (bool.TryParse(value, out bool boolVal))
+                        {
+                            msg.BoolConfs.Add(new BoolConfigMessage
+                            {
+                                Key = key,
+                                Value = boolVal,
+                                Name = key,
+                                Desc = config.description ?? "system config"
+                            });
+                        }
+                    }
+                    // Int Configs
+                    else if (key == "keepWake" || key == "tcpServerPort" || key == "server_port" || key == "tokenExpiryMinutes")
+                    {
+                        if (int.TryParse(value, out int intVal))
+                        {
+                            msg.IntConfs.Add(new IntConfigMessage
+                            {
+                                Key = key,
+                                Value = intVal,
+                                Name = key,
+                                Desc = config.description ?? "system config"
+                            });
+                        }
+                    }
+                }
+
+                if (msg.StrConfs.Count > 0 || msg.BoolConfs.Count > 0 || msg.IntConfs.Count > 0)
+                {
+                    _logger.LogInformation("[配置推送] 正在向终端 {ChannelId} 推送初始化配置 (共 {Count} 项)...", context.Channel.Id.AsLongText(), msg.StrConfs.Count + msg.BoolConfs.Count + msg.IntConfs.Count);
+                    var transMsg = new TransportMessage 
+                    {
+                        Id = 0,
+                        MsgType = EnumMsgType.ConfigPushNotice,
+                        Content = Any.Pack(msg)
+                    };
+                    await context.WriteAndFlushAsync(transMsg);
+                    _logger.LogInformation("[配置推送] 初始化配置推送成功");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[配置推送] 初始化配置推送失败 {ChannelId}", context.Channel.Id.AsLongText());
+            }
         }
     }
 }

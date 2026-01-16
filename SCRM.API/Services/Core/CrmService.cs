@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using SCRM.SHARED.Models;
 using System.Text.Json;
 
-namespace SCRM.API.Services
+namespace SCRM.API.Services.Core
 {
     public class CrmService : ICrmService
     {

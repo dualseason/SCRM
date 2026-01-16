@@ -7,6 +7,8 @@ using SCRM.Models.Configurations;
 using SCRM.Services.Data;
 using SCRM.API.Models.Entities;
 using SCRM.Services;
+using SCRM.API.Services; 
+using SCRM.UI.Services;
 using System;
 using System.Collections.Generic;
 using System.IdentityModel.Tokens.Jwt;
@@ -18,10 +20,18 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using SCRM.SHARED.Models;
 
-namespace SCRM.Services
+namespace SCRM.API.Services.Core
 {
     /// <summary>
     /// 身份验证与权限服务
+    /// <para>负责用户身份验证、JWT令牌生成与验证、以及基于角色的权限管理。</para>
+    /// <para>核心职责：</para>
+    /// <list type="bullet">
+    /// <item>Identity 用户与 Legacy Wechat 用户鉴权</item>
+    /// <item>JWT Token 生成、刷新与撤销</item>
+    /// <item>设备所有权验证 (ValidateDeviceOwnership)</item>
+    /// <item>权限与角色缓存管理</item>
+    /// </list>
     /// </summary>
     public class AuthService
     {
@@ -31,6 +41,7 @@ namespace SCRM.Services
         private readonly IMemoryCache _cache;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly ConnectionManager _connectionManager;
+        private readonly ISystemConfigService _configService;
 
         public AuthService(
             ApplicationDbContext context,
@@ -38,6 +49,7 @@ namespace SCRM.Services
             IMemoryCache cache,
             UserManager<ApplicationUser> userManager,
             ConnectionManager connectionManager,
+            ISystemConfigService configService,
             Microsoft.Extensions.Logging.ILogger<AuthService> logger)
         {
             _context = context;
@@ -45,7 +57,49 @@ namespace SCRM.Services
             _cache = cache;
             _userManager = userManager;
             _connectionManager = connectionManager;
+            _configService = configService;
             _logger = logger;
+        }
+
+        private async Task<int> GetTokenExpiryMinutesAsync()
+        {
+            // Try cache first
+            if (_cache.TryGetValue("config_tokenExpiryMinutes", out int cachedMinutes))
+            {
+                return cachedMinutes;
+            }
+
+            int expiryMinutes = 259200; // Default 180 days
+
+            try 
+            {
+                var config = await _configService.GetConfigByKeyAsync("tokenExpiryMinutes");
+                if (config != null && int.TryParse(config.value, out int val))
+                {
+                    expiryMinutes = val;
+                }
+                else
+                {
+                     // Seed default if missing
+                     if (config == null)
+                     {
+                         await _configService.UpdateConfigAsync(new SystemConfig 
+                         { 
+                             key = "tokenExpiryMinutes", 
+                             value = expiryMinutes.ToString(),
+                             description = "Token Expiry in Minutes (Default 180 days)"
+                         });
+                     }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error fetching token expiry from DB. Using default.");
+            }
+
+            // Cache for 10 minutes
+            _cache.Set("config_tokenExpiryMinutes", expiryMinutes, TimeSpan.FromMinutes(10));
+            return expiryMinutes;
         }
 
         #region JWT 逻辑
@@ -74,7 +128,8 @@ namespace SCRM.Services
                 claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            return CreateJwtToken(claims);
+            var expiryMinutes = await GetTokenExpiryMinutesAsync();
+            return CreateJwtToken(claims, DateTime.UtcNow.AddMinutes(expiryMinutes));
         }
 
         /// <summary>
@@ -110,7 +165,8 @@ namespace SCRM.Services
                 claims.Add(new Claim("permission", permission));
             }
 
-            return CreateJwtToken(claims);
+            var expiryMinutes = await GetTokenExpiryMinutesAsync();
+            return CreateJwtToken(claims, DateTime.UtcNow.AddMinutes(expiryMinutes));
         }
 
         /// <summary>
@@ -136,7 +192,16 @@ namespace SCRM.Services
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-            var expiry = expires ?? DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes);
+            
+            // Enforce explicit expiry
+            if (!expires.HasValue) 
+            {
+                 // Fallback to a safe default if somehow null (should not happen with updated callers)
+                 expires = DateTime.UtcNow.AddDays(7); 
+                 _logger.LogWarning("CreateJwtToken called without expiry. Using 7 days default.");
+            }
+            
+            var expiry = expires.Value;
 
             var token = new JwtSecurityToken(
                 issuer: _jwtSettings.Issuer,
@@ -198,6 +263,14 @@ namespace SCRM.Services
         /// </summary>
         public ClaimsPrincipal? ValidateToken(string token)
         {
+            return ValidateToken(token, validateLifetime: true);
+        }
+
+        /// <summary>
+        /// 验证 JWT 令牌 (可选择忽略过期时间)
+        /// </summary>
+        public ClaimsPrincipal? ValidateToken(string token, bool validateLifetime)
+        {
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
@@ -211,7 +284,7 @@ namespace SCRM.Services
                     ValidIssuer = _jwtSettings.Issuer,
                     ValidateAudience = true,
                     ValidAudience = _jwtSettings.Audience,
-                    ValidateLifetime = true,
+                    ValidateLifetime = validateLifetime, // Controlled by parameter
                     ClockSkew = TimeSpan.Zero
                 };
 
@@ -225,8 +298,8 @@ namespace SCRM.Services
             }
             catch (Microsoft.IdentityModel.Tokens.SecurityTokenExpiredException)
             {
-                 _logger.LogWarning("令牌已过期");
-                 return null;
+                _logger.LogWarning("令牌已过期 (Strict Mode)");
+                return null;
             }
             catch (Exception ex)
             {
@@ -257,11 +330,13 @@ namespace SCRM.Services
             var refreshToken = GenerateRefreshTokenAsync(user);
             var roles = await _userManager.GetRolesAsync(user);
 
+            var expiryMinutes = await GetTokenExpiryMinutesAsync();
+
             return new TokenResponse
             {
                 token = token,
                 refreshToken = refreshToken,
-                expiresAt = (long)(DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes) - new DateTime(1970, 1, 1)).TotalSeconds,
+                expiresAt = (long)(DateTime.UtcNow.AddMinutes(expiryMinutes) - new DateTime(1970, 1, 1)).TotalSeconds,
                 user = new UserDto
                 {
                     userName = user.UserName ?? string.Empty,
@@ -282,11 +357,13 @@ namespace SCRM.Services
             var roles = await GetUserRolesAsync(user.Id);
             var permissions = await GetUserPermissionsAsync(user.Id);
 
+            var expiryMinutes = await GetTokenExpiryMinutesAsync();
+
             return new TokenResponse
             {
                 token = token,
                 refreshToken = refreshToken,
-                expiresAt = (long)(DateTime.UtcNow.AddMinutes(_jwtSettings.ExpiryMinutes) - new DateTime(1970, 1, 1)).TotalSeconds,
+                expiresAt = (long)(DateTime.UtcNow.AddMinutes(expiryMinutes) - new DateTime(1970, 1, 1)).TotalSeconds,
                 user = new UserDto
                 {
                     id = user.Id.ToString(),

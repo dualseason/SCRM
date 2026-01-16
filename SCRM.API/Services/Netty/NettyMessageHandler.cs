@@ -3,7 +3,7 @@ using Jubo.JuLiao.IM.Wx.Proto;
 using System;
 using System.Threading.Tasks;
 using SCRM.Shared.Core;
-using SCRM.Services;
+using SCRM.API.Services.Core;
 
 namespace SCRM.Services.Netty
 {
