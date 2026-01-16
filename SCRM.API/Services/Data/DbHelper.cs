@@ -292,7 +292,10 @@ namespace SCRM.API.Services.Data
             {
                 if (GlobalCache.wechatAccounts.TryGetValue(accountId, out var item)) return item;
 
-                var dbItem = await context.Set<WechatAccount>().FindAsync(accountId);
+                var dbItem = await context.Set<WechatAccount>()
+                    .Include(w => w.Client)
+                    .FirstOrDefaultAsync(w => w.accountId == accountId);
+
                 if (dbItem != null)
                 {
                     GlobalCache.wechatAccounts.TryAdd(accountId, dbItem);

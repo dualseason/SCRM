@@ -6,6 +6,8 @@ using Microsoft.Extensions.Logging;
 using System;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.AspNetCore.SignalR;
+using SCRM.API.Models.Events;
 
 namespace SCRM.API.Controllers
 {
@@ -17,16 +19,25 @@ namespace SCRM.API.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly ILogger<FileUploadController> _logger;
         private readonly IConfiguration _config;
+        private readonly Microsoft.AspNetCore.SignalR.IHubContext<SCRM.API.Hubs.ClientHub> _hubContext;
+        private readonly SCRM.Shared.Interfaces.ICrmEventPublisher _eventPublisher;
 
-        public FileUploadController(IWebHostEnvironment env, ILogger<FileUploadController> logger, IConfiguration config)
+        public FileUploadController(
+            IWebHostEnvironment env, 
+            ILogger<FileUploadController> logger, 
+            IConfiguration config,
+            Microsoft.AspNetCore.SignalR.IHubContext<SCRM.API.Hubs.ClientHub> hubContext,
+            SCRM.Shared.Interfaces.ICrmEventPublisher eventPublisher)
         {
             _env = env;
             _logger = logger;
             _config = config;
+            _hubContext = hubContext;
+            _eventPublisher = eventPublisher;
         }
 
         [HttpPost("fileUpload")]
-        public async Task<IActionResult> Upload(
+        public async Task<IActionResult> fileUpload(
             IFormFile myfile,
             [FromForm] string packageName,
             [FromForm] string device)
@@ -73,6 +84,16 @@ namespace SCRM.API.Controllers
                 var fileUrl = $"{baseUrl}/{requestPrefix}/{fileName}";
 
                 _logger.LogInformation($"File uploaded: {fileName} from {device} to {filePath}");
+
+                // [KISS] Unified Push Notification via EventBus
+                // The Controller only publishes the event. 
+                // 1. EventForwardingService will pick it up and push to SignalR Clients (Remote).
+                // 2. CrmStore will pick it up and update Blazor UI (Local).
+                if (!string.IsNullOrEmpty(device))
+                {
+                   _eventPublisher.PublishEvent("OnScreenShotUploaded", new ScreenShotUploadedEvent(fileUrl, device));
+                   _logger.LogInformation($"[Push] Published OnScreenShotUploaded event for {device}");
+                }
 
                 return Ok(new
                 {

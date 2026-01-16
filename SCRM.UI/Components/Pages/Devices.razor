@@ -91,7 +91,7 @@
         {
             await Store.SelectDeviceAsync(dev);
         }
-        await Store.RequestScreenShotAsync();
+        await Store.RequestScreenShotAsync(dev.uuid);
     }
     
     private void HandleNotification(string msg, bool success)

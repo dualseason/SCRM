@@ -2,7 +2,7 @@
 @using SCRM.API.Models.Entities
 @using SCRM.UI.Services
 @using Microsoft.AspNetCore.Authorization
-@inject IContactService ContactService
+@inject ICrmService CrmService
 @inject NotificationService NotificationService
 @attribute [Authorize]
 
@@ -113,12 +113,21 @@
 
     async Task OnLoadData(LoadDataArgs args)
     {
-        var page = (args.Skip / args.Top) + 1;
-        var pageSize = args.Top ?? 20;
+        // 快速修复：前端分页
+        // 注意：数据量大时应改为服务端分页
+        var all = await CrmService.GetContactsAsync();
+        
+        var filtered = string.IsNullOrEmpty(searchTerm) 
+            ? all 
+            : all.Where(c => (!string.IsNullOrEmpty(c.wxid) && c.wxid.Contains(searchTerm)) || 
+                             (!string.IsNullOrEmpty(c.nickname) && c.nickname.Contains(searchTerm))).ToList();
 
-        var result = await ContactService.GetContactsAsync(page.Value, pageSize, searchTerm);
-        contacts = result.Items;
-        totalCount = result.TotalCount;
+        totalCount = filtered.Count;
+        
+        var skip = args.Skip ?? 0;
+        var top = args.Top ?? 20;
+
+        contacts = filtered.Skip(skip).Take(top).ToList();
     }
 
     async Task OnSearch()

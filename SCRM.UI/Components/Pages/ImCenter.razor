@@ -15,227 +15,311 @@
 <PageTitle>SCRM Unified IM</PageTitle>
 
 <style>
-    .layout-container { height: calc(100vh - 60px); border: none; display: flex; overflow: hidden; }
-    .device-sider { background: #fff; text-align: center; padding-top: 10px; overflow-y: auto; border-right: 1px solid #f0f0f0; width: 80px; flex-shrink: 0; }
-    .contact-sider { background: #fdfdfd; border-right: 1px solid #e8e8e8; overflow-y: auto; width: 300px; display: flex; flex-direction: column; flex-shrink: 0; }
-    .chat-content { background: #fff; display: flex; flex-direction: column; overflow: hidden; height: 100%; flex: 1; }
-
-    .contact-item { cursor: pointer; padding: 12px 16px; border-bottom: 1px solid #f0f0f0; transition: 0.2s; display: flex; align-items: center; }
-    .contact-item:hover { background: #f5f5f5; }
-    .contact-item.active { background: #e6f7ff; }
-
-    .chat-header { padding: 0 24px; border-bottom: 1px solid #f0f0f0; background: #fff; height: 64px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
-    .chat-messages { flex: 1; overflow-y: auto; padding: 24px; background: #f0f2f5; }
-    .chat-input { padding: 16px 24px; background: #fff; border-top: 1px solid #f0f0f0; flex-shrink: 0; }
-
-    .msg-row { margin-bottom: 20px; display: flex; width: 100%; }
-    .msg-row.self { justify-content: flex-end; }
-    .msg-bubble { max-width: 65%; padding: 10px 16px; border-radius: 4px; position: relative; word-wrap: break-word; font-size: 14px; line-height: 1.6; }
-    .msg-row.other .msg-bubble { background: #fff; border: 1px solid #e8e8e8; border-top-left-radius: 0; }
-    .msg-row.self .msg-bubble { background: #95ec69; border: 1px solid #7cd958; border-top-right-radius: 0; }
-
-    .msg-pending { opacity: 0.6; }
-
-    .tab-item { cursor: pointer; padding: 10px 15px; flex: 1; text-align: center; border-bottom: 2px solid transparent; transition: all 0.3s; color: #666; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 5px; }
-    .tab-item:hover { color: var(--rz-primary); background: #fafafa; }
-    .tab-item.active { color: var(--rz-primary); border-bottom: 2px solid var(--rz-primary); background: var(--rz-base-200); }
+    .chat-bubble-self {
+        background-color: #95ec69;
+        border: 1px solid #7cd958;
+    }
+    .chat-bubble-other {
+        background-color: #fff;
+        border: 1px solid #e8e8e8;
+    }
+    /* Device status dot style */
+    .device-status-dot {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid white;
+    }
+    /* Simple hover effect for listbox items if needed */
+    .rz-listbox-item {
+        padding: 5px !important;
+        justify-content: center;
+    }
 </style>
 
-<div class="layout-container">
-    <!-- 1. Left Sider: Devices -->
-    <div class="device-sider">
-        <SCRM.UI.Components.Shared.DeviceList OnDeviceSelected="OnDeviceSelectedInternal" />
-    </div>
-
-    <!-- 2. Middle Sider: Contacts & Chats -->
-    <div class="contact-sider">
-        @if (Store.SelectedDevice != null)
-        {
-                 <div style="padding: 12px; border-bottom: 1px solid #f0f0f0; background: #fafafa; flex-shrink: 0; text-align: center; font-weight: 600; color: #333;">
-                @Store.SelectedDevice.weChatNick
-                 </div>
-        }
-        <!-- Tab Switcher -->
-        <div style="display: flex; border-bottom: 1px solid #f0f0f0; background: #fff; flex-shrink: 0;">
-            <div class="tab-item @(_activeTab == "chats" ? "active" : "")" @onclick="@(() => _activeTab = "chats")">
-                <RadzenIcon Icon="chat" /> Chats
-            </div>
-            <div class="tab-item @(_activeTab == "contacts" ? "active" : "")" @onclick="@(() => _activeTab = "contacts")">
-                <RadzenIcon Icon="contacts" /> Contacts
-            </div>
-        </div>
-
-        @if (_activeTab == "chats")
-        {
-                <!-- Conversation List -->
-            @if (Store.SelectedDevice == null)
-            {
-                         <div class="rz-p-4 rz-text-align-center text-muted">Select a Device</div>
-            }
-            else if (Store.Conversations.Count == 0)
-            {
-                         <div class="rz-p-4 rz-text-align-center text-muted">No chats</div>
-            }
-            else
-            {
-                         <div style="overflow-y: auto; flex: 1;">
-                    @foreach (var conv in Store.Conversations)
-                    {
-                        var isActive = Store.SelectedConversation?.id == conv.id;
-                                    <div class="contact-item @(isActive ? "active" : "")" @onclick="@(() => SelectConversation(conv))">
-                                        <div style="position: relative;">
-                                            <RadzenImage Path="@conv.displayAvatar" Style="width: 40px; height: 40px; border-radius: 4px;" />
-                                @if (conv.unreadCount > 0)
-                                {
-                                                    <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@(conv.unreadCount > 99 ? "99+" : conv.unreadCount.ToString())" Style="position: absolute; top: -5px; right: -5px;" />
-                                }
-                                        </div>
-                                        <div style="margin-left: 10px; overflow: hidden; flex: 1;">
-                                            <div style="display: flex; justify-content: space-between;">
-                                                <span style="font-weight: 500; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px;">
-                                        @conv.displayName
-                                                </span>
-                                                <span style="font-size: 10px; color: #aaa;">
-                                        @FormatDate(conv.lastMessageTime)
-                                                </span>
-                                            </div>
-                                            <div style="font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                                    @(conv.conversationType == 2 ? "[Group] " : "") 
-                                    @(string.IsNullOrEmpty(conv.lastMessageContent) ? "Chat Session" : conv.lastMessageContent)
-                                            </div>
-                                        </div>
-                                    </div>
-                    }
-                         </div>
-            }
-        }
-        else
-        {
-                <!-- Contact List -->
-                <div style="padding: 10px; border-bottom: 1px solid #d9d9d9; flex-shrink: 0;">
-                    <RadzenTextBox Placeholder="Search Contacts..." @bind-Value="_searchText" Change="@OnSearchContact" Style="width: 100%;" />
-                </div>
-
-            @if (Store.SelectedDevice == null)
-            {
-                        <div class="rz-p-4 rz-text-align-center text-muted">Select a Device</div>
-            }
-            else if (Store.Contacts.Count == 0)
-            {
-                         <div class="rz-p-4 rz-text-align-center">
-                            <RadzenButton Text="Sync Contacts" ButtonStyle="ButtonStyle.Secondary" Click="SyncContacts" Size="ButtonSize.Small" />
-                         </div>
-            }
-            else
-            {
-                        <div style="overflow-y: auto; flex: 1;">
-                    @foreach (var contact in _filteredContacts)
-                    {
-                                    <div class="contact-item @(Store.SelectedContact?.wxid == contact.wxid ? "active" : "")" 
-                                         @onclick="@(() => SelectContact(contact))">
-                                        <RadzenImage Path="@(string.IsNullOrEmpty(contact.avatar) ? "images/default-avatar.png" : contact.avatar)" Style="width: 40px; height: 40px; border-radius: 50%;" />
-                                        <div style="margin-left: 10px; overflow: hidden;">
-                                            <div style="font-weight: 500; font-size: 14px;">@(string.IsNullOrEmpty(contact.remarks) ? contact.nickname : contact.remarks)</div>
-                                            <div style="font-size: 12px; color: #888;">@contact.nickname</div>
-                                        </div>
-                                    </div>
-                    }
-                        </div>
-            }
-        }
-    </div>
-
-    <!-- 3. Right Content: Chat & Features -->
-    <div class="chat-content">
-        @if (Store.SelectedContact == null && Store.SelectedConversation == null)
-        {
-            @if (Store.SelectedDevice != null)
-            {
-                         <!-- Device Dashboard View when no contact selected -->
-                         <div style="padding: 50px; text-align: center;">
-                             <h3>@Store.SelectedDevice.weChatNick</h3>
-                             <p>Status: @(Store.SelectedDevice.isOnline ? "Online" : "Offline")</p>
-                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center" Gap="1rem">
-                                <RadzenButton Text="Capture Screen" Click="CaptureScreen" ButtonStyle="ButtonStyle.Primary" />
-                                <RadzenButton Text="Moments" Click="GoToMoments" ButtonStyle="ButtonStyle.Secondary" />
-                             </RadzenStack>
-
-                    @if (!string.IsNullOrEmpty(Store.LastScreenShotUrl))
-                    {
-                                     <div style="margin-top: 20px; border: 1px solid #eee; padding: 10px; border-radius: 8px;">
-                                         <RadzenImage Path="@Store.LastScreenShotUrl" Width="300" />
-                                     </div>
-                    }
-                         </div>
-            }
-            else
-            {
-                         <div class="rz-p-12 rz-text-align-center">
-                            <RadzenIcon Icon="chat_bubble_outline" Style="font-size: 4rem; color: #ccc;" />
-                            <div class="rz-mt-4 text-muted">Select a Device and Contact/Chat to start</div>
-                         </div>
-            }
-        }
-        else
-        {
-                <!-- Chat Header -->
-                <div class="chat-header">
-                    <span style="font-size: 16px; font-weight: 600;">
-                    @{
-                        var name = Store.SelectedContact?.remarks ?? Store.SelectedContact?.nickname
-                            ?? Store.SelectedConversation?.displayName ?? "Unknown";
-                    }
-                    @name
-                    </span>
-                    <RadzenStack Orientation="Orientation.Horizontal">
-                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Variant="Variant.Text" Click="DeleteFriend_Click" />
-                    </RadzenStack>
-                </div>
-
-                <!-- Chat Messages -->
-                <div class="chat-messages" id="chat-box">
-                @foreach (var msg in Store.CurrentMessages)
-                {
-                            <div class="msg-row @(msg.direction == 1 ? "self" : "other") @(msg.sendStatus == 1 ? "msg-pending" : "")">
-                        @if (msg.direction != 1)
+<RadzenSplitter Orientation="Orientation.Horizontal" Style="height: calc(100vh - 60px); border: 1px solid var(--rz-border-color);">
+    
+    @* Pane 1: Device List (KISS: Direct Implementation) *@
+    <RadzenSplitterPane Size="80px" Min="70px" Max="100px" Style="border-right: 1px solid var(--rz-border-color);">
+        <RadzenListBox Data="@Store.Devices" Value="@Store.SelectedDevice" TValue="SrClient"
+                       Change="@(EventCallback.Factory.Create<object>(this, OnDeviceChange))"
+                       Style="height: 100%; width: 100%; border: none; text-align: center;">
+            <Template Context="device">
+                <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="2px" Style="width: 100%; overflow: hidden; padding-top: 5px; padding-bottom: 5px; position: relative;">
+                    @* Device Icon/Avatar - Click to Open Control/Details *@
+                    <div title="@(device.weChatNick ?? device.device?.PhoneModel ?? "Device")" 
+                         style="position: relative; display: inline-block; cursor: pointer;"
+                         @onclick:stopPropagation="true" 
+                         @onclick="@(() => OpenDeviceControl(device))">
+                        
+                        @if (!string.IsNullOrEmpty(device.weChatAvatar))
                         {
-                                        <RadzenImage Path="@(ContextAvatar())" Style="width:36px; height:36px; border-radius: 4px; margin-right: 10px;" />
+                            <RadzenImage Path="@device.weChatAvatar" Style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
                         }
+                        else
+                        {
+                            <RadzenIcon Icon="smartphone" Style="font-size: 24px; width: 40px; height: 40px; background-color: #f0f0f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #999;" />
+                        }
+                        
+                        @{
+                            bool isWxOnline = ((SrClient)device).accounts != null && ((SrClient)device).accounts.Any(a => a.accountStatus == 1);
+                            string dotColor = isWxOnline ? "#52c41a" : (device.isOnline ? "#faad14" : "#ff4d4f");
+                        }
+                        <span class="device-status-dot" style="background-color: @dotColor;"></span>
+                    </div>
 
-                                <div class="msg-bubble">
-                            @msg.content
-                            @if (msg.sendStatus == 1)
-                            {
-                                            <RadzenIcon Icon="sync" Style="font-size: 12px; margin-left: 8px; animation: rz-spin 1s infinite linear;" />
-                            }
+                    <RadzenText TextStyle="TextStyle.Caption" Style="@($"font-size: 10px; line-height: 1.2; font-weight: bold; color: {(device.isOnline ? "#52c41a" : "#ff4d4f")}")">
+                        @(device.isOnline ? "在线" : "离线")
+                    </RadzenText>
+
+                    <RadzenText TextStyle="TextStyle.Caption" Style="font-size: 10px; line-height: 1.2; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;" 
+                                Text="@(string.IsNullOrEmpty(device.weChatNick) ? "未登录" : device.weChatNick)" />
+                </RadzenStack>
+            </Template>
+        </RadzenListBox>
+    </RadzenSplitterPane>
+
+    @* Pane 2: Session/Contact List (300px) *@
+    <RadzenSplitterPane Size="300px" Min="250px" Max="400px" Style="border-right: 1px solid var(--rz-border-color);">
+        <RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%;">
+            
+            @* Custom Text Tabs *@
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceAround" 
+                         Style="height: 48px; border-bottom: 1px solid var(--rz-border-color); background: #fff;">
+                <div @onclick="@(() => _activeTab = "chats")" 
+                     style="@($"cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: {(_activeTab == "chats" ? "var(--rz-primary)" : "#666")}; border-bottom: 2px solid {(_activeTab == "chats" ? "var(--rz-primary)" : "transparent")}")">
+                    会话
+                </div>
+                <div @onclick="@(() => _activeTab = "contacts")" 
+                     style="@($"cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: {(_activeTab == "contacts" ? "var(--rz-primary)" : "#666")}; border-bottom: 2px solid {(_activeTab == "contacts" ? "var(--rz-primary)" : "transparent")}")">
+                    通讯录
+                </div>
+                <div @onclick="@(() => _activeTab = "groups")" 
+                     style="@($"cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: {(_activeTab == "groups" ? "var(--rz-primary)" : "#666")}; border-bottom: 2px solid {(_activeTab == "groups" ? "var(--rz-primary)" : "transparent")}")">
+                    群聊
+                </div>
+            </RadzenStack>
+
+            @* Search & Actions *@
+            <RadzenStack Orientation="Orientation.Vertical" Gap="8px" Style="padding: 10px; border-bottom: 1px solid var(--rz-border-color); background: #f9f9f9;">
+                <RadzenTextBox Placeholder="搜索" @bind-Value="_searchText" Change="@(args => OnSearchContact())" Style="width: 100%; height: 32px; font-size: 13px; border-radius: 4px;" />
+                
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="5px">
+                     <RadzenButton Text="一键群发" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: #666;" Disabled="true" />
+                     <RadzenButton Text="群发未读" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: #666;" Disabled="true" />
+                </RadzenStack>
+            </RadzenStack>
+
+            @* Content List *@
+            <div style="flex: 1; overflow-y: auto;">
+                @if (_activeTab == "chats")
+                {
+                     @if (Store.SelectedDevice == null)
+                     {
+                         <div class="rz-p-4 rz-text-align-center text-muted">请选择设备</div>
+                     }
+                     else if (Store.Conversations.Count == 0)
+                     {
+                         <div class="rz-p-4 rz-text-align-center text-muted">暂无会话</div>
+                     }
+                     else
+                     {
+                         <RadzenListBox Data="@Store.Conversations" Value="@Store.SelectedConversation" 
+                                        TValue="Conversation" SelectedItemsText="Selected"
+                                        Change="@(EventCallback.Factory.Create<object>(this, OnConversationChange))"
+                                        Style="width: 100%; border: none;">
+                             <Template Context="conv">
+                                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" Style="padding: 8px 0;">
+                                     <RadzenImage Path="@conv.displayAvatar" Style="width: 40px; height: 40px; border-radius: 4px;" />
+                                     <RadzenStack Orientation="Orientation.Vertical" Gap="2px" Style="overflow: hidden; flex: 1;">
+                                         <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                                             <RadzenText Text="@conv.displayName" TextStyle="TextStyle.Body2" Style="font-weight: 500; color: #333;" />
+                                             <RadzenText Text="@FormatDate(conv.lastMessageTime)" TextStyle="TextStyle.Caption" Style="color: #999; font-size: 11px;" />
+                                         </RadzenStack>
+                                         <RadzenText Text="@(conv.conversationType == 2 ? "[群] " + conv.lastMessageContent : conv.lastMessageContent)" 
+                                                     TextStyle="TextStyle.Caption" Style="color: #666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px;" />
+                                     </RadzenStack>
+                                     @if (conv.unreadCount > 0)
+                                     {
+                                         <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@(conv.unreadCount > 99 ? "99+" : conv.unreadCount.ToString())" />
+                                     }
+                                 </RadzenStack>
+                             </Template>
+                         </RadzenListBox>
+                     }
+                }
+                else if (_activeTab == "contacts" || _activeTab == "groups")
+                {
+                     @if (Store.SelectedDevice == null)
+                     {
+                         <div class="rz-p-4 rz-text-align-center text-muted">请选择设备</div>
+                     }
+                     else if (Store.Contacts.Count == 0)
+                     {
+                         <div class="rz-p-4 rz-text-align-center">
+                            <RadzenButton Text="同步联系人" ButtonStyle="ButtonStyle.Secondary" Click="SyncContacts" Size="ButtonSize.Small" />
+                         </div>
+                     }
+                     else
+                     {
+                         <RadzenListBox Data="@_filteredContacts" Value="@Store.SelectedContact"
+                                        TValue="Contact"
+                                        Change="@(EventCallback.Factory.Create<object>(this, OnContactChange))"
+                                        Style="width: 100%; border: none;">
+                             <Template Context="contact">
+                                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" Style="padding: 8px 0;">
+                                     <RadzenImage Path="@(string.IsNullOrEmpty(contact.avatar) ? "images/default-avatar.png" : contact.avatar)" 
+                                                  Style="width: 36px; height: 36px; border-radius: 4px;" />
+                                     <RadzenStack Orientation="Orientation.Vertical" Gap="0">
+                                         <RadzenText Text="@(string.IsNullOrEmpty(contact.remarks) ? contact.nickname : contact.remarks)" 
+                                                     TextStyle="TextStyle.Body2" Style="font-weight: 500; color: #333;" />
+                                         <RadzenText Text="@contact.nickname" TextStyle="TextStyle.Caption" Style="color: #999;" />
+                                     </RadzenStack>
+                                 </RadzenStack>
+                             </Template>
+                         </RadzenListBox>
+                     }
+                }
+            </div>
+
+        </RadzenStack>
+    </RadzenSplitterPane>
+
+    @* Pane 3: Chat Content *@
+    <RadzenSplitterPane>
+        <RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%; background: #f5f5f5;">
+             @if (Store.SelectedDevice == null && Store.SelectedContact == null && Store.SelectedConversation == null)
+             {
+                 <!-- Empty State -->
+                 <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="height: 100%;">
+                     <RadzenIcon Icon="chat_bubble_outline" Style="font-size: 4rem; color: #ccc;" />
+                     <RadzenText Text="请选择会话开始聊天" TextStyle="TextStyle.Body1" Style="color: #ccc; margin-top: 10px;" />
+                 </RadzenStack>
+             }
+             else
+             {
+                 <!-- Chat Header -->
+                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" 
+                              Style="height: 50px; padding: 0 1rem; border-bottom: 1px solid #e0e0e0; background: #fff;">
+                     <RadzenText Text="@(Store.SelectedContact?.remarks ?? Store.SelectedContact?.nickname ?? Store.SelectedConversation?.displayName ?? "Unknown")" 
+                                 TextStyle="TextStyle.Subtitle1" Style="margin: 0; font-weight: 600;" />
+                     <RadzenButton Icon="more_horiz" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Medium" />
+                 </RadzenStack>
+
+                 <!-- Chat Messages -->
+                 <div id="chat-box" class="rz-p-4" style="flex: 1; overflow-y: auto;">
+                     <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+                        @foreach (var msg in Store.CurrentMessages)
+                        {
+                            <div style="display: flex; width: 100%; justify-content: @(msg.direction == 1 ? "flex-end" : "flex-start");">
+                                @if (msg.direction != 1)
+                                {
+                                    <RadzenImage Path="@(ContextAvatar())" Style="width:36px; height:36px; border-radius: 4px; margin-right: 10px;" />
+                                }
+
+                                <div style="max-width: 70%; padding: 8px 12px; border-radius: 4px; position: relative; font-size: 14px; line-height: 1.5;
+                                            background-color: @(msg.direction == 1 ? "#95ec69" : "#fff"); border: @(msg.direction == 1 ? "none" : "1px solid #eee");">
+                                    @msg.content
+                                    @if (msg.sendStatus == 1)
+                                    {
+                                        <RadzenIcon Icon="sync" Style="font-size: 12px; margin-left: 8px; animation: rz-spin 1s infinite linear;" />
+                                    }
                                 </div>
 
-                        @if (msg.direction == 1)
-                        {
-                                         <RadzenImage Path="@Store.SelectedDevice.weChatAvatar" Style="width:36px; height:36px; border-radius: 4px; margin-left: 10px; background-color: #87d068;" />
-                        }
+                                @if (msg.direction == 1)
+                                {
+                                    <RadzenImage Path="@(Store.SelectedDevice?.weChatAvatar ?? "images/default-avatar.png")" Style="width:36px; height:36px; border-radius: 4px; margin-left: 10px;" />
+                                }
                             </div>
-                }
-                    <div id="scroll-anchor"></div>
-                </div>
+                        }
+                        <div id="scroll-anchor"></div>
+                     </RadzenStack>
+                 </div>
 
-                <!-- Chat Input -->
-                <div class="chat-input">
-                    <RadzenTextArea @bind-Value="_msgContent" Rows="4" Style="width: 100%; border: none; box-shadow: none;" Placeholder="Type a message..." 
-                              @onkeydown="HandleKeyPress" />
-                    <div style="text-align: right; margin-top: 10px;">
-                        <RadzenButton Text="Send" Click="Send" IsBusy="@_sending" ButtonStyle="ButtonStyle.Primary" />
-                    </div>
+                 <!-- Chat Input Area -->
+                 <div style="background: #fff; border-top: 1px solid #e0e0e0; padding: 0;">
+                     <!-- Toolbar -->
+                     <RadzenStack Orientation="Orientation.Horizontal" Gap="15px" Style="padding: 10px 15px; border-bottom: 1px solid #f0f0f0;">
+                         <RadzenIcon Icon="sentiment_satisfied_alt" Style="cursor: pointer; color: #666; font-size: 20px;" />
+                         <RadzenIcon Icon="folder_open" Style="cursor: pointer; color: #666; font-size: 20px;" />
+                         <RadzenIcon Icon="image" Style="cursor: pointer; color: #666; font-size: 20px;" />
+                         <RadzenIcon Icon="content_cut" Style="cursor: pointer; color: #666; font-size: 20px;" Click="CaptureScreen" />
+                         <RadzenIcon Icon="history" Style="cursor: pointer; color: #666; font-size: 20px;" />
+                     </RadzenStack>
+
+                     <!-- TextArea -->
+                     <RadzenTextArea @bind-Value="_msgContent" Rows="4" Style="width: 100%; border: none; box-shadow: none; padding: 10px 15px; resize: none;" 
+                                   Placeholder="请输入内容..." @onkeydown="HandleKeyPress" />
+                     
+                     <!-- Footer Send Button -->
+                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="padding: 5px 15px 10px;">
+                         <RadzenText Text="按Ctrl + Enter换行" TextStyle="TextStyle.Caption" Style="color: #999;" />
+                         <RadzenButton Text="发送 (Enter)" Click="Send" IsBusy="@_sending" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Style="padding-left: 20px; padding-right: 20px;" />
+                     </RadzenStack>
+                 </div>
+             }
+        </RadzenStack>
+    </RadzenSplitterPane>
+
+    @* Pane 4: Right Sidebar (Knowledge Base) *@
+    <RadzenSplitterPane Size="250px" Collapsible="true" Style="border-left: 1px solid var(--rz-border-color);">
+        <RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%; background: #fff;">
+            <!-- Simple Tab Header -->
+             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceAround" 
+                         Style="height: 48px; border-bottom: 1px solid #e0e0e0; background: #fafafa;">
+                <div style="cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: var(--rz-primary); border-bottom: 2px solid var(--rz-primary);">
+                    公共话术
                 </div>
-        }
-    </div>
-</div>
+                <div style="cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: #666;">
+                    信息管理
+                </div>
+            </RadzenStack>
+
+            <!-- Search -->
+            <div style="padding: 10px; border-bottom: 1px solid #f0f0f0;">
+                <RadzenTextBox Placeholder="请输入内容" Style="width: 100%; height: 30px; font-size: 12px;" />
+            </div>
+
+            <!-- Accordion Content -->
+            <div style="flex: 1; overflow-y: auto;">
+                <RadzenAccordion Multiple="true">
+                    <Items>
+                        <RadzenAccordionItem Text="文本" Icon="text_fields" Selected="true">
+                             <div class="rz-p-2" style="font-size: 12px; color: #666;">暂无文本话术</div>
+                        </RadzenAccordionItem>
+                        <RadzenAccordionItem Text="笑话一则" Icon="mood">
+                             <div class="rz-p-2" style="font-size: 12px; color: #666;">暂无内容</div>
+                        </RadzenAccordionItem>
+                        <RadzenAccordionItem Text="产品介绍" Icon="description">
+                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="padding: 5px 0; border-bottom: 1px dashed #eee;">
+                                 <span style="font-size: 12px;">语音文件</span>
+                                 <RadzenIcon Icon="send" Style="font-size: 14px; color: #999; cursor: pointer;" />
+                             </RadzenStack>
+                        </RadzenAccordionItem>
+                        <RadzenAccordionItem Text="文件" Icon="attach_file">
+                             <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="padding: 5px 0; border-bottom: 1px dashed #eee;">
+                                 <span style="font-size: 12px;">xlsx文件测试</span>
+                                 <RadzenIcon Icon="send" Style="font-size: 14px; color: #999; cursor: pointer;" />
+                             </RadzenStack>
+                        </RadzenAccordionItem>
+                        <RadzenAccordionItem Text="图片" Icon="image">
+                             <div class="rz-p-2" style="font-size: 12px; color: #666;">暂无图片</div>
+                        </RadzenAccordionItem>
+                    </Items>
+                </RadzenAccordion>
+            </div>
+        </RadzenStack>
+    </RadzenSplitterPane>
+</RadzenSplitter>
 
 @code {
     private string _msgContent = "";
     private string _searchText = "";
     private bool _sending = false;
-    private string _activeTab = "chats"; // Default to Chats
+    private string _activeTab = "chats";
 
     // Helper to get avatar for current chat context
     private string ContextAvatar()
@@ -295,12 +379,15 @@
 
     private async Task SelectContact(Contact contact)
     {
-        await Store.SelectContactAsync(contact);
+        // Null check handled by Change event logic mostly, but good to have
+        if (contact != null) 
+            await Store.SelectContactAsync(contact);
     }
 
     private async Task SelectConversation(Conversation conv)
     {
-        await Store.SelectConversationAsync(conv);
+        if (conv != null)
+            await Store.SelectConversationAsync(conv);
     }
 
     private async Task RefreshDevices()
@@ -331,6 +418,17 @@
         if (Store.SelectedDevice == null) return;
         await Store.RequestScreenShotAsync(Store.SelectedDevice.uuid);
         NoticeService.Notify(NotificationSeverity.Info, "Screenshot Requested");
+    }
+
+    private async Task OpenDeviceControl(SrClient? device = null)
+    {
+        var target = device ?? Store.SelectedDevice;
+        if (target == null) return;
+        
+        await DialogService.OpenAsync<SCRM.UI.Components.Dialogs.DeviceControlDialog>(
+            $"Device Control: {target.weChatNick}",
+            new Dictionary<string, object>() { { "Device", target } },
+            new DialogOptions() { Width = "700px", Height = "auto", Resizable = true, Draggable = true });
     }
 
     private async Task Send()
@@ -393,5 +491,29 @@
         if (dt.Year == DateTime.Now.Year)
             return dt.ToString("MM-dd");
         return dt.ToString("yyyy-MM-dd");
+    }
+
+    private async Task OnDeviceChange(object value)
+    {
+        if (value is SrClient device)
+        {
+            await SelectDevice(device);
+        }
+    }
+
+    private async Task OnConversationChange(object value)
+    {
+        if (value is Conversation conv)
+        {
+            await SelectConversation(conv);
+        }
+    }
+
+    private async Task OnContactChange(object value)
+    {
+        if (value is Contact contact)
+        {
+            await SelectContact(contact);
+        }
     }
 }

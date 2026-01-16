@@ -3,7 +3,7 @@
 @using SCRM.API.Models.Entities
 @using Microsoft.AspNetCore.Authorization
 @attribute [Authorize]
-@inject IDeviceService DeviceService
+@inject CrmStore Store
 
 <h1>Device Management</h1>
 
@@ -31,7 +31,8 @@
     {
         try
         {
-            devices = await DeviceService.GetDevicesAsync();
+            // Use Store to fetch devices
+            devices = await Store.GetDevicesAsync();
         }
         finally
         {

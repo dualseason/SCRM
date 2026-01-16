@@ -19,5 +19,10 @@ namespace SCRM.Shared.Interfaces
 
         // --- 铺开模块 ---
         // IDisposable SubscribeToMessages(Action<MessageDto> handler);
+
+        /// <summary>
+        /// 通用事件订阅
+        /// </summary>
+        IDisposable SubscribeToEvent<T>(string eventName, Action<T> handler);
     }
 }

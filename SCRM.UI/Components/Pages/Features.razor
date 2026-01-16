@@ -1,0 +1,48 @@
+@page "/features"
+@using Radzen
+@using Radzen.Blazor
+
+<PageTitle>功能大全</PageTitle>
+
+<RadzenSplitter Style="height: 100%; border: 1px solid var(--rz-border-color);">
+    <RadzenSplitterPane Size="250px" Min="200px" Max="300px">
+        <RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%; background: #fff;">
+            
+            <div class="rz-p-3" style="border-bottom: 1px solid var(--rz-border-color); font-weight: bold;">
+                功能列表
+            </div>
+
+            <div style="flex: 1; overflow-y: auto;">
+                <RadzenPanelMenu Style="width: 100%; border: none;">
+                    <RadzenPanelMenuItem Text="微信好友请求" Icon="notifications" Path="features/friend-requests" />
+                    <RadzenPanelMenuItem Text="添加微信好友" Icon="person_add" Path="features/add-friend" />
+                    <RadzenPanelMenuItem Text="批量加好友" Icon="group_add" Path="features/batch-add-friends" />
+                    <RadzenPanelMenuItem Text="加好友结果查询" Icon="check_circle" Path="features/add-friend-results" />
+                    <RadzenPanelMenuItem Text="自动功能开关" Icon="toggle_on" Path="features/auto-switch" />
+                    <RadzenPanelMenuItem Text="关键词回复" Icon="chat" Path="features/keyword-reply" />
+                    <RadzenPanelMenuItem Text="批量打标签" Icon="label" Path="features/batch-tag" />
+                    <RadzenPanelMenuItem Text="清理僵尸粉" Icon="cleaning_services" Path="features/clean-zombies" />
+                    <RadzenPanelMenuItem Text="导出二维码" Icon="qr_code" Path="features/export-qr" />
+                    <RadzenPanelMenuItem Text="手机管理" Icon="smartphone" Path="features/mobile-mgmt" />
+                    <RadzenPanelMenuItem Text="好友筛选" Icon="filter_list" Path="features/friend-filter" />
+                    <RadzenPanelMenuItem Text="素材资源库" Icon="folder" Path="features/material-library" />
+                    <RadzenPanelMenuItem Text="收款统计" Icon="attach_money" Path="features/payment-stats" />
+                    <RadzenPanelMenuItem Text="数据统计" Icon="bar_chart" Path="features/data-stats" />
+                </RadzenPanelMenu>
+            </div>
+        </RadzenStack>
+    </RadzenSplitterPane>
+
+    <RadzenSplitterPane>
+        <RadzenBody Style="padding: 2rem;">
+            <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="height: 100%; color: #999;">
+                <RadzenIcon Icon="apps" Style="font-size: 64px; margin-bottom: 1rem;" />
+                <RadzenText Text="请从左侧选择一个功能" TextStyle="TextStyle.H5" />
+            </RadzenStack>
+        </RadzenBody>
+    </RadzenSplitterPane>
+</RadzenSplitter>
+
+@code {
+    
+}

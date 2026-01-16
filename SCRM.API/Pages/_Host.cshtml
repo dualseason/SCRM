@@ -4,21 +4,23 @@
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="~/" />
-    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <!-- Bootstrap Local -->
+    <link href="css/bootstrap.min.css" rel="stylesheet" />
+    <!-- Radzen Theme -->
+    <link rel="stylesheet" href="_content/Radzen.Blazor/css/software-base.css">
+    <!-- Local Styles -->
     <link href="css/site.css" rel="stylesheet" />
     <link href="SCRM.API.styles.css" rel="stylesheet" />
-    <link rel="stylesheet" href="_content/Radzen.Blazor/css/software-base.css">
-    <link href="css/app.css" rel="stylesheet" />
     <link rel="icon" type="image/png" href="favicon.png"/>
-    <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+    <component type="typeof(HeadOutlet)" render-mode="Server" />
 </head>
 <body>
-    <component type="typeof(SCRM.UI.Components.Routes)" render-mode="ServerPrerendered" />
+    <component type="typeof(SCRM.UI.Components.Routes)" render-mode="Server" />
 
     <div id="blazor-error-ui">
         <environment include="Staging,Production">

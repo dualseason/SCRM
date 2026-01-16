@@ -65,6 +65,14 @@ namespace SCRM.UI.Services
                 _logger.LogInformation($"[CrmStore] Device Status Changed: {deviceId} -> {isOnline}");
                 _ = LoadDevicesAsync(); 
             }));
+
+            // [New] Subscribe to Screenshot Uploaded Event
+            _subscriptions.Add(_events.SubscribeToEvent("OnScreenShotUploaded", (string url) =>
+            {
+                _logger.LogInformation($"[CrmStore] Received Screenshot: {url}");
+                LastScreenShotUrl = url;
+                NotifyStateChanged();
+            }));
         }
 
         public async Task InitializeAsync()
@@ -124,8 +132,19 @@ namespace SCRM.UI.Services
         public async Task<bool> SendMessageAsync(string content) 
         { 
             if (SelectedConversation == null) return false;
+            // Best effort to find DeviceUUID:
+            // 1. From SelectedDevice
+            // 2. Or from Conversation's Account (if loaded)
+            string deviceUuid = SelectedDevice?.uuid ?? "";
             
-            var success = await _service.SendMessageAsync(SelectedConversation.conversationWxid, content);
+            if (string.IsNullOrEmpty(deviceUuid))
+            {
+                 // Try to fallback (but for now just return false or let Service handle empty)
+                 _logger.LogWarning("SendMessageAsync: No Device Selected.");
+                 return false;
+            }
+            
+            var success = await _service.SendMessageAsync(deviceUuid, SelectedConversation.conversationWxid, content);
             if (success)
             {
                 // Optimistic UI Update or Wait for Event
@@ -135,7 +154,10 @@ namespace SCRM.UI.Services
             }
             return success;
         }
-        public Task RequestScreenShotAsync() { return Task.CompletedTask; }
+        public async Task<bool> RequestScreenShotAsync(string deviceUuid) 
+        { 
+             return await _service.RequestScreenShotAsync(deviceUuid);
+        }
         public async Task LoadConversationsAsync(long accountId) 
         {
              // For now load all, can filter by accountId later
@@ -156,7 +178,7 @@ namespace SCRM.UI.Services
 
         public Task DisconnectAsync() { return Task.CompletedTask; } 
         
-        public Task RequestScreenShotAsync(string uuid) { return Task.CompletedTask; }
+
         public Task DeleteFriendAsync(string uuid, string wxid) { return Task.CompletedTask; }
         public Task DeleteFriendAsync(string wxid) { return Task.CompletedTask; } // Overload for UI
         public Task RequestMomentsSyncAsync() { return Task.CompletedTask; }
@@ -165,7 +187,8 @@ namespace SCRM.UI.Services
         public Task LoadMomentsAsync() { return Task.CompletedTask; }
 
         public Task DeleteWeChatAccountAsync(long accountId) { return Task.CompletedTask; }
-        public Task<List<SrClient>> LoadAllDevicesAsync() { return Task.FromResult(new List<SrClient>()); }
+        public Task<List<SrClient>> LoadAllDevicesAsync() { return _service.GetDevicesAsync(); }
+        public Task<List<SrClient>> GetDevicesAsync() => _service.GetDevicesAsync();
         public Task<List<WechatAccount>> LoadAllWeChatAccountsAsync() { return Task.FromResult(new List<WechatAccount>()); }
     }
 }

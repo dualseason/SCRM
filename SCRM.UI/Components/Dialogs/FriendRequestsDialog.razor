@@ -1,5 +1,5 @@
 @using SCRM.UI.Services
-@inject WeChatService WeChatService
+@inject ICrmService CrmService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
@@ -16,14 +16,21 @@
 </div>
 
 @code {
-    [Parameter] public string ConnectionId { get; set; }
+    [Parameter] public string DeviceUuid { get; set; }
+    
+    // Legacy support for callers using "ConnectionId"
+    [Parameter] public string ConnectionId 
+    { 
+        get => DeviceUuid; 
+        set => DeviceUuid = value; 
+    }
 
     string friendId;
     string friendNick;
 
     async Task AcceptRequest()
     {
-        var success = await WeChatService.AcceptFriendRequestAsync(ConnectionId, friendId, friendNick ?? "");
+        var success = await CrmService.AcceptFriendRequestAsync(DeviceUuid, friendId, friendNick ?? "");
         if (success)
         {
             NotificationService.Notify(NotificationSeverity.Success, "Sent", "Accept Friend Request command sent.");

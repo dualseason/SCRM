@@ -9,6 +9,12 @@ namespace SCRM.Shared.Interfaces
     public interface ICrmEventPublisher
     {
         // --- 试点模块 ---
+        // --- 试点模块 ---
         void PublishDeviceStatus(string deviceId, bool isOnline);
+
+        /// <summary>
+        /// 通用事件发布
+        /// </summary>
+        void PublishEvent<T>(string eventName, T data);
     }
 }

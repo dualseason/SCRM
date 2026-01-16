@@ -1,0 +1,96 @@
+@page "/mass-send"
+@using SCRM.UI.Services
+@using SCRM.SHARED.Models
+@using Radzen
+@using Radzen.Blazor
+@inject NotificationService NoticeService
+@inject DialogService DialogService
+
+<PageTitle>群发消息</PageTitle>
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="height: 100%; padding: 1rem;">
+    
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px">
+            <RadzenText Text="群发列表" TextStyle="TextStyle.H6" Style="margin: 0;" />
+            
+            <RadzenSelectBar @bind-Value="@_activeTab" TValue="string" Size="ButtonSize.Small" class="rz-ml-4">
+                <Items>
+                    <RadzenSelectBarItem Text="群发好友" Value="@("friends")" />
+                    <RadzenSelectBarItem Text="群发群" Value="@("groups")" />
+                </Items>
+            </RadzenSelectBar>
+        </RadzenStack>
+
+        <RadzenButton Text="新增群发" Icon="add" ButtonStyle="ButtonStyle.Warning" Click="OnNewTask" />
+    </RadzenStack>
+
+    <RadzenCard Style="flex: 1; padding: 0;">
+        <RadzenDataGrid Data="@_tasks" TItem="MassSendTask" AllowPaging="true" PageSize="20" AllowSorting="true" 
+                        EmptyText="暂无数据" Style="height: 100%; border: none;">
+            <Columns>
+                <RadzenDataGridColumn TItem="MassSendTask" Property="TaskType" Title="任务类型" Width="120px" />
+                <RadzenDataGridColumn TItem="MassSendTask" Property="WechatNick" Title="微信昵称" Width="150px" />
+                <RadzenDataGridColumn TItem="MassSendTask" Property="Status" Title="当前状态" Width="120px">
+                    <Template Context="data">
+                        <RadzenBadge BadgeStyle="@GetStatusBadge(data.Status)" Text="@data.Status" />
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="MassSendTask" Property="Remark" Title="备注" />
+                <RadzenDataGridColumn TItem="MassSendTask" Property="ExecTime" Title="执行时间" Width="180px" />
+                <RadzenDataGridColumn TItem="MassSendTask" Property="FinishTime" Title="完成时间" Width="180px" />
+                <RadzenDataGridColumn TItem="MassSendTask" Title="操作" Width="150px" TextAlign="TextAlign.Center">
+                    <Template Context="data">
+                         <RadzenButton Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger" Click="@(() => DeleteTask(data))" />
+                    </Template>
+                </RadzenDataGridColumn>
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+    
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center">
+        <RadzenPager Count="@_tasks.Count" PageSize="20" PageNumbersCount="5" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    private string _activeTab = "friends";
+    private List<MassSendTask> _tasks = new List<MassSendTask>();
+
+    protected override void OnInitialized()
+    {
+        // Mock Data
+        // _tasks.Add(new MassSendTask { ... });
+    }
+
+    private void OnNewTask()
+    {
+        NoticeService.Notify(NotificationSeverity.Info, "功能开发中", "新增群发任务尚未实现");
+    }
+
+    private void DeleteTask(MassSendTask task)
+    {
+        _tasks.Remove(task);
+    }
+
+    private BadgeStyle GetStatusBadge(string status)
+    {
+        return status switch
+        {
+            "Executing" => BadgeStyle.Info,
+            "Completed" => BadgeStyle.Success,
+            "Failed" => BadgeStyle.Danger,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    public class MassSendTask
+    {
+        public string TaskType { get; set; } = "Text";
+        public string WechatNick { get; set; } = "Job";
+        public string Status { get; set; } = "Pending";
+        public string Remark { get; set; } = "Promo";
+        public DateTime? ExecTime { get; set; }
+        public DateTime? FinishTime { get; set; }
+    }
+}

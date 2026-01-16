@@ -10,6 +10,8 @@ using SCRM.Services;
 using SCRM.Models.Configurations;
 using SCRM.Services.Netty;
 using SCRM.API.Services;
+using SCRM.API.Services.Core;
+using SCRM.API.Services.Events;
 
 using System.Text;
 using Serilog;
@@ -19,7 +21,10 @@ using SCRM.API.Hubs;
 using Microsoft.AspNetCore.Identity;
 using SCRM.SHARED.Models;
 using SCRM.Shared.Interfaces;
-using SCRM.API.Services;
+
+using Blazored.LocalStorage;
+using Microsoft.AspNetCore.Components.Authorization;
+using SCRM.UI.Services;
 
 public partial class Program
 {
@@ -185,13 +190,35 @@ public partial class Program
         builder.Services.AddSingleton<MessageRouter>();
         builder.Services.AddSingleton<NettyServer>();
         builder.Services.AddSingleton<NettyMessageService>();
-        builder.Services.AddSingleton<ClientTaskService>();
+        builder.Services.AddSingleton<SCRM.Services.ClientTaskService>();
         builder.Services.AddScoped<ISystemLogService, SystemLogService>();
 
         // Blazor Server Services
         builder.Services.AddRazorPages();
         builder.Services.AddServerSideBlazor();
         builder.Services.AddScoped<SCRM.UI.Services.CrmStore>(); // Required for Blazor Server Injection
+        
+        // Radzen Services
+        builder.Services.AddScoped<Radzen.DialogService>();
+        builder.Services.AddScoped<Radzen.NotificationService>();
+        builder.Services.AddScoped<Radzen.TooltipService>();
+        builder.Services.AddScoped<Radzen.ContextMenuService>();
+        
+        // System Config Service (Direct DB Access)
+        builder.Services.AddScoped<ISystemConfigService, ServerSystemConfigService>();
+        
+        // Device Command Service (Direct SignalR Hub Access)
+        builder.Services.AddScoped<ServerDeviceCommandService>();
+        
+        // HttpClient for Local API Calls (Blazor Server Monolith Pattern)
+        builder.Services.AddHttpClient();
+        
+        // Storage Service
+        builder.Services.AddBlazoredLocalStorage();
+        
+        // Custom Auth State Provider
+        builder.Services.AddScoped<AuthenticationStateProvider, CustomAuthenticationStateProvider>();
+        builder.Services.AddAuthorizationCore();
 
         // SCRM Architecture v5 Services (Skeleton)
         builder.Services.AddScoped<ICrmService, CrmService>();
@@ -203,6 +230,16 @@ public partial class Program
 
         builder.Services.AddHostedService<NettyMessageService>(provider => provider.GetRequiredService<NettyMessageService>());        
         builder.Services.AddHostedService<EventForwardingService>(); // Forward events to SignalR
+        
+        // Netty Handlers (Scoped)
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.AuthMessageHandler>();
+builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.TaskMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.SystemMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.ChatMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.ContactMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.GroupMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.MomentsMessageHandler>();
+        
         builder.Services.AddHostedService<SCRM.Services.Automation.AutomationService>(); // C&C Automation (Auto-Reply, etc.)
         builder.Services.AddHostedService<SCRM.API.Services.Maintenance.IndexCleanupService>(); // Auto-fix zombie indexes
         builder.Services.AddHostedService<SCRM.API.Services.Maintenance.MessageCleanupService>(); // Auto-delete old messages

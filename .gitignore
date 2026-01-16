@@ -262,8 +262,10 @@ azure-pipelines.yml
 
 # User secrets
 secrets.json
-*.md
-doc/
+# *.md
+# doc/
 /*.txt
 .agent/
 .vs/
+*.md
+/tmp*

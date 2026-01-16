@@ -3,7 +3,7 @@
 @using SCRM.SHARED.Models
 @using Radzen
 @using Radzen.Blazor
-@inject WeChatService WeChatService
+@inject ICrmService CrmService
 @inject NotificationService NotificationService
 @inject NavigationManager Navigation
 
@@ -91,15 +91,7 @@
         isLoading = true;
         try
         {
-            // Ensure connection
-            if (!WeChatService.IsConnected)
-            {
-                 // Simple wait or notify
-                 NotificationService.Notify(NotificationSeverity.Warning, "连接中...", "正在连接服务器，请稍候");
-                 await Task.Delay(1000);
-            }
-            
-            settings = await WeChatService.GetAccountSettingsAsync(AccountId);
+            settings = await CrmService.GetAccountSettingsAsync(AccountId);
         }
         catch (Exception ex)
         {
@@ -115,14 +107,14 @@
     {
         try
         {
-            bool success = await WeChatService.UpdateAccountSettingsAsync(AccountId, settings);
+            bool success = await CrmService.UpdateAccountSettingsAsync(AccountId, settings);
             if (success)
             {
                 NotificationService.Notify(NotificationSeverity.Success, "保存成功", "配置已更新");
             }
             else
             {
-                NotificationService.Notify(NotificationSeverity.Error, "保存失败", "服务器返回错误");
+                NotificationService.Notify(NotificationSeverity.Error, "保存失败", "数据库操作失败");
             }
         }
         catch (Exception ex)

@@ -1,6 +1,6 @@
 @using SCRM.UI.Services
 @using SCRM.API.Models.Entities
-@inject WeChatService WeChatService
+@inject ICrmService CrmService
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
@@ -26,7 +26,15 @@
 </div>
 
 @code {
-    [Parameter] public string ConnectionId { get; set; }
+    [Parameter] public string DeviceUuid { get; set; }
+    
+    // Legacy support for callers using "ConnectionId"
+    [Parameter] public string ConnectionId 
+    { 
+        get => DeviceUuid; 
+        set => DeviceUuid = value; 
+    }
+
     [Parameter] public string ChatRoomId { get; set; }
     [Parameter] public string CurrentGroupName { get; set; }
 
@@ -40,25 +48,8 @@
 
     async Task RenameGroup()
     {
-        // Action 0 = Socket_ChatRoom_ModName
-        // 1=ModTopic, 2=AddMember, 3=DelMember, ... 6=ModNickName
-        // Based on Proto inspection, typical "Rename Group" is likely Action 0 or related context.
-        // Let's assume Action 0 is correct for ModName based on standard behavior.
-        // Wait, Proto said EnumChatRoomAction: ModName = 9? No, let's double check.
-        // Looking at ChatRoomActionTask.proto (viewed earlier):
-        //   None = 0;
-        //   ShowName = 6;
-        //   ModTopic = 1;
-        //   AddMember = 2; // Invite
-        //   DelMember = 3; // Kick
-        //   ModName = ??? (Need to check enum again, or guess)
-        // I'll check the proto file in next turn if I'm unsure, OR I'll search existing code.
-        // But for "Rename", usually it's "ModTopic" (1) or "ModName" if it exists.
-        // Let's assume ModTopic (1) is "Group Name" for now as "Name" often means "My alias in group".
-        // Actually, WeChat groups have "Topic" which is the Name.
-        // So I will use Action = 1 (ModTopic) for Rename Group.
-        
-        var success = await WeChatService.ExecuteGroupActionAsync(ConnectionId, ChatRoomId, 1, newGroupName, 0); 
+        // Action 1 = ModTopic
+        var success = await CrmService.ExecuteGroupActionAsync(DeviceUuid, ChatRoomId, 1, newGroupName, 0); 
         if (success)
         {
             NotificationService.Notify(NotificationSeverity.Success, "Sent", "Rename command sent.");
@@ -73,7 +64,7 @@
     async Task InviteMember()
     {
         // Action 2 = AddMember
-        var success = await WeChatService.ExecuteGroupActionAsync(ConnectionId, ChatRoomId, 2, inviteWxid, 0);
+        var success = await CrmService.ExecuteGroupActionAsync(DeviceUuid, ChatRoomId, 2, inviteWxid, 0);
         if (success)
         {
             NotificationService.Notify(NotificationSeverity.Success, "Sent", "Invite command sent.");

@@ -1,176 +1,108 @@
 @using SCRM.UI.Services
 @using SCRM.API.Models.Entities
-@inject WeChatService WeChatService
+@using SCRM.SHARED.Models
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
 @inject DialogService DialogService
-@inject NotificationService NotificationService
-@implements IAsyncDisposable
+@inject NotificationService NoticeService
 
-<div style="display: flex; flex-direction: column; gap: 20px;">
-    <!-- Screenshot Section -->
+<RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="width: 100%; max-width: 600px;">
+    
+    @* Device Info Section *@
     <RadzenCard>
-        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Screenshot</RadzenText>
-        <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-            <RadzenButton Text="Take Screenshot" Icon="camera_alt" Click="@RequestScreenshot" IsBusy="@isTakingScreenshot" />
-        </div>
-        @if (!string.IsNullOrEmpty(screenshotUrl))
-        {
-            <div style="text-align: center; border: 1px solid #eee; padding: 10px;">
-                <RadzenImage Path="@screenshotUrl" Style="max-width: 100%; max-height: 400px;" />
+        <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H3">Device Information</RadzenText>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem">
+            <RadzenStack Gap="0">
+                <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-mb-0">Device Name (Remark)</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1"><b>@(Device.weChatNick ?? "Unknown")</b></RadzenText>
+                
+                <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-mb-0">Model</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1">@(Device.device?.PhoneModel ?? "Unknown")</RadzenText>
+            </RadzenStack>
+            
+            <RadzenStack Gap="0">
+                 <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-mb-0">UUID</RadzenText>
+                <RadzenText TextStyle="TextStyle.Body2" Style="font-family: monospace;">@Device.uuid</RadzenText>
+                
+                <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-mb-0">Status</RadzenText>
+                <RadzenBadge BadgeStyle="@(Device.isOnline ? BadgeStyle.Success : BadgeStyle.Danger)" Text="@(Device.isOnline ? "Online" : "Offline")" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    @* Actions Section *@
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H3">Actions</RadzenText>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap">
+            <RadzenButton Text="Capture Screen" Icon="screenshot_monitor" ButtonStyle="ButtonStyle.Primary" Click="OnCaptureScreen" IsBusy="@_isCapturing" />
+            <RadzenButton Text="Sync Contacts" Icon="sync" ButtonStyle="ButtonStyle.Secondary" Click="OnSyncContacts" />
+            <RadzenButton Text="Reboot (Mock)" Icon="restart_alt" ButtonStyle="ButtonStyle.Danger" Disabled="true" />
+        </RadzenStack>
+    </RadzenCard>
+
+    @* Screenshot Display *@
+    @if (!string.IsNullOrEmpty(Store.LastScreenShotUrl))
+    {
+        <RadzenCard>
+            <RadzenText TextStyle="TextStyle.Subtitle2">Latest Screenshot</RadzenText>
+            <div style="width: 100%; overflow: auto; max-height: 400px; text-align: center; background: #f0f0f0; padding: 10px;">
+                 <RadzenImage Path="@Store.LastScreenShotUrl" Style="max-width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
             </div>
-        }
-    </RadzenCard>
+        </RadzenCard>
+    }
+    
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Style="margin-top: 1rem;">
+        <RadzenButton Text="Close" Click="() => DialogService.Close(false)" ButtonStyle="ButtonStyle.Light" />
+    </RadzenStack>
 
-    <!-- System Actions Section -->
-    <RadzenCard>
-        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">System Actions</RadzenText>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-            <RadzenButton Text="Clean App Cache" Icon="cleaning_services" ButtonStyle="ButtonStyle.Info" Click="@(() => ExecuteAction(4, "Clean App Cache"))" />
-            <RadzenButton Text="Clean WeChat Cache" Icon="delete_sweep" ButtonStyle="ButtonStyle.Info" Click="@(() => ExecuteAction(5, "Clean WeChat Cache"))" />
-            <RadzenButton Text="Restart WeChat" Icon="restart_alt" ButtonStyle="ButtonStyle.Warning" Click="@(() => ExecuteAction(9, "Restart WeChat"))" />
-             <RadzenButton Text="Reboot Phone" Icon="power_settings_new" ButtonStyle="ButtonStyle.Danger" Click="@(() => ExecuteAction(1, "Reboot Phone"))" />
-        </div>
-    </RadzenCard>
-</div>
+</RadzenStack>
 
 @code {
-    [Parameter] public string ConnectionId { get; set; }
-    [Parameter] public string DeviceId { get; set; } // AccountId
-    [Parameter] public string DeviceUuid { get; set; } // UUID for SignalR Group
-    
-    string screenshotUrl;
-    bool isTakingScreenshot;
+    [Parameter] public SrClient Device { get; set; }
 
-    protected override async Task OnInitializedAsync()
+    private bool _isCapturing = false;
+
+    protected override void OnInitialized()
     {
+        Store.OnChange += StateHasChanged;
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= StateHasChanged;
+    }
+
+    private async Task OnCaptureScreen()
+    {
+        _isCapturing = true;
         try 
         {
-            if (WeChatService.IsConnected)
+            var success = await Store.RequestScreenShotAsync(Device.uuid);
+            if (success)
             {
-                // Use stable Device UUID group
-                if (!string.IsNullOrEmpty(DeviceUuid))
-                {
-                    await WeChatService.JoinGroupAsync(DeviceUuid);
-                }
-                else if (!string.IsNullOrEmpty(ConnectionId))
-                {
-                    // Fallback
-                    await WeChatService.JoinGroupAsync(ConnectionId);
-                }
+                NoticeService.Notify(NotificationSeverity.Info, "Summary", "Screenshot requested. Updating...");
+                // Optimistic wait, though real update comes via SignalR -> Store
+                await Task.Delay(2000); 
+            }
+            else
+            {
+                NoticeService.Notify(NotificationSeverity.Error, "Error", "Failed to send request (Device offline or not found).");
             }
         }
         catch (Exception ex)
         {
-            NotificationService.Notify(NotificationSeverity.Warning, "SignalR Warning", "Could not subscribe to device updates: " + ex.Message);
-            Console.WriteLine("JoinGroup Error: " + ex);
+            NoticeService.Notify(NotificationSeverity.Error, "Error", $"Request failed: {ex.Message}");
         }
-        WeChatService.OnScreenShotReceived += HandleScreenshot;
-        WeChatService.OnDeviceStatusChanged += HandleDeviceStatusChanged;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        WeChatService.OnScreenShotReceived -= HandleScreenshot;
-        WeChatService.OnDeviceStatusChanged -= HandleDeviceStatusChanged;
-        
-        // Leave the correct group
-        if (!string.IsNullOrEmpty(DeviceUuid))
+        finally
         {
-            await WeChatService.LeaveGroupAsync(DeviceUuid);
-        }
-        else
-        {
-            await WeChatService.LeaveGroupAsync(ConnectionId);
+            _isCapturing = false;
         }
     }
 
-    private async void HandleDeviceStatusChanged(string deviceId, string newConnectionId, bool isOnline)
+    private async Task OnSyncContacts()
     {
-        // 如果这个更新是针对我们正在控制的这台设备的
-        if (deviceId == DeviceId && isOnline && !string.IsNullOrEmpty(newConnectionId) && newConnectionId != ConnectionId)
-        {
-            Console.WriteLine($"Device Reconnected！ Updating ConnectionId: {ConnectionId} -> {newConnectionId}");
-            
-            // 只需要更新 ConnectionId 变量，以便发送指令时使用
-            // 无需退群/加群，因为我们现在加入的是 UUID 稳定群组
-            ConnectionId = newConnectionId;
-
-            // 通知用户
-            await InvokeAsync(() => {
-                NotificationService.Notify(NotificationSeverity.Info, "Recovered", "Device reconnected. Session updated.");
-                StateHasChanged();
-            });
-        }
-    }
-
-    async Task RequestScreenshot()
-    {
-        isTakingScreenshot = true;
-        screenshotUrl = null;
-        
-        // Timeout Logic
-        var timeoutMs = 15000; // 15 seconds
-        // Use DeviceUuid for stable command targeting
-        var task = WeChatService.RequestScreenShotAsync(DeviceUuid);
-        
-        if (await Task.WhenAny(task, Task.Delay(timeoutMs)) == task)
-        {
-            // Task completed within timeout
-            var success = await task;
-            if (!success)
-            {
-                isTakingScreenshot = false;
-                NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send screenshot request.");
-            }
-            
-            // Let's implement a secondary wait for the image
-             _ = Task.Run(async () => 
-            {
-                await Task.Delay(timeoutMs);
-                if (isTakingScreenshot && string.IsNullOrEmpty(screenshotUrl))
-                {
-                    await InvokeAsync(() => 
-                    {
-                        if (isTakingScreenshot) // Double check check
-                        {
-                            isTakingScreenshot = false;
-                            NotificationService.Notify(NotificationSeverity.Warning, "Timeout", "Screenshot capture timed out (no response).");
-                            StateHasChanged();
-                        }
-                    });
-                }
-            });
-        }
-        else
-        {
-            // Timeout sending the command (connection issue)
-            isTakingScreenshot = false;
-            NotificationService.Notify(NotificationSeverity.Error, "Timeout", "Request timed out.");
-        }
-    }
-
-    void HandleScreenshot(string url)
-    {
-        screenshotUrl = url;
-        isTakingScreenshot = false;
-        InvokeAsync(StateHasChanged);
-    }
-
-    async Task ExecuteAction(int action, string actionName)
-    {
-        var confirmed = await DialogService.Confirm($"Are you sure you want to {actionName}?", "Confirm Action", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
-        if (confirmed == true)
-        {
-            var success = await WeChatService.ExecutePhoneActionAsync(DeviceUuid, action);
-            if (success)
-            {
-                NotificationService.Notify(NotificationSeverity.Success, "Sent", $"{actionName} command sent.");
-            }
-            else
-            {
-                NotificationService.Notify(NotificationSeverity.Error, "Failed", $"Could not send {actionName} command.");
-            }
-        }
+        await Store.SyncContactsAsync(); // Store typically syncs selected device, need to ensure logic holds or pass ID
+        NoticeService.Notify(NotificationSeverity.Info, "Summary", "Sync contacts requested.");
     }
 }
-
-

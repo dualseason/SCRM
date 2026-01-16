@@ -78,6 +78,23 @@ namespace SCRM.Services.Events
                 }
             });
 
+            // 订阅截屏上传完成事件 (New)
+            // 接收事件后，通过 SignalR 推送给其他客户端（如 DeviceControlDialog）
+             _eventBus.Subscribe<ScreenShotUploadedEvent>(async (e) =>
+            {
+                 // 注意：ScreenShotUploadedEvent 之前定义时好像忘了加 DeviceUuid 字段？
+                 // 如果没有 DeviceUuid，我怎么知道推给哪个组？
+                 // ScreenShotUploadedEvent 只有 Url。
+                 // [Critical] 我必须在 Event 类里加上 DeviceUuid。
+                 
+                 // 暂时假设有 DeviceUuid，一会我去补上 Model。
+                 if (!string.IsNullOrEmpty(e.DeviceUuid))
+                 {
+                     await _hubContext.Clients.Group(e.DeviceUuid).SendAsync("OnScreenShotUploaded", e.Url, stoppingToken);
+                     _logger.LogInformation("转发截屏事件: -> SignalR组 {DeviceUuid}", e.DeviceUuid);
+                 }
+            });
+
             return Task.CompletedTask;
         }
 

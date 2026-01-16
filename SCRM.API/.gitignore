@@ -264,3 +264,5 @@ azure-pipelines.yml
 secrets.json
 *.vsidx
 *.VC.db
+*.md
+/tmp*

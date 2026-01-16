@@ -8,7 +8,7 @@ namespace SCRM.API.Models.Entities
     /// 微信账号信息表
     /// </summary>
     [Table("wechat_accounts")]
-    public class WechatAccount : ICacheable<WechatAccount>
+    public partial class WechatAccount : ICacheable<WechatAccount>
     {
         /// <summary>账号ID</summary>
         [Key]
@@ -41,6 +41,8 @@ namespace SCRM.API.Models.Entities
         [Column("client_uuid")]
         [StringLength(64)]
         public string? clientUuid { get; set; }
+
+        bool isOnline=> Client?.isOnline ?? false;
 
         [ForeignKey("clientUuid")]
         public virtual SrClient? Client { get; set; }
