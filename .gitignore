@@ -268,4 +268,4 @@ secrets.json
 .agent/
 .vs/
 *.md
-/tmp*
+/tmpclaude*

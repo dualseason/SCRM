@@ -5,7 +5,7 @@ using SCRM.API.Models.Events;
 using SCRM.Services.Events;
 using SCRM.Shared.Interfaces;
 
-namespace SCRM.API.Services.Events
+namespace SCRM.API.Services
 {
     /// <summary>
     /// Event Aggregator Bridge

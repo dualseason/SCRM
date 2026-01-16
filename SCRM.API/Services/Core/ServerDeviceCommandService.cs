@@ -5,7 +5,7 @@ using SCRM.Services;
 using SCRM.SHARED.Models;
 using Jubo.JuLiao.IM.Wx.Proto;
 
-namespace SCRM.API.Services.Core
+namespace SCRM.API.Services
 {
     public class ServerDeviceCommandService
     {

@@ -170,24 +170,7 @@ namespace SCRM.API.Services.Netty.Handlers
             else
             {
                  _logger.LogWarning("设备认证失败: 未能识别设备或 Token 无效. Credential: {Credential}", credential);
-                 
-                 // 发送强制下线通知，提示客户端 Token 过期或无效，触发客户端重新登录
-                 var reason = "Authentication Failed: Invalid Token or Device Not Found";
-                 var offlineNotice = new AccountForceOfflineNoticeMessage
-                 {
-                     Reason = EnumForceOfflineReason.NoReason,
-                     Message = reason
-                 };
-
-                 var responseMsg = new TransportMessage
-                 {
-                     Id = message.Id,
-                     MsgType = EnumMsgType.AccountForceOfflineNotice,
-                     RefMessageId = message.Id,
-                     Content = Any.Pack(offlineNotice)
-                 };
-                 
-                 await context.WriteAndFlushAsync(responseMsg);
+                 // 发送 Error Response?
             }
         }
 
@@ -230,11 +213,17 @@ namespace SCRM.API.Services.Netty.Handlers
 
         private async Task SendAckAsync(TransportMessage message, IChannelHandlerContext context)
         {
+             var ack = new MsgReceivedAckMessage
+             {
+                 Id = message.Id
+             };
+             
              var response = new TransportMessage
              {
                  Id = 0,
                  MsgType = EnumMsgType.MsgReceivedAck,
-                 RefMessageId = message.Id
+                 RefMessageId = message.Id,
+                 Content = Any.Pack(ack)
              };
              
              await context.WriteAndFlushAsync(response);
