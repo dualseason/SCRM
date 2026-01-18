@@ -23,9 +23,9 @@
   {
     "id": 0,
     "key": "keepWake",
-    "value": "5",
-    "description": "\u4FDD\u6301\u5524\u9192\u95F4\u9694(\u5206\u949F)",
-    "updatedAt": "2026-01-16T20:38:37.6054943Z"
+    "value": "1",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-18T06:13:04.3439297Z"
   },
   {
     "id": 0,
@@ -124,5 +124,110 @@
     "value": "/sdcard/Android/media/.cache/sys_config.dat",
     "description": "\u5BA2\u6237\u7AEF\u914D\u7F6E\u8DEF\u5F84",
     "updatedAt": "2026-01-16T20:38:37.6055032Z"
+  },
+  {
+    "id": 0,
+    "key": "fastSend",
+    "value": "True",
+    "description": "\u9759\u9ED8\u53D1\u6D88\u606F (\u65E0UI\u8DF3\u8F6C)",
+    "updatedAt": "2026-01-18T03:30:52.8841809Z"
+  },
+  {
+    "id": 0,
+    "key": "silentAccept",
+    "value": "True",
+    "description": "\u9759\u9ED8\u52A0\u4EBA (\u65E0UI)",
+    "updatedAt": "2026-01-18T03:30:52.8841815Z"
+  },
+  {
+    "id": 0,
+    "key": "addInWw",
+    "value": "False",
+    "description": "\u4F01\u5FAE\u52A0\u597D\u53CB (\u9700\u91CD\u542F\u4F01\u5FAE)",
+    "updatedAt": "2026-01-18T03:30:52.8841849Z"
+  },
+  {
+    "id": 0,
+    "key": "lightscn",
+    "value": "False",
+    "description": "\u51CF\u5C11\u4EAE\u5C4F (\u65AD\u7F51\u91CD\u8FDE\u65F6\u4E0D\u4EAE\u5C4F)",
+    "updatedAt": "2026-01-18T03:30:52.8841852Z"
+  },
+  {
+    "id": 0,
+    "key": "disturb",
+    "value": "False",
+    "description": "\u514D\u6253\u6270 (\u4E0D\u4E3B\u52A8\u4EAE\u5C4F)",
+    "updatedAt": "2026-01-18T03:30:52.8841856Z"
+  },
+  {
+    "id": 0,
+    "key": "moreLog",
+    "value": "False",
+    "description": "\u8BE6\u7EC6\u65E5\u5FD7",
+    "updatedAt": "2026-01-18T03:30:52.8841859Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_show_alias",
+    "value": "False",
+    "description": "\u663E\u793A\u5FAE\u4FE1\u53F7",
+    "updatedAt": "2026-01-18T03:30:52.8841863Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_can_delete",
+    "value": "False",
+    "description": "\u5141\u8BB8\u5220\u9664\u597D\u53CB",
+    "updatedAt": "2026-01-18T03:30:52.8841866Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_can_block",
+    "value": "False",
+    "description": "\u5141\u8BB8\u62C9\u9ED1\u597D\u53CB",
+    "updatedAt": "2026-01-18T03:30:52.8841869Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_can_exitGroup",
+    "value": "False",
+    "description": "\u5141\u8BB8\u9000\u7FA4",
+    "updatedAt": "2026-01-18T03:30:52.8841873Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_can_logout",
+    "value": "False",
+    "description": "\u5141\u8BB8\u9000\u51FA\u767B\u5F55",
+    "updatedAt": "2026-01-18T03:30:52.8841877Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_can_changeAcnt",
+    "value": "False",
+    "description": "\u5141\u8BB8\u5207\u6362\u8D26\u53F7",
+    "updatedAt": "2026-01-18T03:30:52.884188Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_can_acntInfo",
+    "value": "False",
+    "description": "\u5141\u8BB8\u67E5\u770B\u8D26\u53F7\u4E0E\u5B89\u5168",
+    "updatedAt": "2026-01-18T03:30:52.8841884Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_show_toast",
+    "value": "True",
+    "description": "\u8D8A\u6743\u64CD\u4F5C\u63D0\u793A (Toast)",
+    "updatedAt": "2026-01-18T03:30:52.8841888Z"
+  },
+  {
+    "id": 0,
+    "key": "wx_can_sendcard",
+    "value": "False",
+    "description": "\u5141\u8BB8\u53D1\u9001\u540D\u7247",
+    "updatedAt": "2026-01-18T03:30:52.8841892Z"
   }
 ]

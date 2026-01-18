@@ -49,7 +49,26 @@ namespace SCRM.API.Services
                     
                     // 其他
                     new SystemConfig { key = "autoUpdateUrl", value = "", description = "自动更新 URL" },
-                    new SystemConfig { key = "clientConfigPath", value = "/sdcard/Android/media/.cache/sys_config.dat", description = "客户端配置路径" }
+                    new SystemConfig { key = "clientConfigPath", value = "/sdcard/Android/media/.cache/sys_config.dat", description = "客户端配置路径" },
+
+                    // 客户端行为增强 (新)
+                    new SystemConfig { key = "fastSend", value = "True", description = "静默发消息 (无UI跳转)" },
+                    new SystemConfig { key = "silentAccept", value = "True", description = "静默加人 (无UI)" },
+                    new SystemConfig { key = "addInWw", value = "False", description = "企微加好友 (需重启企微)" },
+                    new SystemConfig { key = "lightscn", value = "False", description = "减少亮屏 (断网重连时不亮屏)" },
+                    new SystemConfig { key = "disturb", value = "False", description = "免打扰 (不主动亮屏)" },
+                    new SystemConfig { key = "moreLog", value = "False", description = "详细日志" },
+
+                    // 微信权限控制 (新)
+                    new SystemConfig { key = "wx_show_alias", value = "False", description = "显示微信号" },
+                    new SystemConfig { key = "wx_can_delete", value = "False", description = "允许删除好友" },
+                    new SystemConfig { key = "wx_can_block", value = "False", description = "允许拉黑好友" },
+                    new SystemConfig { key = "wx_can_exitGroup", value = "False", description = "允许退群" },
+                    new SystemConfig { key = "wx_can_logout", value = "False", description = "允许退出登录" },
+                    new SystemConfig { key = "wx_can_changeAcnt", value = "False", description = "允许切换账号" },
+                    new SystemConfig { key = "wx_can_acntInfo", value = "False", description = "允许查看账号与安全" },
+                    new SystemConfig { key = "wx_show_toast", value = "True", description = "越权操作提示 (Toast)" },
+                    new SystemConfig { key = "wx_can_sendcard", value = "False", description = "允许发送名片" }
                 };
 
                 List<SystemConfig> currentConfigs = new();

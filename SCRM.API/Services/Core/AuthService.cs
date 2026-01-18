@@ -107,7 +107,7 @@ namespace SCRM.API.Services.Core
         /// <summary>
         /// 为 Standard Identity 用户生成令牌
         /// </summary>
-        public async Task<string> GenerateTokenAsync(ApplicationUser user)
+        public async Task<string> GenerateTokenAsync(ApplicationUser user, string? deviceUuid = null)
         {
             if (user == null) throw new ArgumentNullException(nameof(user));
 
@@ -120,6 +120,16 @@ namespace SCRM.API.Services.Core
                 new Claim("user_id", user.Id),
                 new Claim("username", user.UserName ?? "Unknown")
             };
+
+            if (!string.IsNullOrEmpty(deviceUuid))
+            {
+                claims.Add(new Claim("device_uuid", deviceUuid));
+                _logger.LogInformation("Added device_uuid claim: {DeviceUuid}", deviceUuid);
+            }
+            else
+            {
+                _logger.LogWarning("GenerateTokenAsync called with empty deviceUuid for user {UserId}", user.Id);
+            }
 
             if (!string.IsNullOrEmpty(user.Email)) claims.Add(new Claim(ClaimTypes.Email, user.Email));
 
@@ -289,6 +299,15 @@ namespace SCRM.API.Services.Core
                 };
 
                 var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+                
+                // Debug logging for claims
+                var deviceClaim = principal.FindFirst("device_uuid");
+                if (deviceClaim == null)
+                {
+                    _logger.LogWarning("Token validated but device_uuid claim is MISSING. Available claims: {Claims}", 
+                        string.Join(", ", principal.Claims.Select(c => $"{c.Type}={c.Value}")));
+                }
+
                 return principal;
             }
             catch (Microsoft.IdentityModel.Tokens.SecurityTokenMalformedException)

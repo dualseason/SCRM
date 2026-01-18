@@ -136,12 +136,12 @@ namespace SCRM.Controllers.Auth
                 var token = new UserAuthToken
                 {
                     userId = user.Id.ToString(),
-                    token = await _authService.GenerateTokenAsync(user),
+                    token = await _authService.GenerateTokenAsync(user, clientUuid),
                     tcpHost = srClient.tcpHost,
                     tcpPort = srClient.tcpPort
                 };
 
-                _logger.LogInformation("[生成Token] 为客户端 {ClientUuid} 生成Token (UserId: {UserId})...", clientUuid, user.Id);
+                _logger.LogInformation("[生成Token] 为客户端 {ClientUuid} 生成带 device_uuid 声明的Token (UserId: {UserId})", clientUuid, user.Id);
 
                 return Ok(ApiResponse<UserAuthToken>.Success(token));
             }
@@ -288,30 +288,21 @@ namespace SCRM.Controllers.Auth
                 try 
                 {
                     var configs = await _configService.GetConfigsAsync();
-                    var configDict = configs.ToDictionary(c => c.key, c => (object)c.value);
-                    
-                    // Specific mapping if needed (e.g. key aliases)
-                    // The client likely merges `customConfigs` into its settings.
-                    // We must ensure integers are integers if client JSON parser is strict.
                     var typedConfig = new Dictionary<string, object>();
                     foreach(var cfg in configs)
                     {
                         string k = cfg.key;
-                        string confVal = cfg.value;
-                         if (k == "fileUploadUrl") typedConfig["fileUpUrl"] = confVal;
-                         else if (k == "tcpServerPort") typedConfig["server_port"] = int.Parse(confVal);
-                         else if (k == "httpApiBaseUrl") typedConfig["apiBaseUrl"] = confVal;
-                         else if (k == "keepWake" || k == "tokenExpiryMinutes") 
-                         {
-                             if(int.TryParse(confVal, out int iVal)) typedConfig[k] = iVal;
-                             else typedConfig[k] = confVal;
-                         }
-                         else if (k == "autoLogin" || k == "autoPic" || k == "silentFunc" || k == "forceRun")
-                         {
-                             if(bool.TryParse(confVal, out bool bVal)) typedConfig[k] = bVal;
-                             else typedConfig[k] = confVal;
-                         }
-                         else typedConfig[k] = confVal;
+                        string value = cfg.value;
+
+                        // Key Mapping (Retro-compatibility)
+                        if (k == "fileUploadUrl") k = "fileUpUrl";
+                        else if (k == "tcpServerPort") k = "server_port";
+                        else if (k == "httpApiBaseUrl") k = "apiBaseUrl";
+
+                        // Type Inference & Grouping
+                        if (bool.TryParse(value, out bool bVal)) typedConfig[k] = bVal;
+                        else if (int.TryParse(value, out int iVal)) typedConfig[k] = iVal;
+                        else typedConfig[k] = value;
                     }
                     
                     // Add Netty settings as fallback
@@ -346,16 +337,20 @@ namespace SCRM.Controllers.Auth
                      user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.regCode);
                 }
 
+                if (user == null)
+                {
+                    _logger.LogInformation("[Login] Device {ClientUuid} has no owner. using fallback user for token.", clientUuid);
+                    user = await _context.Users.OrderBy(u => u.Id).FirstOrDefaultAsync();
+                    if (user != null && string.IsNullOrEmpty(srClient.ownerId))
+                    {
+                         srClient.ownerId = user.Id;
+                    }
+                }
+
                 if (user is SCRM.SHARED.Models.ApplicationUser validUser)
                 {
-                    srClient.token = await _authService.GenerateTokenAsync(validUser);
-                     _logger.LogInformation("[生成Token] Login Success. Token generated for User: {UserId}", validUser.Id);
-                }
-                else
-                {
-                    _logger.LogWarning("[Login] User not found for Client: {ClientUuid}. Token generation skipped.", clientUuid);
-                    // Optional: Create a temporary guest user? Or fail? 
-                    // For now, let's log warning. If Client needs token, this will fail TCP.
+                    srClient.token = await _authService.GenerateTokenAsync(validUser, clientUuid);
+                    _logger.LogInformation("[生成Token] Login Success. Token generated for User: {UserId}, Device: {ClientUuid}", validUser.Id, clientUuid);
                 }
 
                 await _context.SaveChangesAsync();

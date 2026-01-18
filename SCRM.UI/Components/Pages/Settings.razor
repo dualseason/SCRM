@@ -141,6 +141,146 @@
                     </RadzenStack>
                 </RadzenCard>
             </RadzenTabsItem>
+
+            <RadzenTabsItem Text="客户端行为增强 (Behavior)">
+                <RadzenCard>
+                    <RadzenStack Gap="1.5rem">
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="静默发消息 (fastSend)" Component="fastSend" />
+                                <RadzenText TextStyle="TextStyle.Caption">无UI跳转发送消息</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.FastSend Name="fastSend" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="静默加人 (silentAccept)" Component="silentAccept" />
+                                <RadzenText TextStyle="TextStyle.Caption">自动通过好友请求 (无UI)</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.SilentAccept Name="silentAccept" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="企微加好友 (addInWw)" Component="addInWw" />
+                                <RadzenText TextStyle="TextStyle.Caption">通过请求时同步添加到企微 (需重启)</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.AddInWw Name="addInWw" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="减少亮屏 (lightscn)" Component="lightscn" />
+                                <RadzenText TextStyle="TextStyle.Caption">断网重连时不亮屏</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.LightScn Name="lightscn" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="免打扰 (disturb)" Component="disturb" />
+                                <RadzenText TextStyle="TextStyle.Caption">不主动亮屏</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.Disturb Name="disturb" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="详细日志 (moreLog)" Component="moreLog" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.MoreLog Name="moreLog" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="微信权限控制 (Permissions)">
+                <RadzenCard>
+                    <RadzenStack Gap="1.5rem">
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="越权提示 (wx_show_toast)" Component="wx_show_toast" />
+                                <RadzenText TextStyle="TextStyle.Caption">操作禁止功能时弹窗提示</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxShowToast Name="wx_show_toast" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="显示微信号 (wx_show_alias)" Component="wx_show_alias" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxShowAlias Name="wx_show_alias" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="允许删除好友 (wx_can_delete)" Component="wx_can_delete" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxCanDelete Name="wx_can_delete" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="允许拉黑 (wx_can_block)" Component="wx_can_block" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxCanBlock Name="wx_can_block" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="允许退群 (wx_can_exitGroup)" Component="wx_can_exitGroup" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxCanExitGroup Name="wx_can_exitGroup" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="允许退出登录 (wx_can_logout)" Component="wx_can_logout" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxCanLogout Name="wx_can_logout" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="允许切换账号 (wx_can_changeAcnt)" Component="wx_can_changeAcnt" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxCanChangeAcnt Name="wx_can_changeAcnt" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="允许查看账号安全 (wx_can_acntInfo)" Component="wx_can_acntInfo" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxCanAcntInfo Name="wx_can_acntInfo" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                         <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="允许发送名片 (wx_can_sendcard)" Component="wx_can_sendcard" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.WxCanSendCard Name="wx_can_sendcard" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenTabsItem>
         </Tabs>
     </RadzenTabs>
     
@@ -175,11 +315,29 @@
 
         configModel.ApiBaseUrl = GetValue("httpApiBaseUrl") ?? GetValue("apiBaseUrl");
         
+        // Behavior
         configModel.AutoLogin = GetBool("autoLogin");
         configModel.AutoPic = GetBool("autoPic");
         configModel.SilentFunc = GetBool("silentFunc");
         configModel.ForceRun = GetBool("forceRun");
         configModel.KeepWake = GetInt("keepWake", 5);
+        configModel.FastSend = GetBool("fastSend", true);
+        configModel.SilentAccept = GetBool("silentAccept", true);
+        configModel.AddInWw = GetBool("addInWw", false);
+        configModel.LightScn = GetBool("lightscn", false);
+        configModel.Disturb = GetBool("disturb", false);
+        configModel.MoreLog = GetBool("moreLog", false);
+
+        // Permissions
+        configModel.WxShowAlias = GetBool("wx_show_alias", false);
+        configModel.WxCanDelete = GetBool("wx_can_delete", false);
+        configModel.WxCanBlock = GetBool("wx_can_block", false);
+        configModel.WxCanExitGroup = GetBool("wx_can_exitGroup", false);
+        configModel.WxCanLogout = GetBool("wx_can_logout", false);
+        configModel.WxCanChangeAcnt = GetBool("wx_can_changeAcnt", false);
+        configModel.WxCanAcntInfo = GetBool("wx_can_acntInfo", false);
+        configModel.WxShowToast = GetBool("wx_show_toast", true);
+        configModel.WxCanSendCard = GetBool("wx_can_sendcard", false);
         
         configModel.TokenExpiryMinutes = GetInt("tokenExpiryMinutes", 259200);
         configModel.ClientConfigPath = GetValue("clientConfigPath");
@@ -196,22 +354,41 @@
         isSaving = true;
         try
         {
-            // Save to NEW KEYS
+            // Server
             await Update("fileUploadUrl", configModel.FileUpUrl);
             await Update("tcpServerHost", configModel.Host);
             await Update("tcpServerPort", configModel.ServerPort.ToString());
             await Update("httpApiBaseUrl", configModel.ApiBaseUrl);
+            await Update("tokenExpiryMinutes", configModel.TokenExpiryMinutes.ToString());
             
-            await Update("autoLogin", configModel.AutoLogin.ToString());
-            await Update("autoPic", configModel.AutoPic.ToString());
-            await Update("silentFunc", configModel.SilentFunc.ToString());
-            await Update("forceRun", configModel.ForceRun.ToString());
-            await Update("keepWake", configModel.KeepWake.ToString());
-            
+            // Client Base
             await Update("clientConfigPath", configModel.ClientConfigPath);
             await Update("logLevel", configModel.LogLevel);
             await Update("autoUpdateUrl", configModel.AutoUpdateUrl);
-            await Update("tokenExpiryMinutes", configModel.TokenExpiryMinutes.ToString());
+            await Update("autoLogin", configModel.AutoLogin.ToString());
+            await Update("forceRun", configModel.ForceRun.ToString());
+            await Update("keepWake", configModel.KeepWake.ToString());
+
+            // Behavior
+            await Update("autoPic", configModel.AutoPic.ToString());
+            await Update("silentFunc", configModel.SilentFunc.ToString());
+            await Update("fastSend", configModel.FastSend.ToString());
+            await Update("silentAccept", configModel.SilentAccept.ToString());
+            await Update("addInWw", configModel.AddInWw.ToString());
+            await Update("lightscn", configModel.LightScn.ToString());
+            await Update("disturb", configModel.Disturb.ToString());
+            await Update("moreLog", configModel.MoreLog.ToString());
+            
+            // Permissions
+            await Update("wx_show_alias", configModel.WxShowAlias.ToString());
+            await Update("wx_can_delete", configModel.WxCanDelete.ToString());
+            await Update("wx_can_block", configModel.WxCanBlock.ToString());
+            await Update("wx_can_exitGroup", configModel.WxCanExitGroup.ToString());
+            await Update("wx_can_logout", configModel.WxCanLogout.ToString());
+            await Update("wx_can_changeAcnt", configModel.WxCanChangeAcnt.ToString());
+            await Update("wx_can_acntInfo", configModel.WxCanAcntInfo.ToString());
+            await Update("wx_show_toast", configModel.WxShowToast.ToString());
+            await Update("wx_can_sendcard", configModel.WxCanSendCard.ToString());
 
             NotificationService.Notify(NotificationSeverity.Success, "保存成功", "所有配置已更新并推送");
             await LoadConfigs();
@@ -228,10 +405,7 @@
 
     private async Task Update(string key, string? value)
     {
-        if (value == null) return; // check null if needed, or allow empty string to clear
-        // Don't update if not changed? API handles side effects (Push), so maybe we DO want to update to trigger push.
-        // But for "Save All", pushing 12 times is noisy.
-        // Optimization: Check equality.
+        if (value == null) return;
         var oldVal = GetValue(key);
         if (oldVal == value) return;
 
@@ -244,16 +418,35 @@
         public string? Host { get; set; }
         public int ServerPort { get; set; }
         public string? ApiBaseUrl { get; set; }
+        public int TokenExpiryMinutes { get; set; }
         
+        // Base Status
         public bool AutoLogin { get; set; }
-        public bool AutoPic { get; set; }
-        public bool SilentFunc { get; set; }
         public bool ForceRun { get; set; }
         public int KeepWake { get; set; }
-        
         public string? ClientConfigPath { get; set; }
         public string? LogLevel { get; set; }
         public string? AutoUpdateUrl { get; set; }
-        public int TokenExpiryMinutes { get; set; }
+
+        // Behavior
+        public bool AutoPic { get; set; }
+        public bool SilentFunc { get; set; }
+        public bool FastSend { get; set; }
+        public bool SilentAccept { get; set; }
+        public bool AddInWw { get; set; }
+        public bool LightScn { get; set; }
+        public bool Disturb { get; set; }
+        public bool MoreLog { get; set; }
+
+        // Permissions
+        public bool WxShowAlias { get; set; }
+        public bool WxCanDelete { get; set; }
+        public bool WxCanBlock { get; set; }
+        public bool WxCanExitGroup { get; set; }
+        public bool WxCanLogout { get; set; }
+        public bool WxCanChangeAcnt { get; set; }
+        public bool WxCanAcntInfo { get; set; }
+        public bool WxShowToast { get; set; }
+        public bool WxCanSendCard { get; set; }
     }
 }

@@ -55,133 +55,113 @@ namespace SCRM.API.Services.Netty.Handlers
         public async Task HandleDeviceAuth(TransportMessage message, IChannelHandlerContext context)
         {
             var authReq = message.Content.Unpack<DeviceAuthReqMessage>();
-            string credential = authReq.Credential;
-            
-            _logger.LogInformation("[业务鉴权] 收到设备认证请求 - Type: {AuthType}, 凭证: {Credential}, ChannelId: {ChannelId}", authReq.AuthType, credential, context.Channel.Id.AsLongText());
+            string credential = authReq.Credential?.Trim();
 
-            // 因为是 Scoped Service，_db 已经是当前 Scope 所有的 Context
-            WechatAccount account = null;
+            _logger.LogInformation("[业务鉴权] 收到设备认证请求 - Type: {AuthType}, ChannelId: {ChannelId}", authReq.AuthType, context.Channel.Id.AsLongText());
 
-            // === 新鉴权逻辑: Token | IMEI (AuthType = InternalCode) ===
-            if (authReq.AuthType == DeviceAuthReqMessage.Types.EnumAuthType.InternalCode)
+            if (authReq.AuthType != DeviceAuthReqMessage.Types.EnumAuthType.InternalCode)
             {
-                // 格式约定: "JWT_TOKEN|IMEI"
-                var parts = credential.Split('|');
-                if (parts.Length == 2)
+                _logger.LogWarning("鉴权失败: 不支持的 AuthType {AuthType}", authReq.AuthType);
+                await context.CloseAsync();
+                return;
+            }
+
+            if (string.IsNullOrEmpty(credential))
+            {
+                _logger.LogWarning("鉴权失败: 凭证为空。");
+                await context.CloseAsync();
+                return;
+            }
+
+            // 1. 验证 JWT 令牌
+            System.Security.Claims.ClaimsPrincipal? principal = null;
+            try
+            {
+                principal = _authService.ValidateToken(credential);
+                if (principal == null)
                 {
-                    var token = parts[0];
-                    var imei = parts[1];
-
-                    // 1. 验证 Token (优先强校验)
-                    System.Security.Claims.ClaimsPrincipal? principal = _authService.ValidateToken(token);
-
-                    // 如果强校验失败 (返回 null)，尝试忽略过期时间 (Emergency Fix)
-                    if (principal == null)
-                    {
-                        // 注意：AuthService.ValidateToken 内部捕获了 SecurityTokenExpiredException 并返回 null
-                        // 所以这里必须通过判空来触发重试
-                        var expiredPrincipal = _authService.ValidateToken(token, validateLifetime: false);
-                        if (expiredPrincipal != null)
-                        {
-                            _logger.LogWarning("Token 已过期但签名有效。允许登录 (AuthType=InternalCode)。");
-                            principal = expiredPrincipal;
-                        }
-                    }
-
+                    // 尝试过期的令牌但签名必须有效
+                    principal = _authService.ValidateToken(credential, validateLifetime: false);
                     if (principal != null)
                     {
-                        var userIdStr = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-                        var userName = principal.Identity?.Name;
-                        
-                        if (!string.IsNullOrEmpty(userIdStr))
-                        {
-                            _logger.LogInformation("Token 验证成功。User: {User} ({Id})", userName, userIdStr);
-
-                            // 2. 查找或绑定设备
-                            // 策略：优先找已绑定的，没绑定的自动绑定到该用户
-                            account = await _dbContext.WechatAccounts
-                                .FirstOrDefaultAsync(u => u.wechatNumber == imei && !u.isDeleted);
-
-                            if (account == null)
-                            {
-                                // 自动注册/绑定 (Auto-Provisioning)
-                                _logger.LogInformation("新设备 {IMEI}，自动绑定给用户 {User}", imei, userName);
-                                account = new WechatAccount 
-                                { 
-                                    wechatNumber = imei,
-                                    ownerId = userIdStr, 
-                                    isActive = true,
-                                    createdAt = DateTime.UtcNow,
-                                    vipExpiryDate = DateTime.UtcNow.AddSeconds(30)
-                                };
-                                await _dbContext.WechatAccounts.AddAsync(account);
-                                await _dbContext.SaveChangesAsync();
-                            }
-
-                            if (account != null)
-                            {
-                                if (string.IsNullOrEmpty(account.ownerId))
-                                {
-                                    account.ownerId = userIdStr; // Fix: Ensure ownerId is set if it was missing? (Though query above checked !isDeleted)
-                                    // Actually original code Logic was weird here: if (string.IsNullOrEmpty(account.ownerId)) await SaveChangesAsync();
-                                    // I'll keep it simple: if account found or created, we proceed.
-                                    if (string.IsNullOrEmpty(account.ownerId))
-                                    {
-                                        account.ownerId = userIdStr;
-                                        await _dbContext.SaveChangesAsync();
-                                    }
-                                }
-                            }
-
-                            // 3. Register Connection
-                            if (account != null)
-                            {
-                                // public Task AddConnectionAsync(string userId, string connectionId, string deviceType, string deviceInfo = "")
-                                await _connectionManager.AddConnectionAsync(account.ownerId, context.Channel.Id.AsLongText(), "WeChat", account.wechatNumber);
-                            }
-
-                            // 4. Send Response
-                            var authResp = new TransportMessage
-                            {
-                                Id = 0,
-                                MsgType = EnumMsgType.DeviceAuthRsp,
-                                RefMessageId = message.Id,
-                                Content = Any.Pack(new DeviceAuthRspMessage
-                                {
-                                    AccessToken = token // Assuming token is the AccessToken
-                                })
-                            };
-                            await context.WriteAndFlushAsync(authResp);
-
-                            // 5. [Fix] Push System Config immediately to ensure client has valid settings (e.g. keepWake)
-                            await PushClientConfig(context);
-                        }
-                        else
-                        {
-                             base.Logger.LogWarning("Token 有效但 Identity 中缺少 NameIdentifier (UserId)");
-                             await context.CloseAsync();
-                        }
+                        _logger.LogWarning("令牌已过期但签名有效。允许登录以刷新连接。");
                     }
-                    else
-                    {
-                        base.Logger.LogWarning("设备认证失败: Token 无效或过期且无法恢复。");
-                        await context.CloseAsync();
-                    }
-                }
-                else
-                {
-                    base.Logger.LogWarning("设备认证失败: 凭证格式错误 (期望 'Token|IMEI')");
-                    await context.CloseAsync();
                 }
             }
-            // Add explicit handling for other AuthTypes if needed, or default fallback
+            catch (Exception ex)
+            {
+                _logger.LogWarning("令牌校验过程中发生异常: {Message}。凭据预览: {Preview}", ex.Message, 
+                    credential.Length > 20 ? credential.Substring(0, 20) + "..." : credential);
+            }
+
+            if (principal == null)
+            {
+                _logger.LogWarning("[安全审计] 无效、过期或破坏的令牌尝试连接。已拒绝。");
+                await context.CloseAsync();
+                return;
+            }
+
+            // 2. 提取身份信息
+            var userIdStr = principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userName = principal.Identity?.Name ?? "DeviceUser";
+            var deviceUuid = principal.FindFirst("device_uuid")?.Value;
+
+            if (string.IsNullOrEmpty(userIdStr) || string.IsNullOrEmpty(deviceUuid))
+            {
+                _logger.LogWarning("[安全审计] 令牌缺失关键声明 (User: {User}, Device: {Device})。已拒绝。", userIdStr, deviceUuid);
+                await context.CloseAsync();
+                return;
+            }
+
+            _logger.LogInformation("鉴权成功。用户: {User} ({Id}), 设备: {Device}", userName, userIdStr, deviceUuid);
+
+            // 3. 确保账号记录存在
+            var account = await _dbContext.WechatAccounts
+                .FirstOrDefaultAsync(u => u.clientUuid == deviceUuid && !u.isDeleted);
+
+            if (account == null)
+            {
+                _logger.LogInformation("首次连接: 为设备 {Device} 创建影子账号声明并绑定至用户 {User}", deviceUuid, userName);
+                account = new WechatAccount 
+                { 
+                    wechatNumber = deviceUuid, // 默认使用 UUID 作为内部识别码
+                    clientUuid = deviceUuid,
+                    ownerId = userIdStr, 
+                    isActive = true,
+                    createdAt = DateTime.UtcNow,
+                    vipExpiryDate = DateTime.UtcNow.AddYears(1)
+                };
+                await _dbContext.WechatAccounts.AddAsync(account);
+            }
+
+            // 4. 确保 SrClient 记录并更新连接状态
+            var srClient = await _dbContext.SrClients.FirstOrDefaultAsync(c => c.uuid == deviceUuid);
+            if (srClient == null)
+            {
+                srClient = new SrClient { uuid = deviceUuid, ownerId = userIdStr, createdAt = DateTime.UtcNow, isOnline = true };
+                await _dbContext.SrClients.AddAsync(srClient);
+            }
             else
             {
-                base.Logger.LogWarning("设备认证失败: 不支持的 AuthType {AuthType}", authReq.AuthType);
-                await context.CloseAsync();
+                srClient.isOnline = true;
+                // 注意：由于是严格 JWT，令牌中的归属关系具有最高优先级，更新数据库以保持同步
+                srClient.ownerId = userIdStr; 
             }
-        }
 
+            await _dbContext.SaveChangesAsync();
+            await _connectionManager.AddConnectionAsync(userIdStr, context.Channel.Id.AsLongText(), "WeChat", deviceUuid);
+
+            // 5. 发送认证成功响应及初始化配置
+            var authResp = new TransportMessage
+            {
+                Id = 0,
+                MsgType = EnumMsgType.DeviceAuthRsp,
+                RefMessageId = message.Id,
+                Content = Any.Pack(new DeviceAuthRspMessage { AccessToken = credential }) // 返回原始 Token 或按需处理
+            };
+            await context.WriteAndFlushAsync(authResp);
+            await PushClientConfig(context);
+        }
 
         public async Task HandleHeartBeat(TransportMessage message, IChannelHandlerContext context)
         {
@@ -237,46 +217,46 @@ namespace SCRM.API.Services.Netty.Handlers
                     string key = config.key;
                     string value = config.value;
 
-                    // 映射部分新旧Key兼容
-                    if (key == "fileUploadUrl") key = "fileUpUrl"; // Client expects fileUpUrl?
-                    if (key == "tcpServerPort") key = "server_port"; 
+                    // 1. Key Mapping (Retro-compatibility)
+                    // fileUploadUrl -> fileUpUrl for client
+                    if (key == "fileUploadUrl") key = "fileUpUrl";
+                    if (key == "tcpServerPort") key = "server_port"; // map port
                     if (key == "httpApiBaseUrl") key = "apiBaseUrl";
 
-                    // String Configs
-                    if (key == "fileUpUrl" || key == "httpApiBaseUrl" || key == "apiBaseUrl" || key == "clientConfigPath" || 
-                        key == "logLevel" || key == "autoUpdateUrl" || key == "fileUploadStorePath" || key == "fileUploadUrlPrefix" || key == "tcpServerHost" || key == "host")
+                    // 2. Type Inference & Grouping
+                    // Boolean Configs
+                    if (bool.TryParse(value, out bool boolVal))
                     {
-                        msg.StrConfs.Add(new StrConfigMessage
+                        msg.BoolConfs.Add(new BoolConfigMessage
                         {
                             Key = key,
-                            Value = value,
+                            Value = boolVal,
+                            Name = key, // Or map to friendly name if needed
+                            Desc = config.description ?? "system config"
+                        });
+                    }
+                    // Integer Configs
+                    else if (int.TryParse(value, out int intVal))
+                    {
+                        msg.IntConfs.Add(new IntConfigMessage
+                        {
+                            Key = key,
+                            Value = intVal,
                             Name = key,
                             Desc = config.description ?? "system config"
                         });
                     }
-                    // Bool Configs
-                    else if (key == "autoLogin" || key == "autoPic" || key == "silentFunc" || key == "forceRun")
+                    // String Configs (Default)
+                    else
                     {
-                        if (bool.TryParse(value, out bool boolVal))
+                        // Exclude sensitive or internal keys if necessary (e.g. jwt keys), but user asked for "All"
+                        // Filtering out JWT keys just in case, though they are safe on server
+                        if (!key.StartsWith("jwt")) 
                         {
-                            msg.BoolConfs.Add(new BoolConfigMessage
+                            msg.StrConfs.Add(new StrConfigMessage
                             {
                                 Key = key,
-                                Value = boolVal,
-                                Name = key,
-                                Desc = config.description ?? "system config"
-                            });
-                        }
-                    }
-                    // Int Configs
-                    else if (key == "keepWake" || key == "tcpServerPort" || key == "server_port" || key == "tokenExpiryMinutes")
-                    {
-                        if (int.TryParse(value, out int intVal))
-                        {
-                            msg.IntConfs.Add(new IntConfigMessage
-                            {
-                                Key = key,
-                                Value = intVal,
+                                Value = value,
                                 Name = key,
                                 Desc = config.description ?? "system config"
                             });
