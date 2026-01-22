@@ -152,12 +152,23 @@ namespace SCRM.API.Services.Netty.Handlers
             await _connectionManager.AddConnectionAsync(userIdStr, context.Channel.Id.AsLongText(), "WeChat", deviceUuid);
 
             // 5. 发送认证成功响应及初始化配置
+            // Extra.Token 用于初始化客户端的 currentWeChatId。
+            // 优先使用 wxid，若为空（首次连接且未登录微信）则使用 deviceUuid 作为占位符，以通过客户端的“已登录”拦截检查。
+            var extraMsg = new DeviceAuthRspMessage.Types.ExtraMessage
+            {
+                Token = !string.IsNullOrEmpty(account?.wxid) ? account.wxid : deviceUuid 
+            };
+
             var authResp = new TransportMessage
             {
                 Id = 0,
                 MsgType = EnumMsgType.DeviceAuthRsp,
                 RefMessageId = message.Id,
-                Content = Any.Pack(new DeviceAuthRspMessage { AccessToken = credential }) // 返回原始 Token 或按需处理
+                Content = Any.Pack(new DeviceAuthRspMessage 
+                { 
+                    AccessToken = credential,
+                    Extra = extraMsg
+                }) // 返回原始 Token 及识别码
             };
             await context.WriteAndFlushAsync(authResp);
             await PushClientConfig(context);

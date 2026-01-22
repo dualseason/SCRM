@@ -68,8 +68,8 @@ namespace SCRM.API.Controllers
         {
             try
             {
-                var msg = new ConfigPushNoticeMessage();
-                
+                //var msg = new ConfigPushNoticeMessage();
+                var msg= new SetConfigTaskMessage();
                 // 根据 Key 类型构建不同的配置消息
                 // 目前只处理 fileUpUrl 作为 String Config
                 if (key == "fileUpUrl" || key == "host" || key == "portstr" || key == "apiBaseUrl" || key == "clientConfigPath" || key == "logLevel" || key == "autoUpdateUrl")
@@ -114,7 +114,7 @@ namespace SCRM.API.Controllers
                 {
                     _logger.LogInformation("[配置更新] 正在广播配置更新 {Key} 给所有客户端...", key);
                     // 广播发送 "ConfigPushNotice"
-                    await _nettyService.SendMessageToNettyAsync(msg, "ConfigPushNotice");
+                    await _nettyService.SendMessageToNettyAsync(msg, "SetConfigTask");
                     _logger.LogInformation("[配置更新] 配置广播成功 {Key}", key);
                 }
             }
