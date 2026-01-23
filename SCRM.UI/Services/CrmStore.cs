@@ -1,12 +1,13 @@
+using Microsoft.Extensions.Logging;
 using SCRM.API.Models.Entities;
 using SCRM.Shared.Interfaces;
+using SCRM.SHARED.Models;
 using SCRM.SHARED.Models.Dtos;
+using SCRM.UI.Services.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using SCRM.UI.Services.Data;
 
 namespace SCRM.UI.Services
 {
@@ -94,11 +95,37 @@ namespace SCRM.UI.Services
             }
         }
 
-        public Task SelectDeviceAsync(SrClient device)
+        public async Task SelectDeviceAsync(SrClient device)
         {
+            // 1. 设置当前选中设备
             SelectedDevice = device;
+            // 2. 初始化 wx 对象 (如果为空)
+            if (SelectedDevice.wx == null)
+            {
+                SelectedDevice.wx = new Wx();
+            }
+
+            // 3. 【关键】按需加载联系人
+            // 如果联系人列表是空的，并且设备已登录(有WeChatId)，则去服务器拉取
+            if ((SelectedDevice.wx.contacts == null || !SelectedDevice.wx.contacts.Any())
+                && !string.IsNullOrEmpty(device.weChatId))
+            {
+                NotifyStateChanged(); // 先通知UI显示"加载中"状态（可选）
+
+                try
+                {
+                    // 调用 Service 从 API 获取联系人
+                    var contacts = await _service.GetContactsAsync(device.weChatId);
+                    SelectedDevice.wx.contacts = contacts;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to load contacts for device {Uuid}", device.uuid);
+                }
+            }
+            // 4. 通知 UI 渲染数据
             NotifyStateChanged();
-            return Task.CompletedTask;
+            //return Task.CompletedTask;
         }
 
         private void NotifyStateChanged() => OnChange?.Invoke();

@@ -17,25 +17,25 @@
                        Style="height: 100%; width: 100%; border: none; text-align: center; background-color: transparent;">
             <Template Context="device">
                 <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="2px" Style="width: 100%; overflow: hidden; padding-top: 5px; padding-bottom: 5px;">
-                    <div title="@(device.weChatNick ?? device.device?.PhoneModel ?? "Device")" style="position: relative; display: inline-block;">
-                        @if (!string.IsNullOrEmpty(device.weChatAvatar))
+                    <div title="@(device.wx?.wechatAccount?.nickname ?? device.device?.PhoneModel ?? "Device")" style="position: relative; display: inline-block;">
+                        @if (!string.IsNullOrEmpty(device.wx?.wechatAccount?.avatarUrl))
                         {
-                            <RadzenImage Path="@device.weChatAvatar" Style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
+                            <RadzenImage Path="@(device.wx?.wechatAccount?.avatarUrl)" Style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
                         }
                         else
                         {
                             <RadzenIcon Icon="smartphone" Style="font-size: 24px; width: 40px; height: 40px; background-color: #f0f0f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #999;" />
                         }
                         
-                        <span style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #2e2e2e; background-color: @(((SrClient)device).accounts != null && ((SrClient)device).accounts.Any(a => a.accountStatus == 1) ? "#52c41a" : (((SrClient)device).isOnline ? "#faad14" : "#ff4d4f"));"></span>
+                        <span style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #2e2e2e; background-color: @( (device.wx?.isOnline ?? false) ? "#52c41a" : (device.isOnline ? "#faad14" : "#ff4d4f") );"></span>
                     </div>
 
-                    <RadzenText TextStyle="TextStyle.Caption" Style="@($"font-size: 10px; line-height: 1.2; font-weight: bold; color: {(device.isOnline ? "#52c41a" : "#ff4d4f")}")">
-                        @(device.isOnline ? "在线" : "离线")
+                    <RadzenText TextStyle="TextStyle.Caption" Style="@($"font-size: 10px; line-height: 1.2; font-weight: bold; color: {((device.wx?.isOnline ?? false) ? "#52c41a" : "#ff4d4f")}")">
+                        @((device.wx?.isOnline ?? false) ? "在线" : "离线")
                     </RadzenText>
 
                     <RadzenText TextStyle="TextStyle.Caption" Style="font-size: 10px; line-height: 1.2; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;" 
-                                Text="@(string.IsNullOrEmpty(device.weChatNick) ? "未登录" : device.weChatNick)" />
+                                Text="@(string.IsNullOrEmpty(device.wx?.wechatAccount?.nickname) ? "未登录" : device.wx?.wechatAccount?.nickname)" />
                 </RadzenStack>
             </Template>
         </RadzenListBox>
@@ -53,7 +53,7 @@
             else
             {
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4">
-                     <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">@Store.SelectedDevice.weChatNick 的朋友圈</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">@Store.SelectedDevice.wx?.wechatAccount?.nickname 的朋友圈</RadzenText>
                      <RadzenButton Text="同步朋友圈" Icon="sync" Click="SyncMoments" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
                 </RadzenStack>
 

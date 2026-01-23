@@ -6,25 +6,17 @@ using Microsoft.Extensions.Logging;
 using SCRM.API.Models.Entities;
 using SCRM.API.Models.Events;
 using SCRM.API.Services.Core;
+using SCRM.API.Services.Netty.Handlers.Abstractions;
 using SCRM.Services.Data;
 using SCRM.Services.Events;
-using SCRM.SHARED.Models;
 using System;
 using System.Threading.Tasks;
-
-using SCRM.API.Services.Netty.Handlers.Abstractions;
 
 namespace SCRM.API.Services.Netty.Handlers
 {
     /// <summary>
     /// 聊天消息处理器
     /// <para>处理私聊、群聊等聊天相关消息的上报。</para>
-    /// <para>核心功能：</para>
-    /// <list type="bullet">
-    /// <item>处理好友消息通知 (FriendTalkNotice)</item>
-    /// <item>解析消息内容 (文本、图片、Emoji 等)</item>
-    /// <item>发布 MessageReceivedEvent 事件供上层业务消费</item>
-    /// </list>
     /// </summary>
     public class ChatMessageHandler : MessageHandlerBase
     {
@@ -43,7 +35,6 @@ namespace SCRM.API.Services.Netty.Handlers
 
         public async Task HandleMessage(TransportMessage message, IChannelHandlerContext context)
         {
-            // ACK first
             await SendAckAsync(message, context);
 
             try
@@ -53,7 +44,13 @@ namespace SCRM.API.Services.Netty.Handlers
                     case EnumMsgType.FriendTalkNotice:
                         await HandleFriendTalk(message.Content.Unpack<FriendTalkNoticeMessage>(), context);
                         break;
-                    // Add other cases
+                    case EnumMsgType.WeChatTalkToFriendNotice:
+                        await HandleWeChatTalkToFriend(message.Content.Unpack<WeChatTalkToFriendNoticeMessage>(), context);
+                        break;
+                    default:
+                        // Other chat types (history, etc.) can be added here
+                        // _logger.LogInformation("Unhandled Chat Message Type: {Type}", message.MsgType);
+                        break;
                 }
             }
             catch (Exception ex)
@@ -64,17 +61,100 @@ namespace SCRM.API.Services.Netty.Handlers
 
         private async Task HandleFriendTalk(FriendTalkNoticeMessage msg, IChannelHandlerContext context)
         {
+            if (string.IsNullOrEmpty(msg.WeChatId)) return;
+
+            var account = await _db.WechatAccounts.FirstOrDefaultAsync(w => w.wxid == msg.WeChatId);
+            if (account == null)
+            {
+                _logger.LogWarning("Account not found for WeChatId: {WeChatId}", msg.WeChatId);
+                return;
+            }
+
+            // Create Message Entity (Direction: Receive = 2)
+            var message = new Message
+            {
+                accountId = account.accountId,
+                msgSvrId = msg.MsgSvrId,
+                senderWxid = msg.FriendId,
+                receiverWxid = msg.WeChatId,
+                chatType = 1, // Single Chat
+                messageType = (short)msg.ContentType, 
+                content = msg.Content?.ToStringUtf8() ?? "",
+                direction = 2, // Receive
+                sendStatus = 3, // Delivered/Received
+                readStatus = 0, // Unread
+                sentAt = DateTime.UtcNow,
+                receivedAt = DateTime.UtcNow,
+                createdAt = DateTime.UtcNow,
+                updatedAt = DateTime.UtcNow,
+                isDeleted = false,
+                isRevoked = false
+            };
+
+            // Link Sender/Receiver accounts if they exist in system?
+            // Optional optimization: message.senderId = ...
+            
+            _db.Messages.Add(message);
+            await _db.SaveChangesAsync();
+
+            _logger.LogInformation("Received Chat from {Friend} to {Me}, Content: {Content}", msg.FriendId, msg.WeChatId, message.content);
+
+            // Publish Event
             var connId = context.Channel.Id.AsLongText();
             var connInfo = await _connManager.GetConnectionAsync(connId);
-            var deviceUuid = connInfo?.deviceUuid;
-            
-            _logger.LogInformation("Received Chat on Device {Uuid}. Content Length: {Len}", deviceUuid, msg.Content?.Length ?? 0);
+            if (connInfo != null)
+            {
+                await _eventBus.PublishAsync(new MessageReceivedEvent(connInfo.deviceUuid, message, connInfo.userId));
+            }
+        }
 
-            // In real Phase 4, we parsed XML content, etc.
-            // For recovery, ensuring the handler exists is key.
-            
-            // Publish Event to UI
-            // _eventBus.PublishAsync(new MessageReceivedEvent(...));
+        private async Task HandleWeChatTalkToFriend(WeChatTalkToFriendNoticeMessage msg, IChannelHandlerContext context)
+        {
+             if (string.IsNullOrEmpty(msg.WeChatId)) return;
+
+             var account = await _db.WechatAccounts.FirstOrDefaultAsync(w => w.wxid == msg.WeChatId);
+             if (account == null) return;
+
+             // Create Message Entity (Direction: Send = 1)
+             // This notifies us that the phone sent a message successfully (or is trying to)
+             // Since it's a Notice from client, it usually means "I sent this"
+             var message = new Message
+             {
+                 accountId = account.accountId,
+                 msgSvrId = msg.MsgSvrId,
+                 senderWxid = msg.WeChatId,
+                 receiverWxid = msg.FriendId,
+                 chatType = 1, // Single Chat
+                 messageType = (short)msg.ContentType,
+                 content = msg.Content?.ToStringUtf8() ?? "",
+                 direction = 1, // Send
+                 sendStatus = 2, // Sent
+                 readStatus = 1, // Read by self obviously
+                 sentAt = DateTime.UtcNow,
+                 createdAt = DateTime.UtcNow,
+                 updatedAt = DateTime.UtcNow,
+                 isDeleted = false,
+                 isRevoked = false
+             };
+
+             _db.Messages.Add(message);
+             await _db.SaveChangesAsync();
+             
+             _logger.LogInformation("Synced Sent Chat from {Me} to {Friend}", msg.WeChatId, msg.FriendId);
+
+             // Optionally notify UI to append self-message if not already done by optimistic UI
+             // _eventBus.PublishAsync(new MessageSentEvent(...)); 
+             // Reuse MessageReceivedEvent to force UI refresh? or just let UI pull?
+             // Usually for self-sent, UI might already have it if sent via UI. 
+             // But if sent via Phone, UI needs to know.
+             var connId = context.Channel.Id.AsLongText();
+             var connInfo = await _connManager.GetConnectionAsync(connId);
+             if (connInfo != null)
+             {
+                 // We reuse MessageReceivedEvent or create a new sync event. 
+                 // For now, assume UI handles "message" object regardless of direction
+                 await _eventBus.PublishAsync(new MessageReceivedEvent(connInfo.deviceUuid, message, connInfo.userId));
+             }
         }
     }
 }

@@ -24,11 +24,11 @@ namespace SCRM.Services.Netty
             if (message is IByteBuffer buffer)
             {
                 int length = buffer.ReadableBytes;
-                if (length > 0)
-                {
-                    string hex = ByteBufferUtil.HexDump(buffer);
-                    _logger.LogInformation($"[{_direction}] Length: {length}, Hex: {hex}");
-                }
+                //if (length > 0)
+                //{
+                //    string hex = ByteBufferUtil.HexDump(buffer);
+                //    _logger.LogInformation($"[{_direction}] Length: {length}, Hex: {hex}");
+                //}
             }
             return base.WriteAsync(context, message);
         }

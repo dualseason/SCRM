@@ -245,6 +245,7 @@ public partial class Program
         builder.Services.AddHostedService<SCRM.Services.Automation.AutomationService>(); // C&C Automation (Auto-Reply, etc.)
         builder.Services.AddHostedService<SCRM.API.Services.Maintenance.IndexCleanupService>(); // Auto-fix zombie indexes
         builder.Services.AddHostedService<SCRM.API.Services.Maintenance.MessageCleanupService>(); // Auto-delete old messages
+        builder.Services.AddHostedService<SCRM.API.Services.Data.CacheWarmupService>(); // KISS: Cache Warmup on Startup
         builder.Services.AddCors(options =>
         {
             options.AddPolicy("AllowAll", builder =>

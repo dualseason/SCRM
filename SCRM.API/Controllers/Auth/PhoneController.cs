@@ -101,7 +101,7 @@ namespace SCRM.Controllers.Auth
                 }
 
                 // 2. Find or Create SrClient
-                var srClient = await _context.SrClients.Include(c => c.accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
+                var srClient = await _context.SrClients.FirstOrDefaultAsync(c => c.uuid == clientUuid);
                 if (srClient == null)
                 {
                     srClient = new SrClient
@@ -243,9 +243,11 @@ namespace SCRM.Controllers.Auth
                 }
                 account.nickname = $"{request.hsman} {request.hstype}";
                 account.lastOnlineAt = DateTime.UtcNow;
-                
+
                 // Find or Create SrClient
-                var srClient = await _context.SrClients.Include(c => c.accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
+                //var srClient = await _context.SrClients.Include(c => c.accounts).FirstOrDefaultAsync(c => c.uuid == clientUuid);
+                var srClient = await _context.SrClients.FirstOrDefaultAsync(c => c.uuid == clientUuid);
+
                 if (srClient == null)
                 {
                     srClient = new SrClient
@@ -255,6 +257,7 @@ namespace SCRM.Controllers.Auth
                     };
                     _context.SrClients.Add(srClient);
                 }
+                srClient.wx=new Wx { wechatAccount = account,srClient=srClient };
 
                 srClient.device = new Jubo.JuLiao.IM.Wx.Proto.PostDeviceInfoNoticeMessage
                 {
@@ -318,11 +321,8 @@ namespace SCRM.Controllers.Auth
                 }
 
 
-                // Ensure account is in the list
-                if (!srClient.accounts.Any(a => a.accountId == account.accountId))
-                {
-                    srClient.accounts.Add(account);
-                }
+                // Account binding is now handled via Wx object reference only
+                // Compatibility Note: Legacy list 'accounts' is removed. 
 
                 // Generate Token
                 ApplicationUser? user = null;
@@ -401,13 +401,16 @@ namespace SCRM.Controllers.Auth
                     return Ok(ApiResponse<SrClient>.Fail(1, "用户不存在"));
                 }
 
+                var wx = new Wx { wechatAccount = account };
                 var srClient = new SrClient
                 {
                     uuid = "VALIDATION_SUCCESS",
                     tcpHost = _nettySettings.Host,
                     tcpPort = _nettySettings.Port,
-                    accounts = new List<WechatAccount> { account }
+                    weChatId = account.wxid,
+                    wx = wx,
                 };
+                wx.srClient = srClient;
 
                 return Ok(ApiResponse<SrClient>.Success(srClient));
             }

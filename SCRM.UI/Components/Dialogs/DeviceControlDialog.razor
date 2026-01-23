@@ -6,6 +6,7 @@
 @inject CrmStore Store
 @inject DialogService DialogService
 @inject NotificationService NoticeService
+@implements IDisposable
 
 <RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="width: 100%; max-width: 600px;">
     
@@ -15,7 +16,7 @@
         <RadzenStack Orientation="Orientation.Horizontal" Gap="2rem">
             <RadzenStack Gap="0">
                 <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-mb-0">Device Name (Remark)</RadzenText>
-                <RadzenText TextStyle="TextStyle.Body1"><b>@(Device.weChatNick ?? "Unknown")</b></RadzenText>
+                <RadzenText TextStyle="TextStyle.Body1"><b>@(Device?.wx?.wechatAccount?.nickname  ?? "Unknown")</b></RadzenText>
                 
                 <RadzenText TextStyle="TextStyle.Overline" class="rz-display-flex rz-mt-2 rz-mb-0">Model</RadzenText>
                 <RadzenText TextStyle="TextStyle.Body1">@(Device.device?.PhoneModel ?? "Unknown")</RadzenText>
@@ -65,12 +66,17 @@
 
     protected override void OnInitialized()
     {
-        Store.OnChange += StateHasChanged;
+        Store.OnChange += HandleStoreChange;
     }
 
     public void Dispose()
     {
-        Store.OnChange -= StateHasChanged;
+        Store.OnChange -= HandleStoreChange;
+    }
+
+    private void HandleStoreChange()
+    {
+        InvokeAsync(StateHasChanged);
     }
 
     private async Task OnCaptureScreen()

@@ -323,6 +323,20 @@ namespace SCRM.API.Services.Core
         }
 
         /// <summary>
+        /// 更新连接的微信信息 (设备上报信息后调用)
+        /// </summary>
+        public Task<bool> UpdateConnectionWeChatInfoAsync(string connectionId, string wechatId, string nickName)
+        {
+             if (_connections.TryGetValue(connectionId, out var connection))
+             {
+                 connection.wechatId = wechatId;
+                 connection.nickName = nickName;
+                 return Task.FromResult(true);
+             }
+             return Task.FromResult(false);
+        }
+
+        /// <summary>
         /// 检查连接是否已认证 (关联了 UserId)
         /// </summary>
         public Task<bool> IsConnectionAuthenticatedAsync(string connectionId)

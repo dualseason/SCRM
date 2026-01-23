@@ -31,6 +31,24 @@ public class Contact
     public string wxid { get; set; } = string.Empty;
 
     /// <summary>
+    /// 所属微信账号 WXID (冗余字段，方便查询)
+    /// </summary>
+    [Column("owner_wxid")]
+    public string ownerWxid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 好友微信号 (Alias/FriendNo)
+    /// </summary>
+    [Column("friend_no")]
+    public string friendNo { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 来源扩展信息
+    /// </summary>
+    [Column("source_ext")]
+    public string sourceExt { get; set; } = string.Empty;
+
+    /// <summary>
     /// 微信昵称
     /// </summary>
     [Column("nickname")]

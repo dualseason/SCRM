@@ -50,14 +50,14 @@
             <Template Context="device">
                 <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="2px" Style="width: 100%; overflow: hidden; padding-top: 5px; padding-bottom: 5px; position: relative;">
                     @* Device Icon/Avatar - Click to Open Control/Details *@
-                    <div title="@(device.weChatNick ?? device.device?.PhoneModel ?? "Device")" 
+                    <div title="@(device.wx?.wechatAccount?.nickname ?? device.device?.PhoneModel ?? "Device")" 
                          style="position: relative; display: inline-block; cursor: pointer;"
                          @onclick:stopPropagation="true" 
                          @onclick="@(() => OpenDeviceControl(device))">
                         
-                        @if (!string.IsNullOrEmpty(device.weChatAvatar))
+                        @if (!string.IsNullOrEmpty(device.wx?.wechatAccount?.avatarUrl))
                         {
-                            <RadzenImage Path="@device.weChatAvatar" Style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
+                            <RadzenImage Path="@device.wx?.wechatAccount?.avatarUrl" Style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
                         }
                         else
                         {
@@ -65,7 +65,7 @@
                         }
                         
                         @{
-                            bool isWxOnline = ((SrClient)device).accounts != null && ((SrClient)device).accounts.Any(a => a.accountStatus == 1);
+                            bool isWxOnline = ((SrClient)device).wx?.wechatAccount != null ;
                             string dotColor = isWxOnline ? "#52c41a" : (device.isOnline ? "#faad14" : "#ff4d4f");
                         }
                         <span class="device-status-dot" style="background-color: @dotColor;"></span>
@@ -76,7 +76,7 @@
                     </RadzenText>
 
                     <RadzenText TextStyle="TextStyle.Caption" Style="font-size: 10px; line-height: 1.2; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;" 
-                                Text="@(string.IsNullOrEmpty(device.weChatNick) ? "未登录" : device.weChatNick)" />
+                                Text="@(string.IsNullOrEmpty(device.wx?.wechatAccount?.nickname) ? (string.IsNullOrEmpty(device.wx?.wechatAccount?.wxid ?? device.weChatId) ? "未登录" : $"未知微信号({device.wx?.wechatAccount?.wxid ?? device.weChatId})") : device.wx?.wechatAccount?.nickname)" />
                 </RadzenStack>
             </Template>
         </RadzenListBox>
@@ -157,7 +157,9 @@
                      {
                          <div class="rz-p-4 rz-text-align-center text-muted">请选择设备</div>
                      }
-                     else if (Store.Contacts.Count == 0)
+                     @* else if (Store.Contacts.Count == 0) *@
+                     else if (Store.SelectedDevice.wx?.contacts?.Count==0)
+
                      {
                          <div class="rz-p-4 rz-text-align-center">
                             <RadzenButton Text="同步联系人" ButtonStyle="ButtonStyle.Secondary" Click="SyncContacts" Size="ButtonSize.Small" />
@@ -231,7 +233,7 @@
 
                                 @if (msg.direction == 1)
                                 {
-                                    <RadzenImage Path="@(Store.SelectedDevice?.weChatAvatar ?? "images/default-avatar.png")" Style="width:36px; height:36px; border-radius: 4px; margin-left: 10px;" />
+                                    <RadzenImage Path="@(Store.SelectedDevice?.wx?.wechatAccount?.avatarUrl ?? "images/default-avatar.png")" Style="width:36px; height:36px; border-radius: 4px; margin-left: 10px;" />
                                 }
                             </div>
                         }
@@ -329,10 +331,24 @@
         return "images/default-avatar.png";
     }
 
-    private List<Contact> _filteredContacts => string.IsNullOrWhiteSpace(_searchText)
-        ? Store.Contacts
-        : Store.Contacts.Where(c => (c.nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+    // private List<Contact> _filteredContacts => string.IsNullOrWhiteSpace(_searchText)
+    //     ? Store.Contacts
+    //     : Store.Contacts.Where(c => (c.nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+    //                              || (c.remarks?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        private List<Contact> _filteredContacts
+    {
+        get
+        {
+            // 1. 获取当前选中设备的 wx 对象中的联系人列表
+            // 如果 SelectedDevice 为空、wx 为空或 contacts 为空，则使用空列表，防止空引用报错
+            var source = Store.SelectedDevice?.wx?.contacts ?? new List<Contact>();
+            // 2. 根据搜索框内容进行过滤
+            return string.IsNullOrWhiteSpace(_searchText)
+                ? source
+                : source.Where(c => (c.nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)
                                  || (c.remarks?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        }
+    }
     protected override async Task OnInitializedAsync()
     {
         Store.OnChange += HandleStoreChange;
@@ -426,7 +442,7 @@
         if (target == null) return;
         
         await DialogService.OpenAsync<SCRM.UI.Components.Dialogs.DeviceControlDialog>(
-            $"Device Control: {target.weChatNick}",
+            $"Device Control: {target?.wx?.wechatAccount?.nickname}",
             new Dictionary<string, object>() { { "Device", target } },
             new DialogOptions() { Width = "700px", Height = "auto", Resizable = true, Draggable = true });
     }

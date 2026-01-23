@@ -24,7 +24,7 @@
     <RadzenStack Gap="1rem">
         <RadzenCard>
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">联系人列表 (@Store.Contacts.Count) - @Store.SelectedDevice.weChatNick</RadzenText>
+                <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">联系人列表 (@Store.Contacts.Count) - @Store.SelectedDevice.wx?.wechatAccount?.nickname</RadzenText>
                 <RadzenButton Icon="sync" Text="同步通讯录" IsBusy="@_loading" Click="Sync" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
             </RadzenStack>
         </RadzenCard>

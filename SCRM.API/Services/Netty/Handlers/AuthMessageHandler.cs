@@ -16,6 +16,9 @@ using System.Threading.Tasks;
 using DotNetty.Transport.Channels;
 using SCRM.API.Services.Netty.Handlers.Abstractions;
 using SCRM.API.Services.Core;
+using SCRM.Services.Events;
+using SCRM.API.Models.Events;
+using SCRM.API.Services.Data;
 
 namespace SCRM.API.Services.Netty.Handlers
 {
@@ -37,19 +40,22 @@ namespace SCRM.API.Services.Netty.Handlers
         private readonly ConnectionManager _connectionManager;
         private readonly ApplicationDbContext _dbContext;
         private readonly SCRM.UI.Services.ISystemConfigService _configService;
+        private readonly IEventBus _eventBus;
 
         public AuthMessageHandler(
             ILogger<AuthMessageHandler> logger,
             AuthService authService,
             ConnectionManager connectionManager,
             ApplicationDbContext dbContext,
-            SCRM.UI.Services.ISystemConfigService configService) : base(logger)
+            SCRM.UI.Services.ISystemConfigService configService,
+            IEventBus eventBus) : base(logger)
         {
             _logger = logger;
             _authService = authService;
             _connectionManager = connectionManager;
             _dbContext = dbContext;
             _configService = configService;
+            _eventBus = eventBus;
         }
 
         public async Task HandleDeviceAuth(TransportMessage message, IChannelHandlerContext context)
@@ -115,7 +121,7 @@ namespace SCRM.API.Services.Netty.Handlers
 
             _logger.LogInformation("鉴权成功。用户: {User} ({Id}), 设备: {Device}", userName, userIdStr, deviceUuid);
 
-            // 3. 确保账号记录存在
+                // 3. 确保账号记录存在
             var account = await _dbContext.WechatAccounts
                 .FirstOrDefaultAsync(u => u.clientUuid == deviceUuid && !u.isDeleted);
 
@@ -131,15 +137,21 @@ namespace SCRM.API.Services.Netty.Handlers
                     createdAt = DateTime.UtcNow,
                     vipExpiryDate = DateTime.UtcNow.AddYears(1)
                 };
-                await _dbContext.WechatAccounts.AddAsync(account);
+                // await _dbContext.WechatAccounts.AddAsync(account);
+                // Fix: 立即持久化并同步缓存
+                await DbHelper.SaveWechatAccount(_dbContext, account);
             }
 
             // 4. 确保 SrClient 记录并更新连接状态
-            var srClient = await _dbContext.SrClients.FirstOrDefaultAsync(c => c.uuid == deviceUuid);
+            //var srClient = await _dbContext.SrClients.FirstOrDefaultAsync(c => c.uuid == deviceUuid);
+            var srClient = await DbHelper.GetSrClient(_dbContext, deviceUuid);
+
             if (srClient == null)
             {
                 srClient = new SrClient { uuid = deviceUuid, ownerId = userIdStr, createdAt = DateTime.UtcNow, isOnline = true };
-                await _dbContext.SrClients.AddAsync(srClient);
+                //await _dbContext.SrClients.AddAsync(srClient);
+                // await DbHelper.SaveSrClient(_dbContext,srClient);
+
             }
             else
             {
@@ -148,7 +160,21 @@ namespace SCRM.API.Services.Netty.Handlers
                 srClient.ownerId = userIdStr; 
             }
 
-            await _dbContext.SaveChangesAsync();
+            // [Optimization] 统一更新 SrClient 属性 (在线状态 + 归属人 + 登录记录)
+            if (account != null && !string.IsNullOrEmpty(account.wxid))
+            {
+                if (!srClient.loggedInWeChatIds.Contains(account.wxid))
+                {
+                    srClient.loggedInWeChatIds.Add(account.wxid);
+                }
+                srClient.wx = new Wx { wechatAccount = account, srClient = srClient };
+            }
+
+            // Fix: 无论后续逻辑如何，这里必须先保存一次 SrClient 的基础状态
+            // 这样可以确保 "在线" 状态被持久化
+            await DbHelper.SaveSrClient(_dbContext,srClient);
+
+            //await _dbContext.SaveChangesAsync();
             await _connectionManager.AddConnectionAsync(userIdStr, context.Channel.Id.AsLongText(), "WeChat", deviceUuid);
 
             // 5. 发送认证成功响应及初始化配置
@@ -171,7 +197,33 @@ namespace SCRM.API.Services.Netty.Handlers
                 }) // 返回原始 Token 及识别码
             };
             await context.WriteAndFlushAsync(authResp);
-            await PushClientConfig(context);
+            await PushClientConfig(context);    //下发初始化配置
+
+            // 下发 联系人同步 (如果微信已登录)
+            if (account != null && !string.IsNullOrEmpty(account.wxid))
+            {
+                _logger.LogInformation("[业务同步] 微信已登录 ({WxId})，自动触发联系人全量同步指令...", account.wxid);
+                try 
+                {
+                    var syncMsg = new TransportMessage
+                    {
+                        Id = 0,
+                        MsgType = EnumMsgType.TriggerFriendPushTask,
+                        RefMessageId = 0,
+                        Content = Any.Pack(new TriggerFriendPushTaskMessage
+                        {
+                            WeChatId = account.wxid,
+                            TaskId = DateTime.Now.Ticks
+                        })
+                    };
+                    await context.WriteAndFlushAsync(syncMsg);
+
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "自动触发联系人同步失败");
+                }
+            }
         }
 
         public async Task HandleHeartBeat(TransportMessage message, IChannelHandlerContext context)
@@ -190,19 +242,82 @@ namespace SCRM.API.Services.Netty.Handlers
             await context.WriteAndFlushAsync(pong);
         }
 
+        public async Task HandlePhoneStateWarning(TransportMessage message, IChannelHandlerContext context)
+        {
+            try
+            {
+                var warningMsg = message.Content.Unpack<PhoneStateWarningNoticeMessage>(); // 1053 uses PhoneStateWarningNoticeMessage
+                var connId = context.Channel.Id.AsLongText();
+                if (!string.IsNullOrEmpty(warningMsg.WeChatId))
+                {
+                    _logger.LogInformation("收到设备状态告警/上报: WeChatId={WeChatId}, IMEI={IMEI}, Net={Net}", warningMsg.WeChatId, warningMsg.Imei, warningMsg.NetType);
+                    _logger.LogInformation("PhoneStateWarning Detail: {Detail}", System.Text.Json.JsonSerializer.Serialize(warningMsg));
+                    
+                    // 尝试从数据库获取昵称
+                    string nickName = "";
+                    var account = await _dbContext.WechatAccounts.FirstOrDefaultAsync(u => u.wxid == warningMsg.WeChatId);
+                    if (account != null)
+                    {
+                        nickName = account.nickname ?? "";
+                    }
+
+                    await _connectionManager.UpdateConnectionWeChatInfoAsync(connId, warningMsg.WeChatId, nickName);
+                    
+                    var connInfo = await _connectionManager.GetConnectionAsync(connId);
+                    if (connInfo != null)
+                    {
+                        await _eventBus.PublishAsync(new DeviceStatusChangedEvent(connInfo.deviceUuid, true));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "解析 PhoneStateWarningNotice 失败");
+            }
+        }
+
         public async Task HandlePostDeviceInfo(TransportMessage message, IChannelHandlerContext context)
         {
-            // 设备信息上报 (简单处理，仅更新活动状态并回复ACK)
-            // 实际业务逻辑可能需要解析 PostDeviceInfoNotice
-            
-            // 检查连接是否已认证
-            if (!_connectionManager.IsConnected(context.Channel.Id.AsLongText())) 
+             // 检查连接是否已认证
+            var connId = context.Channel.Id.AsLongText();
+            if (!_connectionManager.IsConnected(connId)) 
             {
                 return;
             }
 
+            try 
+            {
+                var infoMsg = message.Content.Unpack<PostDeviceInfoNoticeMessage>();
+                if (!string.IsNullOrEmpty(infoMsg.WeChatId))
+                {
+                    _logger.LogInformation("收到设备信息上报: WeChatId={WeChatId}", infoMsg.WeChatId);
+                    _logger.LogInformation("PostDeviceInfo Detail: {Detail}", System.Text.Json.JsonSerializer.Serialize(infoMsg));
+                    
+                    // 尝试从数据库获取昵称
+                    string nickName = "";
+                    var account = await _dbContext.WechatAccounts.FirstOrDefaultAsync(u => u.wxid == infoMsg.WeChatId);
+                    if (account != null)
+                    {
+                        nickName = account.nickname ?? "";
+                    }
+
+                    await _connectionManager.UpdateConnectionWeChatInfoAsync(connId, infoMsg.WeChatId, nickName);
+                    
+                    // 获取 DeviceUuid 并发布状态变更事件以刷新 UI
+                    var connInfo = await _connectionManager.GetConnectionAsync(connId);
+                    if (connInfo != null)
+                    {
+                        await _eventBus.PublishAsync(new DeviceStatusChangedEvent(connInfo.deviceUuid, true));
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "解析 PostDeviceInfoNotice 失败");
+            }
+
             // 仅在已认证时更新活动状态
-            await _connectionManager.UpdateConnectionActivityAsync(context.Channel.Id.AsLongText());
+            await _connectionManager.UpdateConnectionActivityAsync(connId);
 
             // 发送 ACK
             var response = new TransportMessage
@@ -221,7 +336,7 @@ namespace SCRM.API.Services.Netty.Handlers
             {
                 // 获取当前最新配置
                 var configs = await _configService.GetConfigsAsync();
-                var msg = new ConfigPushNoticeMessage();
+                var msg = new SetConfigTaskMessage();
 
                 foreach (var config in configs)
                 {
@@ -278,14 +393,26 @@ namespace SCRM.API.Services.Netty.Handlers
                 if (msg.StrConfs.Count > 0 || msg.BoolConfs.Count > 0 || msg.IntConfs.Count > 0)
                 {
                     _logger.LogInformation("[配置推送] 正在向终端 {ChannelId} 推送初始化配置 (共 {Count} 项)...", context.Channel.Id.AsLongText(), msg.StrConfs.Count + msg.BoolConfs.Count + msg.IntConfs.Count);
+                    
+                    
                     var transMsg = new TransportMessage 
                     {
                         Id = 0,
-                        MsgType = EnumMsgType.ConfigPushNotice,
+                        MsgType = EnumMsgType.SetConfigTask, // Changed from ConfigPushNotice(1381) to SetConfigTask(1382)
                         Content = Any.Pack(msg)
                     };
                     await context.WriteAndFlushAsync(transMsg);
-                    _logger.LogInformation("[配置推送] 初始化配置推送成功");
+                    _logger.LogInformation("[配置推送] 初始化配置推送成功 (指令: SetConfigTask)");
+                    
+                    // 主动请求设备上报信息 (TriggerDeviceInfo)
+                    var triggerMsg = new TransportMessage
+                    {
+                        Id = 0,
+                        MsgType = EnumMsgType.TriggerDeviceInfo,
+                        Content = Any.Pack(new Empty())
+                    };
+                    await context.WriteAndFlushAsync(triggerMsg);
+                    _logger.LogInformation("[业务同步] 已发送 TriggerDeviceInfo 指令，请求设备上报状态");
                 }
             }
             catch (Exception ex)

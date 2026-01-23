@@ -16,9 +16,9 @@
   {
     "id": 0,
     "key": "httpApiBaseUrl",
-    "value": "http://127.0.0.1:42718",
+    "value": "http://192.168.1.226:42718",
     "description": "Updated via Web Settings",
-    "updatedAt": "2026-01-16T20:39:11.0772048Z"
+    "updatedAt": "2026-01-22T02:43:19.4658839Z"
   },
   {
     "id": 0,
@@ -72,9 +72,9 @@
   {
     "id": 0,
     "key": "fileUploadUrl",
-    "value": "http://127.0.0.1:42718/uploads",
+    "value": "http://192.168.1.226:42718/fileUpload",
     "description": "Updated via Web Settings",
-    "updatedAt": "2026-01-16T20:39:11.0736101Z"
+    "updatedAt": "2026-01-22T02:51:58.163352Z"
   },
   {
     "id": 0,
@@ -170,51 +170,51 @@
   {
     "id": 0,
     "key": "wx_show_alias",
-    "value": "False",
-    "description": "\u663E\u793A\u5FAE\u4FE1\u53F7",
-    "updatedAt": "2026-01-18T03:30:52.8841863Z"
+    "value": "True",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-22T02:44:09.2173477Z"
   },
   {
     "id": 0,
     "key": "wx_can_delete",
-    "value": "False",
-    "description": "\u5141\u8BB8\u5220\u9664\u597D\u53CB",
-    "updatedAt": "2026-01-18T03:30:52.8841866Z"
+    "value": "True",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-22T02:44:09.2196529Z"
   },
   {
     "id": 0,
     "key": "wx_can_block",
-    "value": "False",
-    "description": "\u5141\u8BB8\u62C9\u9ED1\u597D\u53CB",
-    "updatedAt": "2026-01-18T03:30:52.8841869Z"
+    "value": "True",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-22T02:44:09.2223208Z"
   },
   {
     "id": 0,
     "key": "wx_can_exitGroup",
-    "value": "False",
-    "description": "\u5141\u8BB8\u9000\u7FA4",
-    "updatedAt": "2026-01-18T03:30:52.8841873Z"
+    "value": "True",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-22T02:44:09.225102Z"
   },
   {
     "id": 0,
     "key": "wx_can_logout",
-    "value": "False",
-    "description": "\u5141\u8BB8\u9000\u51FA\u767B\u5F55",
-    "updatedAt": "2026-01-18T03:30:52.8841877Z"
+    "value": "True",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-22T02:44:09.2278422Z"
   },
   {
     "id": 0,
     "key": "wx_can_changeAcnt",
-    "value": "False",
-    "description": "\u5141\u8BB8\u5207\u6362\u8D26\u53F7",
-    "updatedAt": "2026-01-18T03:30:52.884188Z"
+    "value": "True",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-22T02:44:09.2305336Z"
   },
   {
     "id": 0,
     "key": "wx_can_acntInfo",
-    "value": "False",
-    "description": "\u5141\u8BB8\u67E5\u770B\u8D26\u53F7\u4E0E\u5B89\u5168",
-    "updatedAt": "2026-01-18T03:30:52.8841884Z"
+    "value": "True",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-22T02:44:09.2548311Z"
   },
   {
     "id": 0,
@@ -226,8 +226,8 @@
   {
     "id": 0,
     "key": "wx_can_sendcard",
-    "value": "False",
-    "description": "\u5141\u8BB8\u53D1\u9001\u540D\u7247",
-    "updatedAt": "2026-01-18T03:30:52.8841892Z"
+    "value": "True",
+    "description": "Updated via Web Settings",
+    "updatedAt": "2026-01-22T02:44:09.2575215Z"
   }
 ]

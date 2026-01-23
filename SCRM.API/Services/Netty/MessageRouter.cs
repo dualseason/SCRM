@@ -42,6 +42,12 @@ namespace SCRM.Services.Netty
                     case EnumMsgType.HeartBeatReq:
                         await sp.GetRequiredService<AuthMessageHandler>().HandleHeartBeat(message, context);
                         break;
+                    case EnumMsgType.PhoneStateWarningNotice:
+                        await sp.GetRequiredService<AuthMessageHandler>().HandlePhoneStateWarning(message, context);
+                        break;
+                    case EnumMsgType.PostDeviceInfoNotice:
+                        await sp.GetRequiredService<AuthMessageHandler>().HandlePostDeviceInfo(message, context);
+                        break;
 
                     // === 任务结果 (TaskMessageHandler) ===
                     case EnumMsgType.TaskResultNotice:
@@ -57,8 +63,8 @@ namespace SCRM.Services.Netty
                     // === 系统消息 (SystemMessageHandler) ===
                     case EnumMsgType.WeChatOnlineNotice:
                     case EnumMsgType.WeChatOfflineNotice:
-                    case EnumMsgType.ConfigPushNotice:
-                    case EnumMsgType.PostDeviceInfoNotice:
+                    case EnumMsgType.SetConfigTask: // 客户端上报配置信息的通道
+                    // case EnumMsgType.PostDeviceInfoNotice: // Moved to AuthMessageHandler
                     case EnumMsgType.PostFriendDetectCountNotice:
                         var systemHandler = sp.GetService<SystemMessageHandler>();
                         if (systemHandler != null) 
@@ -82,6 +88,7 @@ namespace SCRM.Services.Netty
                     case EnumMsgType.FriendAddNotice:
                     case EnumMsgType.FriendDelNotice:
                     case EnumMsgType.FriendChangeNotice: // 1017
+                    case EnumMsgType.FriendPushNotice: // 1050
                     // case EnumMsgType.ContactPushNotice: // Missing in Proto
                     case EnumMsgType.BizContactPushNotice: // 2071
                         var contactHandler = sp.GetService<ContactMessageHandler>();

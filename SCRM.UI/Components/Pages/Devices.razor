@@ -22,7 +22,7 @@
                         @if (!string.IsNullOrEmpty(device.weChatId))
                         {
                             <RadzenIcon Icon="wechat" IconColor="@Colors.Success" />
-                            <RadzenText TextStyle="TextStyle.Subtitle2">@device.weChatNick</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Subtitle2">@device.wx?.wechatAccount?.nickname</RadzenText>
                         }
                         else
                         {
@@ -46,7 +46,7 @@
 
 @if(Store.SelectedDevice != null) {
   <RadzenCard Style="margin-top: 20px;">
-       <RadzenText TextStyle="TextStyle.H6">设备控制: @(Store.SelectedDevice.weChatNick ?? "未登录")</RadzenText>
+        <RadzenText TextStyle="TextStyle.H6">设备控制: @(Store.SelectedDevice.wx?.wechatAccount?.nickname ?? "未登录")</RadzenText>
        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Style="margin-top: 1rem;">
            <RadzenButton Icon="camera_alt" Text="截屏" ButtonStyle="ButtonStyle.Primary" Click="@(() => CaptureScreen(Store.SelectedDevice))" />
            <RadzenButton Icon="sync" Text="同步联系人" ButtonStyle="ButtonStyle.Secondary" Click="@Store.SyncContactsAsync" />

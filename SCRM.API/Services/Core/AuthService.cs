@@ -483,9 +483,10 @@ namespace SCRM.API.Services.Core
 
                 if (account != null)
                 {
+                    if (client.wx == null) client.wx = new Wx{ wechatAccount = account,srClient=client};
                     client.weChatId = account.wxid;
-                    client.weChatNick = account.nickname;
-                    client.wechatAccountId = account.accountId;
+                    //client.weChatNick = account.nickname;
+                    //client.wechatAccountId = account.accountId;
 
                     var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(client.uuid);
                     if (!string.IsNullOrEmpty(connectionId))
@@ -525,9 +526,10 @@ namespace SCRM.API.Services.Core
             var account = await _context.WechatAccounts.FirstOrDefaultAsync(w => w.clientUuid == deviceUuid && !w.isDeleted);
             if (account != null)
             {
+
                 client.weChatId = account.wxid;
-                client.weChatNick = account.nickname;
-                client.wechatAccountId = account.accountId;
+                //client.weChatNick = account.nickname;
+                //client.wechatAccountId = account.accountId;
 
                 var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
                 if (!string.IsNullOrEmpty(connectionId))

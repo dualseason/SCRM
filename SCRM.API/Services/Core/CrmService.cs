@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using SCRM.SHARED.Models;
 using System.Text.Json;
+using SCRM.API.Services.Data;
 
 namespace SCRM.API.Services.Core
 {
@@ -24,18 +25,27 @@ namespace SCRM.API.Services.Core
         public async Task<List<SrClient>> GetDevicesAsync()
         {
             // Pilot Implementation
-            return await _db.SrClients
-                .Include(c => c.accounts)
-                .AsNoTracking()
-                .ToListAsync();
+            var devices = DbHelper.GetAllSrClients();
+
+            //foreach (SrClient device in devices)
+            //{
+            //    WechatAccount? activeAccount = device.accounts.FirstOrDefault(a => a.accountStatus == 1);
+            //    if (activeAccount != null)
+            //    {
+            //        device.weChatId = activeAccount.wxid;
+            //        device.weChatNick = activeAccount.nickname;
+            //        device.weChatAvatar = activeAccount.avatar;
+            //        device.wechatAccountId = activeAccount.accountId;
+            //        // device.isOnline = true; // Use connection status or logic as needed
+            //    }
+            //}
+            
+            return devices;
         }
 
         public async Task<SrClient?> GetDeviceAsync(string uuid)
         {
-             return await _db.SrClients
-                .Include(c => c.accounts)
-                .AsNoTracking()
-                .FirstOrDefaultAsync(d => d.uuid == uuid);
+             return await _db.GetSrClient(uuid);
         }
 
         // --- Phase 3 Implementation ---

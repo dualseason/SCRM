@@ -7,6 +7,8 @@ namespace SCRM.Models
         public string deviceType { get; set; } = string.Empty;
         public string deviceInfo { get; set; } = string.Empty;
         public string deviceUuid { get; set; } = string.Empty;
+        public string wechatId { get; set; } = string.Empty; // Added
+        public string nickName { get; set; } = string.Empty; // Added
         public DateTime connectedAt { get; set; }
         public bool isOnline { get; set; } = true;
         public DateTime lastActivityAt { get; set; }

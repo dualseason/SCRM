@@ -228,10 +228,8 @@ namespace SCRM.Services.Data
                 entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                 // Configure relationship with WechatAccount
-                entity.HasMany(e => e.accounts)
-                      .WithOne(w => w.Client)
-                      .HasForeignKey(w => w.clientUuid)
-                      .HasPrincipalKey(e => e.uuid);
+                // Removed legacy 'accounts' relationship configuration as the property has been removed from SrClient.
+                // The relationship is now managed primarily through WechatAccount.clientUuid foreign key.
             });
         }
     }

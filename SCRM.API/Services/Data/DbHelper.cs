@@ -268,6 +268,11 @@ namespace SCRM.API.Services.Data
             });
         }
 
+        public static  List<SrClient> GetAllSrClients()
+        {
+            return GlobalCache.srClients.Values.ToList();
+        }
+
         public static async Task<SrClient?> SaveSrClient(this DbContext context, SrClient client)
         {
             if (!GlobalCache.srClients.ContainsKey(client.uuid))

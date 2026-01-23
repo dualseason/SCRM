@@ -86,7 +86,7 @@ public class SrClient : ICacheable<SrClient>
     public string? connectionId { get; set; }
 
     /// <summary>
-    /// 绑定的微信 ID (非持久化)
+    /// 当前绑定的微信 ID (非持久化)
     /// </summary>
     [NotMapped]
     public string? weChatId { get; set; }
@@ -94,31 +94,33 @@ public class SrClient : ICacheable<SrClient>
     /// <summary>
     /// 绑定的微信昵称 (非持久化)
     /// </summary>
-    [NotMapped]
-    public string? weChatNick { get; set; }
+    //[NotMapped]
+    //public string? weChatNick { get; set; }
 
     /// <summary>
     /// 绑定的微信头像 (非持久化)
     /// </summary>
-    [NotMapped]
-    public string? weChatAvatar { get; set; }
+    //[NotMapped]
+    //public string? weChatAvatar { get; set; }
 
     /// <summary>
     /// 微信号 (非持久化)
     /// </summary>
-    [NotMapped]
-    public string? wechatNumber { get; set; }
+    //[NotMapped]
+    //public string? wechatNumber { get; set; }
 
     /// <summary>
     /// 关联的微信账号 ID (非持久化)
     /// </summary>
-    [NotMapped]
-    public long? wechatAccountId { get; set; }
+    //[NotMapped]
+    //public long? wechatAccountId { get; set; }
 
     /// <summary>
     /// 关联的微信账号列表
     /// </summary>
-    public virtual ICollection<WechatAccount> accounts { get; set; } = new List<WechatAccount>();
+    //public virtual ICollection<WechatAccount> accounts { get; set; } = new List<WechatAccount>();
+    //public virtual ICollection<WechatAccount> accounts { get; set; } = new List<WechatAccount>();
+
 
     /// <summary>
     /// 创建时间
@@ -138,6 +140,15 @@ public class SrClient : ICacheable<SrClient>
     /// </summary>
     [NotMapped]
     public string? token { get; set; }
+
+    [NotMapped]
+    public Wx? wx { get; set; } = null;
+
+    // <summary>
+    /// <summary>
+    /// 此设备登录过的微信号列表
+    /// </summary>
+    public List<string> loggedInWeChatIds { get; set; } = new List<string>();
 
 
 

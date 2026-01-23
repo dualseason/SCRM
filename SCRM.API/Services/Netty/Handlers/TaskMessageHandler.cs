@@ -103,7 +103,7 @@ namespace SCRM.API.Services.Netty.Handlers
                         break;
                 }
 
-                _clientTaskService.CompleteTask((int)taskIdRequest, success, errMsg);
+                _clientTaskService.CompleteTask(taskIdRequest, success, errMsg);
 
                 if (taskIdRequest > 0 || success)
                 {
