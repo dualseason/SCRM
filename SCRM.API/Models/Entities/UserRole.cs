@@ -22,13 +22,13 @@ public class UserRole
     /// 用户账号 ID
     /// </summary>
     [Column("AccountId")]
-    public long accountId { get; set; }
+    public string accountId { get; set; }
 
     /// <summary>
     /// 用户 ID 别名 (与 accountId 相同，用于兼容性)
     /// </summary>
     [NotMapped]
-    public long userId
+    public string userId
     {
         get { return accountId; }
         set { accountId = value; }
@@ -44,7 +44,7 @@ public class UserRole
     /// 分配该角色的管理者账号 ID
     /// </summary>
     [Column("AssignedBy")]
-    public long? assignedBy { get; set; }
+    public string? assignedBy { get; set; }
 
     /// <summary>
     /// 分配时间

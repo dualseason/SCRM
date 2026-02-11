@@ -1,4 +1,4 @@
-@page "/settings/{AccountId:long}"
+@page "/settings/{AccountId}"
 @using SCRM.UI.Services
 @using SCRM.SHARED.Models
 @using Radzen
@@ -76,7 +76,7 @@
 
 @code {
     [Parameter]
-    public long AccountId { get; set; }
+    public string AccountId { get; set; }
 
     private WechatAccountSettings settings = new WechatAccountSettings();
     private bool isLoading = true;

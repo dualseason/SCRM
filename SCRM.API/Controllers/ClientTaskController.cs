@@ -48,7 +48,7 @@ namespace SCRM.Controllers
                 request.ConnectionId, 
                 request.FriendWxId, 
                 request.Content);
-            return Ok(new { success = result });
+            return Ok(new { success = result }); 
         }
 
         [HttpPost("add-friend")]

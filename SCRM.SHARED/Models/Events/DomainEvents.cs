@@ -1,8 +1,31 @@
 using System;
 
-namespace SCRM.API.Models.Events
+namespace SCRM.SHARED.Models.Events
 {
     // --- Domain Events (领域事件) ---
+
+    // 微信已上线事件 (业务逻辑层)
+    public class WeChatOnlineEvent
+    {
+        public string deviceUuid { get; set; }
+        public string weChatId { get; set; }
+        public string nickName { get; set; }
+        public string accountId { get; set; } // Changed to string (WxId)
+        public string ownerId { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public WeChatOnlineEvent() { }
+
+        public WeChatOnlineEvent(string deviceUuid, string weChatId, string nickName, string accountId, string ownerId)
+        {
+            this.deviceUuid = deviceUuid;
+            this.weChatId = weChatId;
+            this.nickName = nickName;
+            this.accountId = accountId;
+            this.ownerId = ownerId;
+            this.timestamp = DateTime.UtcNow;
+        }
+    }
 
     // 设备已连接事件
     public class DeviceConnectedEvent
@@ -45,10 +68,10 @@ namespace SCRM.API.Models.Events
     public class ContactsReceivedEvent
     {
         public string deviceUuid { get; set; }
-        public long accountId { get; set; }
+        public string accountId { get; set; } // Changed to string
         public string ownerId { get; set; }
 
-        public ContactsReceivedEvent(string deviceUuid, long accountId, string ownerId)
+        public ContactsReceivedEvent(string deviceUuid, string accountId, string ownerId)
         {
             this.deviceUuid = deviceUuid;
             this.accountId = accountId;
@@ -64,9 +87,9 @@ namespace SCRM.API.Models.Events
         public string friendNick { get; set; }
         public string reason { get; set; }
         public string connectionId { get; set; } // 当前连接ID 用于回发任务
-        public long accountId { get; set; }      // 我们的数据库DB ID
+        public string accountId { get; set; }      // 我们的数据库DB ID (WxId)
 
-        public FriendRequestEvent(string weChatId, string friendId, string friendNick, string reason, string connectionId, long accountId)
+        public FriendRequestEvent(string weChatId, string friendId, string friendNick, string reason, string connectionId, string accountId)
         {
             this.weChatId = weChatId;
             this.friendId = friendId;
@@ -85,9 +108,9 @@ namespace SCRM.API.Models.Events
         public long circleId { get; set; }   // 朋友圈ID
         public string content { get; set; }
         public string connectionId { get; set; }
-        public long accountId { get; set; }
+        public string accountId { get; set; } // Changed to string
 
-        public CircleNewPublishEvent(string weChatId, string authorId, long circleId, string content, string connectionId, long accountId)
+        public CircleNewPublishEvent(string weChatId, string authorId, long circleId, string content, string connectionId, string accountId)
         {
             this.weChatId = weChatId;
             this.authorId = authorId;
@@ -101,14 +124,14 @@ namespace SCRM.API.Models.Events
     // 自动化消息处理事件 (用于自动回复/抢红包)
     public class AutomationMessageEvent
     {
-        public long accountId { get; set; }
+        public string accountId { get; set; } // Changed to string
         public string connectionId { get; set; }
         public string weChatId { get; set; }
         public string friendId { get; set; }
         public string contentXml { get; set; }
         public int contentType { get; set; }
 
-        public AutomationMessageEvent(long accountId, string connectionId, string weChatId, string friendId, string contentXml, int contentType)
+        public AutomationMessageEvent(string accountId, string connectionId, string weChatId, string friendId, string contentXml, int contentType)
         {
             this.accountId = accountId;
             this.connectionId = connectionId;
@@ -137,6 +160,32 @@ namespace SCRM.API.Models.Events
             this.connectionId = connectionId;
             this.deviceUuid = deviceUuid;
             this.timestamp = DateTime.UtcNow;
+        }
+    }
+    
+    // 截屏上传完成事件
+    public class ScreenShotUploadedEvent
+    {
+        public string Url { get; set; }
+        public string DeviceUuid { get; set; }
+
+        public ScreenShotUploadedEvent(string url, string deviceUuid = "")
+        {
+            Url = url;
+            DeviceUuid = deviceUuid;
+        }
+    }
+    
+    // 设备状态变更事件 (已上线/已下线)
+    public class DeviceStatusChangedEvent
+    {
+        public string DeviceUuid { get; set; }
+        public bool IsOnline { get; set; }
+        
+        public DeviceStatusChangedEvent(string deviceUuid, bool isOnline)
+        {
+            DeviceUuid = deviceUuid;
+            IsOnline = isOnline;
         }
     }
 }

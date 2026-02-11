@@ -19,29 +19,29 @@
                     <RadzenStack Gap="1.5rem">
                         <RadzenRow AlignItems="AlignItems.Center">
                              <RadzenColumn Size="12" SizeMD="4">
-                                <RadzenLabel Text="TCP 服务器主机 (tcpServerHost)" Component="tcpServerHost" />
+                                <RadzenLabel Text="TCP 服务器主机 (host)" Component="host" />
                                 <RadzenText TextStyle="TextStyle.Caption">客户端连接 Netty 的 IP/域名</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenTextBox @bind-Value=@configModel.Host Name="tcpServerHost" Style="width: 100%" />
+                                <RadzenTextBox @bind-Value=@configModel.host Name="host" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
-                                <RadzenLabel Text="TCP 服务器端口 (tcpServerPort)" Component="tcpServerPort" />
+                                <RadzenLabel Text="TCP 服务器端口 (port)" Component="port" />
                                  <RadzenText TextStyle="TextStyle.Caption">客户端连接 Netty 的端口</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenNumeric @bind-Value=@configModel.ServerPort Name="tcpServerPort" Style="width: 100%" />
+                                <RadzenNumeric @bind-Value=@configModel.port Name="port" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
-                                <RadzenLabel Text="文件上传 URL (fileUploadUrl)" Component="fileUploadUrl" />
+                                <RadzenLabel Text="文件上传 URL (fileUpUrl)" Component="fileUpUrl" />
                                 <RadzenText TextStyle="TextStyle.Caption">用于上传截图/日志 (完整 HTTP URL)</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenTextBox @bind-Value=@configModel.FileUpUrl Name="fileUploadUrl" Style="width: 100%" Placeholder="http://..." />
+                                <RadzenTextBox @bind-Value=@configModel.fileUpUrl Name="fileUpUrl" Style="width: 100%" Placeholder="http://..." />
                             </RadzenColumn>
                         </RadzenRow>
                          <RadzenRow AlignItems="AlignItems.Center">
@@ -50,7 +50,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">REST API 接口地址</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenTextBox @bind-Value=@configModel.ApiBaseUrl Name="httpApiBaseUrl" Style="width: 100%" />
+                                <RadzenTextBox @bind-Value=@configModel.httpApiBaseUrl Name="httpApiBaseUrl" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -59,7 +59,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">APK 更新检查地址</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenTextBox @bind-Value=@configModel.AutoUpdateUrl Name="autoUpdateUrl" Style="width: 100%" />
+                                <RadzenTextBox @bind-Value=@configModel.autoUpdateUrl Name="autoUpdateUrl" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -68,7 +68,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">默认 180 天 (259200 分钟)</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenNumeric @bind-Value=@configModel.TokenExpiryMinutes Name="tokenExpiryMinutes" Style="width: 100%" Min="1" />
+                                <RadzenNumeric @bind-Value=@configModel.tokenExpiryMinutes Name="tokenExpiryMinutes" Style="width: 100%" Min="1" />
                             </RadzenColumn>
                         </RadzenRow>
                     </RadzenStack>
@@ -84,7 +84,7 @@
                                  <RadzenText TextStyle="TextStyle.Caption">本地存储路径 (建议隐藏路径，如 /sdcard/Android/media/.cache/sys_config.dat)</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenTextBox @bind-Value=@configModel.ClientConfigPath Name="clientConfigPath" Style="width: 100%" />
+                                <RadzenTextBox @bind-Value=@configModel.clientConfigPath Name="clientConfigPath" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                          <RadzenRow AlignItems="AlignItems.Center">
@@ -92,7 +92,7 @@
                                 <RadzenLabel Text="日志级别 (logLevel)" Component="logLevel" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenDropDown @bind-Value=@configModel.LogLevel Data=@(new [] {"DEBUG", "INFO", "WARN", "ERROR"}) Name="logLevel" Style="width: 100%" />
+                                <RadzenDropDown @bind-Value=@configModel.logLevel Data=@(new [] {"DEBUG", "INFO", "WARN", "ERROR"}) Name="logLevel" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -100,7 +100,7 @@
                                 <RadzenLabel Text="自动登录 (autoLogin)" Component="autoLogin" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.AutoLogin Name="autoLogin" />
+                                <RadzenSwitch @bind-Value=@configModel.autoLogin Name="autoLogin" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -108,7 +108,7 @@
                                 <RadzenLabel Text="自动下载图片 (autoPic)" Component="autoPic" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.AutoPic Name="autoPic" />
+                                <RadzenSwitch @bind-Value=@configModel.autoPic Name="autoPic" />
                             </RadzenColumn>
                         </RadzenRow>
                          <RadzenRow AlignItems="AlignItems.Center">
@@ -117,7 +117,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">隐藏通知栏图标</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                 <RadzenSwitch @bind-Value=@configModel.SilentFunc Name="silentFunc" />
+                                 <RadzenSwitch @bind-Value=@configModel.silentFunc Name="silentFunc" />
                             </RadzenColumn>
                         </RadzenRow>
                          <RadzenRow AlignItems="AlignItems.Center">
@@ -126,7 +126,7 @@
                                  <RadzenText TextStyle="TextStyle.Caption">尝试后台保活</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.ForceRun Name="forceRun" />
+                                <RadzenSwitch @bind-Value=@configModel.forceRun Name="forceRun" />
                             </RadzenColumn>
                         </RadzenRow>
                          <RadzenRow AlignItems="AlignItems.Center">
@@ -135,7 +135,7 @@
                                  <RadzenText TextStyle="TextStyle.Caption">分钟</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenNumeric @bind-Value=@configModel.KeepWake Name="keepWake" Style="width: 100%" />
+                                <RadzenNumeric @bind-Value=@configModel.keepWake Name="keepWake" Style="width: 100%" />
                             </RadzenColumn>
                         </RadzenRow>
                     </RadzenStack>
@@ -151,7 +151,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">无UI跳转发送消息</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.FastSend Name="fastSend" />
+                                <RadzenSwitch @bind-Value=@configModel.fastSend Name="fastSend" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -160,7 +160,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">自动通过好友请求 (无UI)</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.SilentAccept Name="silentAccept" />
+                                <RadzenSwitch @bind-Value=@configModel.silentAccept Name="silentAccept" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -169,7 +169,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">通过请求时同步添加到企微 (需重启)</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.AddInWw Name="addInWw" />
+                                <RadzenSwitch @bind-Value=@configModel.addInWw Name="addInWw" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -178,7 +178,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">断网重连时不亮屏</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.LightScn Name="lightscn" />
+                                <RadzenSwitch @bind-Value=@configModel.lightscn Name="lightscn" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -187,7 +187,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">不主动亮屏</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.Disturb Name="disturb" />
+                                <RadzenSwitch @bind-Value=@configModel.disturb Name="disturb" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -195,7 +195,7 @@
                                 <RadzenLabel Text="详细日志 (moreLog)" Component="moreLog" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.MoreLog Name="moreLog" />
+                                <RadzenSwitch @bind-Value=@configModel.moreLog Name="moreLog" />
                             </RadzenColumn>
                         </RadzenRow>
                     </RadzenStack>
@@ -211,7 +211,7 @@
                                 <RadzenText TextStyle="TextStyle.Caption">操作禁止功能时弹窗提示</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxShowToast Name="wx_show_toast" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_show_toast Name="wx_show_toast" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -219,7 +219,7 @@
                                 <RadzenLabel Text="显示微信号 (wx_show_alias)" Component="wx_show_alias" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxShowAlias Name="wx_show_alias" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_show_alias Name="wx_show_alias" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -227,7 +227,7 @@
                                 <RadzenLabel Text="允许删除好友 (wx_can_delete)" Component="wx_can_delete" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxCanDelete Name="wx_can_delete" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_can_delete Name="wx_can_delete" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -235,7 +235,7 @@
                                 <RadzenLabel Text="允许拉黑 (wx_can_block)" Component="wx_can_block" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxCanBlock Name="wx_can_block" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_can_block Name="wx_can_block" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -243,7 +243,7 @@
                                 <RadzenLabel Text="允许退群 (wx_can_exitGroup)" Component="wx_can_exitGroup" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxCanExitGroup Name="wx_can_exitGroup" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_can_exitGroup Name="wx_can_exitGroup" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -251,7 +251,7 @@
                                 <RadzenLabel Text="允许退出登录 (wx_can_logout)" Component="wx_can_logout" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxCanLogout Name="wx_can_logout" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_can_logout Name="wx_can_logout" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">
@@ -259,7 +259,7 @@
                                 <RadzenLabel Text="允许切换账号 (wx_can_changeAcnt)" Component="wx_can_changeAcnt" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxCanChangeAcnt Name="wx_can_changeAcnt" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_can_changeAcnt Name="wx_can_changeAcnt" />
                             </RadzenColumn>
                         </RadzenRow>
                          <RadzenRow AlignItems="AlignItems.Center">
@@ -267,7 +267,7 @@
                                 <RadzenLabel Text="允许查看账号安全 (wx_can_acntInfo)" Component="wx_can_acntInfo" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxCanAcntInfo Name="wx_can_acntInfo" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_can_acntInfo Name="wx_can_acntInfo" />
                             </RadzenColumn>
                         </RadzenRow>
                          <RadzenRow AlignItems="AlignItems.Center">
@@ -275,7 +275,7 @@
                                 <RadzenLabel Text="允许发送名片 (wx_can_sendcard)" Component="wx_can_sendcard" />
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
-                                <RadzenSwitch @bind-Value=@configModel.WxCanSendCard Name="wx_can_sendcard" />
+                                <RadzenSwitch @bind-Value=@configModel.wx_can_sendcard Name="wx_can_sendcard" />
                             </RadzenColumn>
                         </RadzenRow>
                     </RadzenStack>
@@ -290,9 +290,8 @@
 </RadzenStack>
 
 @code {
-    private ConfigViewModel configModel = new();
+    private SCRM.SHARED.Models.SystemConfigModel configModel = new();
     private bool isSaving = false;
-    private List<SystemConfig> _rawData = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -301,97 +300,18 @@
 
     private async Task LoadConfigs()
     {
-        var configs = await ConfigService.GetConfigsAsync();
-        _rawData = configs.ToList();
-        
-        // Map to ViewModel: Try NEW KEY -> Fallback OLD KEY
-        configModel.FileUpUrl = GetValue("fileUploadUrl") ?? GetValue("fileUpUrl");
-        configModel.Host = GetValue("tcpServerHost") ?? GetValue("host");
-        
-        // Port logic
-        string portStr = GetValue("tcpServerPort") ?? GetValue("server_port");
-        if (int.TryParse(portStr, out int p)) configModel.ServerPort = p;
-        else configModel.ServerPort = 42718;
-
-        configModel.ApiBaseUrl = GetValue("httpApiBaseUrl") ?? GetValue("apiBaseUrl");
-        
-        // Behavior
-        configModel.AutoLogin = GetBool("autoLogin");
-        configModel.AutoPic = GetBool("autoPic");
-        configModel.SilentFunc = GetBool("silentFunc");
-        configModel.ForceRun = GetBool("forceRun");
-        configModel.KeepWake = GetInt("keepWake", 5);
-        configModel.FastSend = GetBool("fastSend", true);
-        configModel.SilentAccept = GetBool("silentAccept", true);
-        configModel.AddInWw = GetBool("addInWw", false);
-        configModel.LightScn = GetBool("lightscn", false);
-        configModel.Disturb = GetBool("disturb", false);
-        configModel.MoreLog = GetBool("moreLog", false);
-
-        // Permissions
-        configModel.WxShowAlias = GetBool("wx_show_alias", false);
-        configModel.WxCanDelete = GetBool("wx_can_delete", false);
-        configModel.WxCanBlock = GetBool("wx_can_block", false);
-        configModel.WxCanExitGroup = GetBool("wx_can_exitGroup", false);
-        configModel.WxCanLogout = GetBool("wx_can_logout", false);
-        configModel.WxCanChangeAcnt = GetBool("wx_can_changeAcnt", false);
-        configModel.WxCanAcntInfo = GetBool("wx_can_acntInfo", false);
-        configModel.WxShowToast = GetBool("wx_show_toast", true);
-        configModel.WxCanSendCard = GetBool("wx_can_sendcard", false);
-        
-        configModel.TokenExpiryMinutes = GetInt("tokenExpiryMinutes", 259200);
-        configModel.ClientConfigPath = GetValue("clientConfigPath");
-        configModel.LogLevel = GetValue("logLevel") ?? "INFO";
-        configModel.AutoUpdateUrl = GetValue("autoUpdateUrl");
+        configModel = await ConfigService.GetConfigModelAsync();
     }
-
-    private string? GetValue(string key) => _rawData.FirstOrDefault(c => c.key == key)?.value;
-    private bool GetBool(string key, bool def = false) => bool.TryParse(GetValue(key), out var v) ? v : def;
-    private int GetInt(string key, int def = 0) => int.TryParse(GetValue(key), out var v) ? v : def;
 
     private async Task SaveAllConfigs()
     {
         isSaving = true;
         try
         {
-            // Server
-            await Update("fileUploadUrl", configModel.FileUpUrl);
-            await Update("tcpServerHost", configModel.Host);
-            await Update("tcpServerPort", configModel.ServerPort.ToString());
-            await Update("httpApiBaseUrl", configModel.ApiBaseUrl);
-            await Update("tokenExpiryMinutes", configModel.TokenExpiryMinutes.ToString());
-            
-            // Client Base
-            await Update("clientConfigPath", configModel.ClientConfigPath);
-            await Update("logLevel", configModel.LogLevel);
-            await Update("autoUpdateUrl", configModel.AutoUpdateUrl);
-            await Update("autoLogin", configModel.AutoLogin.ToString());
-            await Update("forceRun", configModel.ForceRun.ToString());
-            await Update("keepWake", configModel.KeepWake.ToString());
-
-            // Behavior
-            await Update("autoPic", configModel.AutoPic.ToString());
-            await Update("silentFunc", configModel.SilentFunc.ToString());
-            await Update("fastSend", configModel.FastSend.ToString());
-            await Update("silentAccept", configModel.SilentAccept.ToString());
-            await Update("addInWw", configModel.AddInWw.ToString());
-            await Update("lightscn", configModel.LightScn.ToString());
-            await Update("disturb", configModel.Disturb.ToString());
-            await Update("moreLog", configModel.MoreLog.ToString());
-            
-            // Permissions
-            await Update("wx_show_alias", configModel.WxShowAlias.ToString());
-            await Update("wx_can_delete", configModel.WxCanDelete.ToString());
-            await Update("wx_can_block", configModel.WxCanBlock.ToString());
-            await Update("wx_can_exitGroup", configModel.WxCanExitGroup.ToString());
-            await Update("wx_can_logout", configModel.WxCanLogout.ToString());
-            await Update("wx_can_changeAcnt", configModel.WxCanChangeAcnt.ToString());
-            await Update("wx_can_acntInfo", configModel.WxCanAcntInfo.ToString());
-            await Update("wx_show_toast", configModel.WxShowToast.ToString());
-            await Update("wx_can_sendcard", configModel.WxCanSendCard.ToString());
-
+            await ConfigService.UpdateModelAsync(configModel);
             NotificationService.Notify(NotificationSeverity.Success, "保存成功", "所有配置已更新并推送");
-            await LoadConfigs();
+            // Optional: Reload to ensure local model matches server state (though typically same)
+            // await LoadConfigs(); 
         }
         catch (Exception ex)
         {
@@ -401,52 +321,5 @@
         {
             isSaving = false;
         }
-    }
-
-    private async Task Update(string key, string? value)
-    {
-        if (value == null) return;
-        var oldVal = GetValue(key);
-        if (oldVal == value) return;
-
-        await ConfigService.UpdateConfigAsync(new SystemConfig { key = key, value = value, description = "Updated via Web Settings" });
-    }
-
-    class ConfigViewModel
-    {
-        public string? FileUpUrl { get; set; }
-        public string? Host { get; set; }
-        public int ServerPort { get; set; }
-        public string? ApiBaseUrl { get; set; }
-        public int TokenExpiryMinutes { get; set; }
-        
-        // Base Status
-        public bool AutoLogin { get; set; }
-        public bool ForceRun { get; set; }
-        public int KeepWake { get; set; }
-        public string? ClientConfigPath { get; set; }
-        public string? LogLevel { get; set; }
-        public string? AutoUpdateUrl { get; set; }
-
-        // Behavior
-        public bool AutoPic { get; set; }
-        public bool SilentFunc { get; set; }
-        public bool FastSend { get; set; }
-        public bool SilentAccept { get; set; }
-        public bool AddInWw { get; set; }
-        public bool LightScn { get; set; }
-        public bool Disturb { get; set; }
-        public bool MoreLog { get; set; }
-
-        // Permissions
-        public bool WxShowAlias { get; set; }
-        public bool WxCanDelete { get; set; }
-        public bool WxCanBlock { get; set; }
-        public bool WxCanExitGroup { get; set; }
-        public bool WxCanLogout { get; set; }
-        public bool WxCanChangeAcnt { get; set; }
-        public bool WxCanAcntInfo { get; set; }
-        public bool WxShowToast { get; set; }
-        public bool WxCanSendCard { get; set; }
     }
 }

@@ -7,7 +7,7 @@ using System;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using Microsoft.AspNetCore.SignalR;
-using SCRM.API.Models.Events;
+using SCRM.SHARED.Models.Events;
 
 namespace SCRM.API.Controllers
 {

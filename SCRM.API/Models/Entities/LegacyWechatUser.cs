@@ -11,20 +11,26 @@ public class LegacyWechatUser
     /// <summary>
     /// 用户ID (映射到AccountId)
     /// </summary>
-    public long Id
+    /// <summary>
+    /// 用户ID (映射到Wxid)
+    /// </summary>
+    public string Id
     {
-        get { return WechatAccount?.accountId ?? 0; }
+        get { return WechatAccount?.wxid ?? string.Empty; }
         set
         {
             if (WechatAccount != null)
-                WechatAccount.accountId = value;
+                WechatAccount.wxid = value;
         }
     }
 
     /// <summary>
     /// 用户ID别名 (与Id相同，用于兼容性)
     /// </summary>
-    public long UserId
+    /// <summary>
+    /// 用户ID别名 (与Id相同，用于兼容性)
+    /// </summary>
+    public string UserId
     {
         get { return Id; }
         set { Id = value; }
@@ -143,11 +149,11 @@ public class LegacyWechatUser
     /// <param name="userId">用户ID</param>
     /// <param name="userName">用户名</param>
     /// <param name="email">邮箱</param>
-    public LegacyWechatUser(long userId, string userName, string? email = null)
+    public LegacyWechatUser(string userId, string userName, string? email = null)
     {
         WechatAccount = new WechatAccount
         {
-            accountId = userId,
+            wxid = userId,
             nickname = userName,
             mobilePhone = email
         };

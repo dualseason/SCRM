@@ -86,13 +86,13 @@ namespace SCRM.API.Hubs
             return result;
         }
 
-        public async Task<IEnumerable<Contact>> GetContacts(long accountId)
+        public async Task<IEnumerable<Contact>> GetContacts(string accountId)
         {
             var userId = Context.User?.Identity?.Name;
             var isAdmin = Context.User?.IsInRole("SuperAdmin") == true || Context.User?.IsInRole("Admin") == true;
 
             // Use Atomic Get
-            var account = await _context.GetWechatAccount(accountId);
+            var account = await _context.WechatAccounts.FindAsync(accountId);
             if (account == null) return Enumerable.Empty<Contact>();
 
             // Security check: ensure user owns the client linked to this account
@@ -106,7 +106,7 @@ namespace SCRM.API.Hubs
             return await _context.GetContacts(accountId);
         }
 
-        public async Task<IEnumerable<Message>> GetChatHistory(long accountId, string friendWxId)
+        public async Task<IEnumerable<Message>> GetChatHistory(string accountId, string friendWxId)
         {
             return await _context.Messages
                 .Where(m => m.accountId == accountId && (m.senderWxid == friendWxId || m.receiverWxid == friendWxId))
@@ -229,9 +229,9 @@ namespace SCRM.API.Hubs
         /// <summary>
         /// 获取账号配置
         /// </summary>
-        public async Task<WechatAccountSettings> GetAccountSettings(long accountId)
+        public async Task<WechatAccountSettings> GetAccountSettings(string accountId)
         {
-            var account = await _context.GetWechatAccount(accountId);
+            var account = await _context.WechatAccounts.FindAsync(accountId);
             // Security check omitted for brevity in this step, should add ownership check
             if (account == null || string.IsNullOrEmpty(account.settings))
                 return new WechatAccountSettings();
@@ -249,9 +249,9 @@ namespace SCRM.API.Hubs
         /// <summary>
         /// 更新账号配置
         /// </summary>
-        public async Task<bool> UpdateAccountSettings(long accountId, WechatAccountSettings settings)
+        public async Task<bool> UpdateAccountSettings(string accountId, WechatAccountSettings settings)
         {
-            var account = await _context.GetWechatAccount(accountId);
+            var account = await _context.WechatAccounts.FindAsync(accountId);
             if (account == null) return false;
 
             // Security check should go here
@@ -306,7 +306,7 @@ namespace SCRM.API.Hubs
                 likes = !string.IsNullOrEmpty(m.likesJson) ? System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(m.likesJson) : new List<SCRM.SHARED.Models.Dtos.MomentLikeDto>()
             });
         }
-        public async Task<IEnumerable<Conversation>> GetConversations(long accountId)
+        public async Task<IEnumerable<Conversation>> GetConversations(string accountId)
         {
             var userId = Context.User?.Identity?.Name;
             var isAdmin = Context.User?.IsInRole("SuperAdmin") == true || Context.User?.IsInRole("Admin") == true;

@@ -37,7 +37,7 @@ namespace SCRM.UI.Services
                 }
 
                 var response = await _httpClient.GetAsync(url);
-                
+
                 if (response.IsSuccessStatusCode)
                 {
                     var items = await response.Content.ReadFromJsonAsync<IEnumerable<Contact>>();

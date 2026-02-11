@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using SCRM.Shared.Core;
 using SCRM.Services;
 using SCRM.API.Services.Core;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using SCRM.Models.Configurations;
 
@@ -16,10 +17,12 @@ namespace SCRM.Services.Netty
     /// <summary>
     /// Netty 服务器
     /// 负责启动 TCP 监听，配置 Channel Pipeline（Protobuf 编解码器，业务处理器）
+    /// [AntiGravity] Refactored: Port Configuration from AppSettings (Infrastructure)
     /// </summary>
     public class NettyServer
     {
         private readonly Microsoft.Extensions.Logging.ILogger<NettyServer> _logger;
+        private readonly NettySettings _nettySettings;
 
         private readonly IServiceProvider _serviceProvider;
         private IChannel _channel;
@@ -31,14 +34,14 @@ namespace SCRM.Services.Netty
         /// Worker 线程组，用于处理 Socket IO 读写
         /// </summary>
         private readonly IEventLoopGroup _workerGroup;
-        private readonly NettySettings _nettySettings;
 
-        public NettyServer(IServiceProvider serviceProvider, IOptions<NettySettings> nettySettings, Microsoft.Extensions.Logging.ILogger<NettyServer> logger)
+        public int Port { get; private set; }
+
+        public NettyServer(IServiceProvider serviceProvider, Microsoft.Extensions.Logging.ILogger<NettyServer> logger, IOptions<NettySettings> nettySettings)
         {
             _serviceProvider = serviceProvider;
-            _nettySettings = nettySettings.Value;
             _logger = logger;
-            Port = _nettySettings.Port;
+            _nettySettings = nettySettings.Value;
 
             _bossGroup = new MultithreadEventLoopGroup(1);
             _workerGroup = new MultithreadEventLoopGroup();
@@ -61,17 +64,14 @@ namespace SCRM.Services.Netty
                         
                         // 入站解码器：处理 TCP 粘包/拆包，确保 ProtobufDecoder 接收到完整的数据包
                         // MaxFrameLength: 100MB, LengthFieldOffset: 0, LengthFieldLength: 4, LengthAdjustment: 0, InitialBytesToStrip: 4
-
-                        // 入站解码器：处理 TCP 粘包/拆包，确保 ProtobufDecoder 接收到完整的数据包
-                        // MaxFrameLength: 100MB, LengthFieldOffset: 0, LengthFieldLength: 4, LengthAdjustment: 0, InitialBytesToStrip: 4
                         // Strip=4 意味着移除 4 字节长度头，下游 ProtobufDecoder 只接收纯消息体
                         pipeline.AddLast(new LengthFieldBasedFrameDecoder(100 * 1024 * 1024, 0, 4, 0, 4));
 
                         // 入站解码器：将接收到的 ByteBuf 解码为 TransportMessage
                         pipeline.AddLast(new ProtobufDecoder());
                         
-                        // Debug: 打印出站消息的 Hex (必须放在 Encoder 之前添加，这样在 Outbound 流程中它会在 Encoder 之后执行)
-                        // Outbound 顺序: Tail -> Encoder -> HexDump -> Head
+                        // 调试: 打印出站消息的 Hex (必须放在 Encoder 之前添加，这样在 Outbound 流程中它会在 Encoder 之后执行)
+                        // 出站顺序: Tail -> Encoder -> HexDump -> Head
                         var hexLogger = (Microsoft.Extensions.Logging.ILogger<HexDumpChannelHandler>)_serviceProvider.GetService(typeof(Microsoft.Extensions.Logging.ILogger<HexDumpChannelHandler>));
                         pipeline.AddLast(new HexDumpChannelHandler(hexLogger));
 
@@ -97,18 +97,26 @@ namespace SCRM.Services.Netty
         {
             try
             {
-                if (_channel == null || !_channel.Open)
+                // 使用 AppSettings 配置的端口进行绑定 (基础设施配置)
+                this.Port = _nettySettings.Port;
+                
+                if (Port <= 0)
                 {
-                    _logger.LogInformation("Starting Netty server on port {Port}", Port);
-                    var bootstrap = CreateBootstrap();
-                    _channel = await bootstrap.BindAsync(IPAddress.Any, Port);
-                    _logger.LogInformation("Netty server started successfully on port {Port}", Port);
+                    _logger.LogError("以前的端口配置无效 (Port={Port}). Defaulting to 8647", Port);
+                    this.Port = 8647;
                 }
+
+                _logger.LogInformation("正在启动 Netty 服务器，绑定端口: {Port}", Port); // Simplified log
+
+                var bootstrap = CreateBootstrap();
+                _channel = await bootstrap.BindAsync(IPAddress.Any, Port);
+                
+                _logger.LogInformation("Netty 服务器启动成功，监听端口: {Port}", Port);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to start Netty server");
-                throw;
+                _logger.LogError(ex, "Netty 服务器启动失败");
+                throw; // 抛出异常以便 Host 知道启动失败
             }
         }
 
@@ -140,6 +148,5 @@ namespace SCRM.Services.Netty
         }
 
         public bool IsRunning => _channel?.Open ?? false;
-        public int Port { get; set; }
     }
 }

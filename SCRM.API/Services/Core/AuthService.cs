@@ -150,8 +150,8 @@ namespace SCRM.API.Services.Core
             if (user == null)
                 throw new ArgumentNullException(nameof(user));
 
-            var roles = await GetUserRolesAsync(user.Id);
-            var permissions = await GetUserPermissionsAsync(user.Id);
+            var roles = await GetUserRolesAsync(user.Id.ToString());
+            var permissions = await GetUserPermissionsAsync(user.Id.ToString());
 
             var claims = new List<Claim>
             {
@@ -189,7 +189,7 @@ namespace SCRM.API.Services.Core
 
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.NameIdentifier, device.accountId.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, device.wxid),
                 new Claim("device_imei", device.wechatNumber ?? ""),
                 new Claim("device_uuid", device.clientUuid ?? ""),
                 new Claim("is_device", "true")
@@ -373,8 +373,8 @@ namespace SCRM.API.Services.Core
             var token = await GenerateTokenAsync(user);
             var refreshToken = GenerateRefreshTokenAsync(user);
 
-            var roles = await GetUserRolesAsync(user.Id);
-            var permissions = await GetUserPermissionsAsync(user.Id);
+            var roles = await GetUserRolesAsync(user.Id.ToString());
+            var permissions = await GetUserPermissionsAsync(user.Id.ToString());
 
             var expiryMinutes = await GetTokenExpiryMinutesAsync();
 
@@ -425,10 +425,11 @@ namespace SCRM.API.Services.Core
                 return false;
             }
 
-            if (long.TryParse(connectionInfo.userId, out long accountId))
+            if (!string.IsNullOrEmpty(connectionInfo.userId))
             {
+                var accountId = connectionInfo.userId;
                 var ownerId = await _context.WechatAccounts
-                    .Where(w => w.accountId == accountId && !w.isDeleted)
+                    .Where(w => w.wxid == accountId && !w.isDeleted)
                     .Join(_context.SrClients, 
                           w => w.clientUuid, 
                           c => c.uuid, 
@@ -444,7 +445,7 @@ namespace SCRM.API.Services.Core
                 return false;
             }
             
-            _logger.LogWarning("ValidateDeviceOwnership: 无法将连接用户ID '{ConnUserId}' 解析为 long", connectionInfo.userId);
+            _logger.LogWarning("ValidateDeviceOwnership: 连接用户ID为空", connectionInfo.userId);
             return false;
         }
 
@@ -484,7 +485,6 @@ namespace SCRM.API.Services.Core
                 if (account != null)
                 {
                     if (client.wx == null) client.wx = new Wx{ wechatAccount = account,srClient=client};
-                    client.weChatId = account.wxid;
                     //client.weChatNick = account.nickname;
                     //client.wechatAccountId = account.accountId;
 
@@ -527,7 +527,6 @@ namespace SCRM.API.Services.Core
             if (account != null)
             {
 
-                client.weChatId = account.wxid;
                 //client.weChatNick = account.nickname;
                 //client.wechatAccountId = account.accountId;
 
@@ -551,23 +550,23 @@ namespace SCRM.API.Services.Core
 
         #region 权限与角色缓存
 
-        public async Task<bool> HasPermissionAsync(int userId, string permissionCode)
+        public async Task<bool> HasPermissionAsync(string userId, string permissionCode)
         {
-            if (userId <= 0 || string.IsNullOrEmpty(permissionCode)) return false;
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(permissionCode)) return false;
             var permissions = await GetUserPermissionsAsync(userId);
             return permissions.Contains(permissionCode);
         }
 
-        public async Task<bool> HasAnyPermissionAsync(int userId, params string[] permissionCodes)
+        public async Task<bool> HasAnyPermissionAsync(string userId, params string[] permissionCodes)
         {
-            if (userId <= 0 || permissionCodes == null || permissionCodes.Length == 0) return false;
+            if (string.IsNullOrEmpty(userId) || permissionCodes == null || permissionCodes.Length == 0) return false;
             var permissions = await GetUserPermissionsAsync(userId);
             return permissionCodes.Any(code => permissions.Contains(code));
         }
 
-        public async Task<bool> HasRoleAsync(int userId, string roleName)
+        public async Task<bool> HasRoleAsync(string userId, string roleName)
         {
-            if (userId <= 0 || string.IsNullOrEmpty(roleName)) return false;
+            if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(roleName)) return false;
             var roles = await GetUserRolesAsync(userId);
             return roles.Contains(roleName);
         }
@@ -575,9 +574,9 @@ namespace SCRM.API.Services.Core
         /// <summary>
         /// 获取用户所有权限（带缓存）
         /// </summary>
-        public async Task<List<string>> GetUserPermissionsAsync(long userId)
+        public async Task<List<string>> GetUserPermissionsAsync(string userId)
         {
-            if (userId <= 0) return new List<string>();
+            if (string.IsNullOrEmpty(userId)) return new List<string>();
             var cacheKey = $"user_permissions_{userId}";
 
             return await _cache.GetOrCreateAsync(cacheKey, async entry =>
@@ -600,9 +599,9 @@ namespace SCRM.API.Services.Core
         /// <summary>
         /// 获取用户所有角色（带缓存）
         /// </summary>
-        public async Task<List<string>> GetUserRolesAsync(long userId)
+        public async Task<List<string>> GetUserRolesAsync(string userId)
         {
-            if (userId <= 0) return new List<string>();
+            if (string.IsNullOrEmpty(userId)) return new List<string>();
             var cacheKey = $"user_roles_{userId}";
 
             return await _cache.GetOrCreateAsync(cacheKey, async entry =>
@@ -654,19 +653,19 @@ namespace SCRM.API.Services.Core
         /// <summary>
         /// 获取完整用户信息及权限详情（带缓存）
         /// </summary>
-        public async Task<UserPermissionInfo> GetUserPermissionInfoAsync(long userId)
+        public async Task<UserPermissionInfo> GetUserPermissionInfoAsync(string userId)
         {
-            if (userId <= 0) return new UserPermissionInfo();
+            if (string.IsNullOrEmpty(userId)) return new UserPermissionInfo();
             var cacheKey = $"user_permission_info_{userId}";
 
             return await _cache.GetOrCreateAsync(cacheKey, async entry =>
             {
                 entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(15);
                 var user = await _context.WechatAccounts
-                    .Where(u => u.accountId == userId && !u.isDeleted)
+                    .Where(u => u.wxid == userId && !u.isDeleted)
                     .Select(u => new UserDto 
                     { 
-                        id = u.accountId.ToString(), 
+                        id = u.wxid, 
                         userName = u.wxid, 
                         firstName = u.nickname ?? string.Empty 
                     })
@@ -681,7 +680,7 @@ namespace SCRM.API.Services.Core
             }) ?? new UserPermissionInfo();
         }
 
-        public void ClearUserPermissionCache(int userId)
+        public void ClearUserPermissionCache(string userId)
         {
             _cache.Remove($"user_permissions_{userId}");
             _cache.Remove($"user_roles_{userId}");
@@ -695,14 +694,14 @@ namespace SCRM.API.Services.Core
             _cache.Remove("all_roles");
         }
 
-        public async Task<bool> HasAllPermissionsAsync(int userId, IEnumerable<string> permissions)
+        public async Task<bool> HasAllPermissionsAsync(string userId, IEnumerable<string> permissions)
         {
             if (permissions == null || !permissions.Any()) return true;
             var userPermissions = await GetUserPermissionsAsync(userId);
             return permissions.All(p => userPermissions.Contains(p));
         }
 
-        public async Task<bool> HasAnyPermissionAsync(int userId, IEnumerable<string> permissions)
+        public async Task<bool> HasAnyPermissionAsync(string userId, IEnumerable<string> permissions)
         {
             if (permissions == null || !permissions.Any()) return false;
             var userPermissions = await GetUserPermissionsAsync(userId);

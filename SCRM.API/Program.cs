@@ -95,9 +95,10 @@ public partial class Program
         builder.Services.Configure<JwtSettings>(
             builder.Configuration.GetSection("JwtSettings"));
             
-        // Configure Netty settings
+        // Configure Netty settings (Added Back)
         builder.Services.Configure<NettySettings>(
             builder.Configuration.GetSection("NettySettings"));
+
 
         // Add JWT services
         // Add JWT services
@@ -206,8 +207,8 @@ public partial class Program
         builder.Services.AddScoped<Radzen.TooltipService>();
         builder.Services.AddScoped<Radzen.ContextMenuService>();
         
-        // System Config Service (JSON File Based)
-        builder.Services.AddSingleton<ISystemConfigService, JsonFileConfigService>();
+        // System Config Service (Database Based - KISS)
+        builder.Services.AddScoped<ISystemConfigService, ServerSystemConfigService>();
         
         // Device Command Service (Direct SignalR Hub Access)
         builder.Services.AddScoped<ServerDeviceCommandService>();
@@ -350,6 +351,10 @@ public partial class Program
         var storePath = uploadSettings["StorePath"];
         var requestPrefix = uploadSettings["RequestUrlPrefix"] ?? "uploads";
 
+        // Fix: ALWAYS serve standard static files (wwwroot) like site.css, bootstrap.css, blazor.server.js
+        // If we don't do this, enabling file uploads effectively disables the entire website's styling and scripts.
+        app.UseStaticFiles();
+
         if (!string.IsNullOrEmpty(storePath) && Path.IsPathRooted(storePath))
         {
             // Absolute Path (e.g. C:/Uploads)
@@ -360,11 +365,7 @@ public partial class Program
                 RequestPath = "/" + requestPrefix.Trim('/')
             });
         }
-        else
-        {
-            // Default or Relative (wwwroot)
-            app.UseStaticFiles(); 
-        }
+        // Removed 'else' block because wwwroot must allow be served regardless of upload config
 
         app.UseRouting();
 

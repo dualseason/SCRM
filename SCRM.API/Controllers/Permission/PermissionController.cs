@@ -62,7 +62,7 @@ namespace SCRM.Controllers.Permission
 
         [HttpGet("user/{userId}")]
         [Authorize(Policy = "RequireAdminRole")]
-        public async Task<IActionResult> GetUserPermissions(int userId)
+        public async Task<IActionResult> GetUserPermissions(string userId)
         {
             try
             {
@@ -81,10 +81,11 @@ namespace SCRM.Controllers.Permission
             try
             {
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
                 {
                     return Unauthorized(new { Success = false, Message = "无效的用户信息" });
                 }
+                var userId = userIdClaim.Value;
 
                 var permissionInfo = await _authService.GetUserPermissionInfoAsync(userId);
                 return Ok(new { Success = true, Data = permissionInfo });
@@ -101,10 +102,11 @@ namespace SCRM.Controllers.Permission
             try
             {
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
                 {
                     return Unauthorized(new { Success = false, Message = "无效的用户信息" });
                 }
+                var userId = userIdClaim.Value;
 
                 var hasPermission = await _authService.HasPermissionAsync(userId, request.Permission);
                 return Ok(new { Success = true, Data = new { HasPermission = hasPermission } });
@@ -121,10 +123,11 @@ namespace SCRM.Controllers.Permission
             try
             {
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
                 {
                     return Unauthorized(new { Success = false, Message = "无效的用户信息" });
                 }
+                var userId = userIdClaim.Value;
 
                 var hasPermission = await _authService.HasPermissionAsync(userId, permission);
                 return Ok(new { Success = true, Data = new { HasPermission = hasPermission, Permission = permission } });
@@ -141,10 +144,11 @@ namespace SCRM.Controllers.Permission
             try
             {
                 var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out var userId))
+                if (userIdClaim == null || string.IsNullOrEmpty(userIdClaim.Value))
                 {
                     return Unauthorized(new { Success = false, Message = "无效的用户信息" });
                 }
+                var userId = userIdClaim.Value;
 
                 var hasAllPermissions = await _authService.HasAllPermissionsAsync(userId, request.Permissions);
                 var hasAnyPermission = await _authService.HasAnyPermissionAsync(userId, request.Permissions);

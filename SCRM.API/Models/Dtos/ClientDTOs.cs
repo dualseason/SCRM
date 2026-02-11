@@ -94,4 +94,10 @@ namespace SCRM.API.Models.DTOs
         /// </summary>
         public string userIdentifier { get; set; } = string.Empty;
     }
+
+    public class PhoneRegisterResponse
+    {
+        public UserAuthToken token { get; set; } 
+        public string config { get; set; } = string.Empty; // 序列化后的配置字符串
+    }
 }

@@ -5,7 +5,7 @@ using Jubo.JuLiao.IM.Wx.Proto;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Logging;
 using SCRM.API.Hubs;
-using SCRM.API.Models.Events;
+using SCRM.SHARED.Models.Events;
 using SCRM.API.Services.Core;
 using SCRM.Services.Events;
 using SCRM.Services.Data;

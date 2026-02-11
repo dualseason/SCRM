@@ -324,13 +324,14 @@ namespace SCRM.API.Services.Core
 
         /// <summary>
         /// 更新连接的微信信息 (设备上报信息后调用)
+        /// 如果传入 null，则不更新对应字段
         /// </summary>
-        public Task<bool> UpdateConnectionWeChatInfoAsync(string connectionId, string wechatId, string nickName)
+        public Task<bool> UpdateConnectionWeChatInfoAsync(string connectionId, string wechatId, string? nickName=null)
         {
              if (_connections.TryGetValue(connectionId, out var connection))
              {
-                 connection.wechatId = wechatId;
-                 connection.nickName = nickName;
+                 if (wechatId != null) connection.wechatId = wechatId;
+                 if (nickName != null) connection.nickName = nickName;
                  return Task.FromResult(true);
              }
              return Task.FromResult(false);

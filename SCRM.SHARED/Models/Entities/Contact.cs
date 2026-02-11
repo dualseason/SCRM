@@ -6,7 +6,7 @@ namespace SCRM.API.Models.Entities;
 /// <summary>
 /// 联系人信息实体
 /// </summary>
-[Index(nameof(wechatAccountId), nameof(wxid), IsUnique = true)]
+[Index(nameof(ownerWxid), nameof(wxid), IsUnique = true)]
 public class Contact
 {
     /// <summary>
@@ -15,14 +15,7 @@ public class Contact
     [Column("id")]
     public int id { get; set; }
 
-    /// <summary>
-    /// 所属微信账号 ID
-    /// </summary>
-    [Column("wechat_account_id")]
-    public long wechatAccountId { get; set; }
 
-    [ForeignKey("wechatAccountId")]
-    public virtual WechatAccount? Account { get; set; }
 
     /// <summary>
     /// 微信 WXID
@@ -34,7 +27,10 @@ public class Contact
     /// 所属微信账号 WXID (冗余字段，方便查询)
     /// </summary>
     [Column("owner_wxid")]
+    [ForeignKey("Account")] // EF Core allow FK on property or nav prop
     public string ownerWxid { get; set; } = string.Empty;
+
+    public virtual WechatAccount? Account { get; set; }
 
     /// <summary>
     /// 好友微信号 (Alias/FriendNo)

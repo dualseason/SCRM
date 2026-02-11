@@ -1,20 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using SCRM.API.Filters;
 using SCRM.API.Models.DTOs;
 using SCRM.API.Models.Entities;
-using SCRM.SHARED.Models;
+using SCRM.API.Services.Core;
 using SCRM.API.Utils;
 using SCRM.Services;
-using SCRM.API.Services.Core;
 using SCRM.Services.Data;
+using SCRM.SHARED.Models;
 using SCRM.UI.Services;
-using SCRM.API.Filters;
 using System;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using static SCRM.Models.Constants.Permissions;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SCRM.Controllers.Auth
 {
@@ -25,15 +27,15 @@ namespace SCRM.Controllers.Auth
         private readonly ApplicationDbContext _context;
         private readonly AuthService _authService;
         private readonly Microsoft.Extensions.Logging.ILogger<PhoneController> _logger;
-        private readonly SCRM.Models.Configurations.NettySettings _nettySettings;
+        // _nettySettings removed
         private readonly ISystemConfigService _configService;
 
-        public PhoneController(ApplicationDbContext context, AuthService authService, Microsoft.Extensions.Logging.ILogger<PhoneController> logger, Microsoft.Extensions.Options.IOptions<SCRM.Models.Configurations.NettySettings> options, ISystemConfigService configService)
+        public PhoneController(ApplicationDbContext context, AuthService authService, Microsoft.Extensions.Logging.ILogger<PhoneController> logger, ISystemConfigService configService)
         {
             _context = context;
             _authService = authService;
             _logger = logger;
-            _nettySettings = options.Value;
+            // _nettySettings removed
             _configService = configService;
         }
 
@@ -90,10 +92,14 @@ namespace SCRM.Controllers.Auth
                     }
                 }
 
+                // 严格从数据库获取配置
+                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost");
+                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port");
+                string tcpHost = tcpHostCfg?.value ?? "";
+                int tcpPort = 0;
+                if (tcpPortCfg != null) int.TryParse(tcpPortCfg.value, out tcpPort);
+
                 // 1. Find User by Email
-                // Note: User entity mapping might be complex, but we try to query by Email.
-                // If User.Email maps to WechatAccount.MobilePhone, this query effectively searches WechatAccounts.
-                // But we use _context.Users to be consistent with DbContext.
                 var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.userEmail);
                 if (user == null)
                 {
@@ -108,8 +114,8 @@ namespace SCRM.Controllers.Auth
                     {
                         uuid = clientUuid,
                         createdAt = DateTime.UtcNow,
-                        tcpHost = _nettySettings.Host,
-                        tcpPort = _nettySettings.Port,
+                        tcpHost = tcpHost,
+                        tcpPort = tcpPort,
                         status = 1,
                         isOnline = true,
                         lastLoginAt = DateTime.UtcNow,
@@ -124,10 +130,12 @@ namespace SCRM.Controllers.Auth
                     srClient.ip = clientIp;
                     srClient.lastLoginAt = DateTime.UtcNow;
                     srClient.isOnline = true;
+                    // 确保现有客户端的 TCP 配置也已更新!
+                    srClient.tcpHost = tcpHost;
+                    srClient.tcpPort = tcpPort;
                 }
 
                 // 3. Bind Client to User
-                // We convert long Id to string because ownerId is string?
                 srClient.ownerId = user.Id.ToString();
 
                 await _context.SaveChangesAsync();
@@ -141,9 +149,49 @@ namespace SCRM.Controllers.Auth
                     tcpPort = srClient.tcpPort
                 };
 
+                // [修正] 将系统配置注入 customConfigs 以便客户端立即获取
+                try
+                {
+                    var configs = await _configService.GetConfigsAsync();
+                    var typedConfig = new Dictionary<string, object>();
+                    foreach (var cfg in configs)
+                    {
+                        string k = cfg.key;
+                        string value = cfg.value;
+
+                        // 键映射 (兼容旧版)
+                        if (k == "fileUploadUrl") k = "fileUpUrl";
+                        else if (k == "tcpServerPort") k = "server_port";
+                        else if (k == "httpApiBaseUrl") k = "apiBaseUrl";
+
+                        // 类型推断 & 分组
+                        if (bool.TryParse(value, out bool bVal)) typedConfig[k] = bVal;
+                        else if (int.TryParse(value, out int iVal)) typedConfig[k] = iVal;
+                        else typedConfig[k] = value;
+                    }
+
+                    // 无需兜底，因为如果 DB 存在我们已经有了。
+                    // 但这里显式确保 "server_port" 和 "tcpServerHost" 与上面的严格查询一致
+                    if (tcpPort > 0) typedConfig["server_port"] = tcpPort;
+                    if (!string.IsNullOrEmpty(tcpHost)) typedConfig["tcpServerHost"] = tcpHost;
+
+                    srClient.customConfigs = JsonSerializer.Serialize(typedConfig);
+                    _logger.LogInformation("[HTTP登录] 已将系统配置植入 PhoneRegisterResponse.customConfigs 下发给客户端 (Host={Host}, Port={Port})", tcpHost, tcpPort);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "[HTTP登录] 配置植入失败");
+                }
+
+                var phoneRegisterResponse = new PhoneRegisterResponse
+                {
+                    token = token,
+                    config = srClient.customConfigs?? "{}"
+                };
+
                 _logger.LogInformation("[生成Token] 为客户端 {ClientUuid} 生成带 device_uuid 声明的Token (UserId: {UserId})", clientUuid, user.Id);
 
-                return Ok(ApiResponse<UserAuthToken>.Success(token));
+                return Ok(ApiResponse<PhoneRegisterResponse>.Success(phoneRegisterResponse));
             }
             catch (Exception ex)
             {
@@ -170,6 +218,14 @@ namespace SCRM.Controllers.Auth
                 {
                     return Ok(ApiResponse<SrClient>.Fail(1, "注册码不能为空"));
                 }
+
+                // 严格从数据库获取配置
+                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost");
+                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port");
+                
+                string tcpHost = tcpHostCfg?.value ?? "";
+                int tcpPort = 0;
+                if (tcpPortCfg != null) int.TryParse(tcpPortCfg.value, out tcpPort);
 
                 WechatAccount account = null;
 
@@ -275,19 +331,17 @@ namespace SCRM.Controllers.Auth
                         VerNumber = request.versionCode
                     });
                 }
-                srClient.tcpHost = _nettySettings.Host;
-                srClient.tcpPort = _nettySettings.Port;
+                
+                // Inject DB Configs
+                srClient.tcpHost = tcpHost;
+                srClient.tcpPort = tcpPort;
                 srClient.updatedAt = DateTime.UtcNow;
                 srClient.ip = clientIp;
                 srClient.lastLoginAt = DateTime.UtcNow;
                 srClient.isOnline = true;
                 srClient.status = 1;
 
-                // [Fix] Inject System Configs into customConfigs so client gets them immediately
-                // Convert List<SystemConfig> to Dictionary<string, object> for serialization
-                // Or just a simple wrapper if client expects specific format. 
-                // Assuming client parses customConfigs as a dictionary or checks for specific keys.
-                // We'll mimic the PushConfig format roughly - a dictionary of Key/Value
+                // [修正] 将系统配置注入 customConfigs 以便客户端立即获取
                 try 
                 {
                     var configs = await _configService.GetConfigsAsync();
@@ -297,41 +351,41 @@ namespace SCRM.Controllers.Auth
                         string k = cfg.key;
                         string value = cfg.value;
 
-                        // Key Mapping (Retro-compatibility)
+                        // 键映射 (兼容旧版)
                         if (k == "fileUploadUrl") k = "fileUpUrl";
                         else if (k == "tcpServerPort") k = "server_port";
                         else if (k == "httpApiBaseUrl") k = "apiBaseUrl";
 
-                        // Type Inference & Grouping
+                        // 类型推断 & 分组
                         if (bool.TryParse(value, out bool bVal)) typedConfig[k] = bVal;
                         else if (int.TryParse(value, out int iVal)) typedConfig[k] = iVal;
                         else typedConfig[k] = value;
                     }
                     
-                    // Add Netty settings as fallback
-                    if (!typedConfig.ContainsKey("server_port")) typedConfig["server_port"] = _nettySettings.Port;
-                    if (!typedConfig.ContainsKey("tcpServerHost")) typedConfig["tcpServerHost"] = _nettySettings.Host;
+                    // 无需兜底，因为如果 DB 存在我们已经有了。
+                    // 但这里显式确保 "server_port" 和 "tcpServerHost" 与上面的严格查询一致
+                    if (tcpPort > 0) typedConfig["server_port"] = tcpPort;
+                    if (!string.IsNullOrEmpty(tcpHost)) typedConfig["tcpServerHost"] = tcpHost;
 
                     srClient.customConfigs = JsonSerializer.Serialize(typedConfig);
-                    _logger.LogInformation("[HTTP登录] 已将系统配置植入 customConfigs 下发给客户端 (包含 keepWake={KeepWake})", typedConfig.ContainsKey("keepWake") ? typedConfig["keepWake"] : "N/A");
+                    _logger.LogInformation("[HTTP登录] 已将系统配置植入 customConfigs 下发给客户端 (Host={Host}, Port={Port})", tcpHost, tcpPort);
                 }
                 catch (Exception ex)
                 {
                      _logger.LogError(ex, "[HTTP登录] 配置植入失败");
                 }
 
+                // 账户绑定现由 Wx 对象引用处理
+                // 兼容性说明: 移除了旧版 'accounts' 列表 
 
-                // Account binding is now handled via Wx object reference only
-                // Compatibility Note: Legacy list 'accounts' is removed. 
-
-                // Generate Token
+                // 生成 Token
                 ApplicationUser? user = null;
                 if (!string.IsNullOrEmpty(srClient.ownerId))
                 {
                     user = await _context.Users.FindAsync(srClient.ownerId);
                 }
                 
-                // Fallback: If no owner, try to find by RegCode if it's an email (Legacy)
+                // 兜底: 若无 owner，尝试通过 RegCode 如果是邮箱查找 (旧版)
                 if (user == null && request.regCode.Contains("@"))
                 {
                      user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.regCode);
@@ -401,13 +455,19 @@ namespace SCRM.Controllers.Auth
                     return Ok(ApiResponse<SrClient>.Fail(1, "用户不存在"));
                 }
 
+                // 严格从数据库获取配置
+                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost");
+                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port");
+                string tcpHost = tcpHostCfg?.value ?? "";
+                int tcpPort = 0;
+                if (tcpPortCfg != null) int.TryParse(tcpPortCfg.value, out tcpPort);
+
                 var wx = new Wx { wechatAccount = account };
                 var srClient = new SrClient
                 {
                     uuid = "VALIDATION_SUCCESS",
-                    tcpHost = _nettySettings.Host,
-                    tcpPort = _nettySettings.Port,
-                    weChatId = account.wxid,
+                    tcpHost = tcpHost,
+                    tcpPort = tcpPort,
                     wx = wx,
                 };
                 wx.srClient = srClient;

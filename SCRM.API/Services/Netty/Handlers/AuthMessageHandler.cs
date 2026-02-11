@@ -17,7 +17,7 @@ using DotNetty.Transport.Channels;
 using SCRM.API.Services.Netty.Handlers.Abstractions;
 using SCRM.API.Services.Core;
 using SCRM.Services.Events;
-using SCRM.API.Models.Events;
+using SCRM.SHARED.Models.Events;
 using SCRM.API.Services.Data;
 
 namespace SCRM.API.Services.Netty.Handlers
@@ -41,6 +41,7 @@ namespace SCRM.API.Services.Netty.Handlers
         private readonly ApplicationDbContext _dbContext;
         private readonly SCRM.UI.Services.ISystemConfigService _configService;
         private readonly IEventBus _eventBus;
+        private readonly Microsoft.Extensions.Configuration.IConfiguration _configuration;
 
         public AuthMessageHandler(
             ILogger<AuthMessageHandler> logger,
@@ -48,7 +49,8 @@ namespace SCRM.API.Services.Netty.Handlers
             ConnectionManager connectionManager,
             ApplicationDbContext dbContext,
             SCRM.UI.Services.ISystemConfigService configService,
-            IEventBus eventBus) : base(logger)
+            IEventBus eventBus,
+            Microsoft.Extensions.Configuration.IConfiguration configuration) : base(logger)
         {
             _logger = logger;
             _authService = authService;
@@ -56,6 +58,7 @@ namespace SCRM.API.Services.Netty.Handlers
             _dbContext = dbContext;
             _configService = configService;
             _eventBus = eventBus;
+            _configuration = configuration;
         }
 
         public async Task HandleDeviceAuth(TransportMessage message, IChannelHandlerContext context)
@@ -96,7 +99,7 @@ namespace SCRM.API.Services.Netty.Handlers
             }
             catch (Exception ex)
             {
-                _logger.LogWarning("令牌校验过程中发生异常: {Message}。凭据预览: {Preview}", ex.Message, 
+                _logger.LogWarning("令牌校验过程中发生异常: {Message}。凭据预览: {Preview}", ex.Message,
                     credential.Length > 20 ? credential.Substring(0, 20) + "..." : credential);
             }
 
@@ -121,116 +124,83 @@ namespace SCRM.API.Services.Netty.Handlers
 
             _logger.LogInformation("鉴权成功。用户: {User} ({Id}), 设备: {Device}", userName, userIdStr, deviceUuid);
 
-                // 3. 确保账号记录存在
-            var account = await _dbContext.WechatAccounts
-                .FirstOrDefaultAsync(u => u.clientUuid == deviceUuid && !u.isDeleted);
-
-            if (account == null)
-            {
-                _logger.LogInformation("首次连接: 为设备 {Device} 创建影子账号声明并绑定至用户 {User}", deviceUuid, userName);
-                account = new WechatAccount 
-                { 
-                    wechatNumber = deviceUuid, // 默认使用 UUID 作为内部识别码
-                    clientUuid = deviceUuid,
-                    ownerId = userIdStr, 
-                    isActive = true,
-                    createdAt = DateTime.UtcNow,
-                    vipExpiryDate = DateTime.UtcNow.AddYears(1)
-                };
-                // await _dbContext.WechatAccounts.AddAsync(account);
-                // Fix: 立即持久化并同步缓存
-                await DbHelper.SaveWechatAccount(_dbContext, account);
-            }
+            // 3. [Fix] 彻底移除历史账号查找逻辑
+            // 之前的逻辑会查找并自动关联历史 WechatAccount，导致"假在线"。
+            // 现在我们完全忽略历史状态，一切以客户端实时上报为准。
+            // WechatAccount account = null; // Do not fetch from DB
 
             // 4. 确保 SrClient 记录并更新连接状态
-            //var srClient = await _dbContext.SrClients.FirstOrDefaultAsync(c => c.uuid == deviceUuid);
             var srClient = await DbHelper.GetSrClient(_dbContext, deviceUuid);
 
             if (srClient == null)
             {
                 srClient = new SrClient { uuid = deviceUuid, ownerId = userIdStr, createdAt = DateTime.UtcNow, isOnline = true };
-                //await _dbContext.SrClients.AddAsync(srClient);
-                // await DbHelper.SaveSrClient(_dbContext,srClient);
-
             }
             else
             {
                 srClient.isOnline = true;
-                // 注意：由于是严格 JWT，令牌中的归属关系具有最高优先级，更新数据库以保持同步
-                srClient.ownerId = userIdStr; 
-            }
-
-            // [Optimization] 统一更新 SrClient 属性 (在线状态 + 归属人 + 登录记录)
-            if (account != null && !string.IsNullOrEmpty(account.wxid))
-            {
-                if (!srClient.loggedInWeChatIds.Contains(account.wxid))
-                {
-                    srClient.loggedInWeChatIds.Add(account.wxid);
-                }
-                srClient.wx = new Wx { wechatAccount = account, srClient = srClient };
+                srClient.ownerId = userIdStr;
+                // [Fix] 清空历史关联，等待客户端上报
+                // srClient.loggedInWeChatIds.Clear(); // Optional: Do we want to clear history? Maybe not.
+                srClient.wx = null; // Ensure no current wx session is assumed
             }
 
             // Fix: 无论后续逻辑如何，这里必须先保存一次 SrClient 的基础状态
-            // 这样可以确保 "在线" 状态被持久化
-            await DbHelper.SaveSrClient(_dbContext,srClient);
+            await DbHelper.SaveSrClient(_dbContext, srClient);
 
-            //await _dbContext.SaveChangesAsync();
             await _connectionManager.AddConnectionAsync(userIdStr, context.Channel.Id.AsLongText(), "WeChat", deviceUuid);
 
             // 5. 发送认证成功响应及初始化配置
-            // Extra.Token 用于初始化客户端的 currentWeChatId。
-            // 优先使用 wxid，若为空（首次连接且未登录微信）则使用 deviceUuid 作为占位符，以通过客户端的“已登录”拦截检查。
+            // [Fix] 由于不查库，直接使用 deviceUuid 作为 Token
+            // 客户端会使用此 Token 进行后续通信，只要非空即可。
             var extraMsg = new DeviceAuthRspMessage.Types.ExtraMessage
             {
-                Token = !string.IsNullOrEmpty(account?.wxid) ? account.wxid : deviceUuid 
+                Token = deviceUuid 
             };
 
             var authResp = new TransportMessage
             {
-                Id = 0,
+                Id = DateTime.UtcNow.Ticks,
                 MsgType = EnumMsgType.DeviceAuthRsp,
                 RefMessageId = message.Id,
-                Content = Any.Pack(new DeviceAuthRspMessage 
-                { 
+                Content = Any.Pack(new DeviceAuthRspMessage
+                {
                     AccessToken = credential,
                     Extra = extraMsg
-                }) // 返回原始 Token 及识别码
+                }) 
             };
             await context.WriteAndFlushAsync(authResp);
-            await PushClientConfig(context);    //下发初始化配置
-
-            // 下发 联系人同步 (如果微信已登录)
-            if (account != null && !string.IsNullOrEmpty(account.wxid))
+            
+            // 6. 下发 获取wx信息 (强制查询)
+            // [Fix] 不再依赖 account.wxid，直接下发空 ID，要求客户端汇报当前状态
+            _logger.LogInformation("下发获取微信信息指令(Blank ID)...");
+            try
             {
-                _logger.LogInformation("[业务同步] 微信已登录 ({WxId})，自动触发联系人全量同步指令...", account.wxid);
-                try 
+                var syncMsg = new TransportMessage
                 {
-                    var syncMsg = new TransportMessage
+                    MsgType = EnumMsgType.TriggerWechatPushTask,
+                    Content = Any.Pack(new TriggerWechatPushTaskMessage
                     {
-                        Id = 0,
-                        MsgType = EnumMsgType.TriggerFriendPushTask,
-                        RefMessageId = 0,
-                        Content = Any.Pack(new TriggerFriendPushTaskMessage
-                        {
-                            WeChatId = account.wxid,
-                            TaskId = DateTime.Now.Ticks
-                        })
-                    };
-                    await context.WriteAndFlushAsync(syncMsg);
+                        WeChatId = "" // Empty ID force client to report self
+                    })
+                };
+                await context.WriteAndFlushAsync(syncMsg);
 
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, "自动触发联系人同步失败");
-                }
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "下发获取wx信息失败");
+            }
+
+            // [Fix] 移除 TriggerFriendPushTask
+            // 现在由 SystemMessageHandler 在收到 WeChatOnlineNotice 后触发
         }
 
         public async Task HandleHeartBeat(TransportMessage message, IChannelHandlerContext context)
         {
             // 心跳处理逻辑
             // Logger.LogDebug("收到心跳: {ConnId}", context.Channel.Id); // 减少日志噪音
-            
+
             await _connectionManager.UpdateConnectionActivityAsync(context.Channel.Id.AsLongText());
 
             var pong = new TransportMessage
@@ -252,7 +222,7 @@ namespace SCRM.API.Services.Netty.Handlers
                 {
                     _logger.LogInformation("收到设备状态告警/上报: WeChatId={WeChatId}, IMEI={IMEI}, Net={Net}", warningMsg.WeChatId, warningMsg.Imei, warningMsg.NetType);
                     _logger.LogInformation("PhoneStateWarning Detail: {Detail}", System.Text.Json.JsonSerializer.Serialize(warningMsg));
-                    
+
                     // 尝试从数据库获取昵称
                     string nickName = "";
                     var account = await _dbContext.WechatAccounts.FirstOrDefaultAsync(u => u.wxid == warningMsg.WeChatId);
@@ -262,7 +232,7 @@ namespace SCRM.API.Services.Netty.Handlers
                     }
 
                     await _connectionManager.UpdateConnectionWeChatInfoAsync(connId, warningMsg.WeChatId, nickName);
-                    
+
                     var connInfo = await _connectionManager.GetConnectionAsync(connId);
                     if (connInfo != null)
                     {
@@ -278,31 +248,24 @@ namespace SCRM.API.Services.Netty.Handlers
 
         public async Task HandlePostDeviceInfo(TransportMessage message, IChannelHandlerContext context)
         {
-             // 检查连接是否已认证
+            // 检查连接是否已认证
             var connId = context.Channel.Id.AsLongText();
-            if (!_connectionManager.IsConnected(connId)) 
+            if (!_connectionManager.IsConnected(connId))
             {
                 return;
             }
 
-            try 
+            try
             {
                 var infoMsg = message.Content.Unpack<PostDeviceInfoNoticeMessage>();
                 if (!string.IsNullOrEmpty(infoMsg.WeChatId))
                 {
                     _logger.LogInformation("收到设备信息上报: WeChatId={WeChatId}", infoMsg.WeChatId);
                     _logger.LogInformation("PostDeviceInfo Detail: {Detail}", System.Text.Json.JsonSerializer.Serialize(infoMsg));
-                    
-                    // 尝试从数据库获取昵称
-                    string nickName = "";
-                    var account = await _dbContext.WechatAccounts.FirstOrDefaultAsync(u => u.wxid == infoMsg.WeChatId);
-                    if (account != null)
-                    {
-                        nickName = account.nickname ?? "";
-                    }
 
-                    await _connectionManager.UpdateConnectionWeChatInfoAsync(connId, infoMsg.WeChatId, nickName);
-                    
+                    // PostDeviceInfoNotice 不包含昵称信息，此处仅更新设备在线状态 (传递 null 以保持原昵称不变)
+                    await _connectionManager.UpdateConnectionWeChatInfoAsync(connId, infoMsg.WeChatId);
+
                     // 获取 DeviceUuid 并发布状态变更事件以刷新 UI
                     var connInfo = await _connectionManager.GetConnectionAsync(connId);
                     if (connInfo != null)
@@ -326,7 +289,7 @@ namespace SCRM.API.Services.Netty.Handlers
                 MsgType = EnumMsgType.MsgReceivedAck,
                 RefMessageId = message.Id
             };
-            
+
             await context.WriteAndFlushAsync(response);
         }
 
@@ -338,30 +301,60 @@ namespace SCRM.API.Services.Netty.Handlers
                 var configs = await _configService.GetConfigsAsync();
                 var msg = new SetConfigTaskMessage();
 
+                // --- Configs (Source: Database) ---
+                // All client behavior, including where to connect (Host/Port), is managed via the UI (Database).
+                // This allows flexibility (e.g. mapping external IPs, ports) without restarting the server.
+                
                 foreach (var config in configs)
                 {
                     string key = config.key;
                     string value = config.value;
 
-                    // 1. Key Mapping (Retro-compatibility)
-                    // fileUploadUrl -> fileUpUrl for client
+                    // MAPPING: TCP Connection Configs (DB -> Proto)
+                    // These are "Android Settings" as requested, allowing dynamic modification via UI.
+                    if (key == "tcpServerHost")
+                    {
+                        msg.StrConfs.Add(new StrConfigMessage 
+                        { 
+                            Key = "host", // Client expects "host"
+                            Value = value, // STRICTLY use DB value
+                            Name = key, 
+                            Desc = config.description ?? "TCP Host" 
+                        });
+                        continue;
+                    }
+
+                    if (key == "tcpServerPort")
+                    {
+                        // Use default 8647 if parsing fails, but try DB value first
+                        int portVal = 8647;
+                        int.TryParse(value, out portVal);
+
+                        msg.IntConfs.Add(new IntConfigMessage 
+                        { 
+                            Key = "port", // Client expects "port"
+                            Value = portVal,
+                            Name = key, 
+                            Desc = config.description ?? "TCP Port" 
+                        });
+                        continue;
+                    }
+
+                    // MAPPING: Legacy Key Support
                     if (key == "fileUploadUrl") key = "fileUpUrl";
-                    if (key == "tcpServerPort") key = "server_port"; // map port
                     if (key == "httpApiBaseUrl") key = "apiBaseUrl";
 
-                    // 2. Type Inference & Grouping
-                    // Boolean Configs
+                    // PARSING: Type Inference
                     if (bool.TryParse(value, out bool boolVal))
                     {
                         msg.BoolConfs.Add(new BoolConfigMessage
                         {
                             Key = key,
                             Value = boolVal,
-                            Name = key, // Or map to friendly name if needed
-                            Desc = config.description ?? "system config"
+                            Name = key,
+                            Desc = config.description ?? ""
                         });
                     }
-                    // Integer Configs
                     else if (int.TryParse(value, out int intVal))
                     {
                         msg.IntConfs.Add(new IntConfigMessage
@@ -369,33 +362,31 @@ namespace SCRM.API.Services.Netty.Handlers
                             Key = key,
                             Value = intVal,
                             Name = key,
-                            Desc = config.description ?? "system config"
+                            Desc = config.description ?? ""
                         });
                     }
-                    // String Configs (Default)
                     else
                     {
-                        // Exclude sensitive or internal keys if necessary (e.g. jwt keys), but user asked for "All"
-                        // Filtering out JWT keys just in case, though they are safe on server
-                        if (!key.StartsWith("jwt")) 
+                        // Default to String
+                        if (!key.StartsWith("jwt")) // Safety check
                         {
                             msg.StrConfs.Add(new StrConfigMessage
                             {
                                 Key = key,
                                 Value = value,
                                 Name = key,
-                                Desc = config.description ?? "system config"
+                                Desc = config.description ?? ""
                             });
                         }
                     }
                 }
 
-                if (msg.StrConfs.Count > 0 || msg.BoolConfs.Count > 0 || msg.IntConfs.Count > 0)
+            if (msg.StrConfs.Count > 0 || msg.BoolConfs.Count > 0 || msg.IntConfs.Count > 0)
                 {
                     _logger.LogInformation("[配置推送] 正在向终端 {ChannelId} 推送初始化配置 (共 {Count} 项)...", context.Channel.Id.AsLongText(), msg.StrConfs.Count + msg.BoolConfs.Count + msg.IntConfs.Count);
-                    
-                    
-                    var transMsg = new TransportMessage 
+
+
+                    var transMsg = new TransportMessage
                     {
                         Id = 0,
                         MsgType = EnumMsgType.SetConfigTask, // Changed from ConfigPushNotice(1381) to SetConfigTask(1382)
@@ -403,7 +394,7 @@ namespace SCRM.API.Services.Netty.Handlers
                     };
                     await context.WriteAndFlushAsync(transMsg);
                     _logger.LogInformation("[配置推送] 初始化配置推送成功 (指令: SetConfigTask)");
-                    
+
                     // 主动请求设备上报信息 (TriggerDeviceInfo)
                     var triggerMsg = new TransportMessage
                     {

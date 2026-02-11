@@ -76,5 +76,32 @@ namespace SCRM.UI.Services
                 return null;
             }
         }
+        public async Task<SCRM.SHARED.Models.SystemConfigModel> GetConfigModelAsync()
+        {
+            try
+            {
+                await AddAuthorizationHeader();
+                return await _httpClient.GetFromJsonAsync<SCRM.SHARED.Models.SystemConfigModel>("api/SystemConfig/model") 
+                       ?? new SCRM.SHARED.Models.SystemConfigModel();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error fetching config model: {ex.Message}");
+                return new SCRM.SHARED.Models.SystemConfigModel();
+            }
+        }
+
+        public async Task UpdateModelAsync(SCRM.SHARED.Models.SystemConfigModel model)
+        {
+            try
+            {
+                await AddAuthorizationHeader();
+                await _httpClient.PostAsJsonAsync("api/SystemConfig/model", model);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error updating config model: {ex.Message}");
+            }
+        }
     }
 }

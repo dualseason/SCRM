@@ -330,7 +330,7 @@ namespace SCRM.API.Migrations
 
                     b.Property<string>("ownerWxid")
                         .IsRequired()
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("owner_wxid");
 
                     b.Property<string>("phone")
@@ -367,10 +367,6 @@ namespace SCRM.API.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<long>("wechatAccountId")
-                        .HasColumnType("bigint")
-                        .HasColumnName("wechat_account_id");
-
                     b.Property<string>("wxid")
                         .IsRequired()
                         .HasColumnType("text")
@@ -378,7 +374,7 @@ namespace SCRM.API.Migrations
 
                     b.HasKey("id");
 
-                    b.HasIndex("wechatAccountId", "wxid")
+                    b.HasIndex("ownerWxid", "wxid")
                         .IsUnique();
 
                     b.ToTable("Contacts");
@@ -638,8 +634,9 @@ namespace SCRM.API.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
-                    b.Property<long>("wechatAccountId")
-                        .HasColumnType("bigint")
+                    b.Property<string>("wechatAccountId")
+                        .IsRequired()
+                        .HasColumnType("text")
                         .HasColumnName("wechat_account_id");
 
                     b.HasKey("id");
@@ -1178,11 +1175,8 @@ namespace SCRM.API.Migrations
 
             modelBuilder.Entity("SCRM.API.Models.Entities.LegacyWechatUser", b =>
                 {
-                    b.Property<long>("UserId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("UserId"));
+                    b.Property<string>("UserId")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1193,8 +1187,8 @@ namespace SCRM.API.Migrations
                     b.Property<string>("FirstName")
                         .HasColumnType("text");
 
-                    b.Property<long>("Id")
-                        .HasColumnType("bigint");
+                    b.Property<string>("Id")
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
@@ -1212,12 +1206,12 @@ namespace SCRM.API.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<long?>("WechatAccountaccountId")
-                        .HasColumnType("bigint");
+                    b.Property<string>("WechatAccountwxid")
+                        .HasColumnType("character varying(100)");
 
                     b.HasKey("UserId");
 
-                    b.HasIndex("WechatAccountaccountId");
+                    b.HasIndex("WechatAccountwxid");
 
                     b.ToTable("users", (string)null);
                 });
@@ -1347,8 +1341,9 @@ namespace SCRM.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("messageId"));
 
-                    b.Property<long>("accountId")
-                        .HasColumnType("bigint")
+                    b.Property<string>("accountId")
+                        .IsRequired()
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("account_id");
 
                     b.Property<short>("chatType")
@@ -1411,12 +1406,12 @@ namespace SCRM.API.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("received_at");
 
-                    b.Property<long?>("receiverId")
-                        .HasColumnType("bigint")
+                    b.Property<string>("receiverId")
+                        .HasColumnType("text")
                         .HasColumnName("receiver_id");
 
                     b.Property<string>("receiverWxid")
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("receiver_wxid");
 
                     b.Property<DateTime?>("revokedAt")
@@ -1427,12 +1422,12 @@ namespace SCRM.API.Migrations
                         .HasColumnType("smallint")
                         .HasColumnName("send_status");
 
-                    b.Property<long?>("senderId")
-                        .HasColumnType("bigint")
+                    b.Property<string>("senderId")
+                        .HasColumnType("text")
                         .HasColumnName("sender_id");
 
                     b.Property<string>("senderWxid")
-                        .HasColumnType("text")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("sender_wxid");
 
                     b.Property<DateTime?>("sentAt")
@@ -1447,9 +1442,9 @@ namespace SCRM.API.Migrations
 
                     b.HasIndex("accountId");
 
-                    b.HasIndex("receiverId");
+                    b.HasIndex("receiverWxid");
 
-                    b.HasIndex("senderId");
+                    b.HasIndex("senderWxid");
 
                     b.ToTable("Messages");
                 });
@@ -3083,8 +3078,9 @@ namespace SCRM.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("userRoleId"));
 
-                    b.Property<long>("accountId")
-                        .HasColumnType("bigint")
+                    b.Property<string>("accountId")
+                        .IsRequired()
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("AccountId");
 
                     b.Property<DateTime>("assignedAt")
@@ -3093,8 +3089,8 @@ namespace SCRM.API.Migrations
                         .HasColumnName("AssignedAt")
                         .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
-                    b.Property<long?>("assignedBy")
-                        .HasColumnType("bigint")
+                    b.Property<string>("assignedBy")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("AssignedBy");
 
                     b.Property<DateTime>("createdAt")
@@ -3301,12 +3297,10 @@ namespace SCRM.API.Migrations
 
             modelBuilder.Entity("SCRM.API.Models.Entities.WechatAccount", b =>
                 {
-                    b.Property<long>("accountId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint")
-                        .HasColumnName("account_id");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("accountId"));
+                    b.Property<string>("wxid")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("wxid");
 
                     b.Property<short?>("accountStatus")
                         .HasColumnType("smallint")
@@ -3392,13 +3386,7 @@ namespace SCRM.API.Migrations
                         .HasColumnType("character varying(50)")
                         .HasColumnName("wechat_number");
 
-                    b.Property<string>("wxid")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)")
-                        .HasColumnName("wxid");
-
-                    b.HasKey("accountId");
+                    b.HasKey("wxid");
 
                     b.HasIndex("accountStatus");
 
@@ -3533,7 +3521,7 @@ namespace SCRM.API.Migrations
                 {
                     b.HasOne("SCRM.API.Models.Entities.WechatAccount", "Account")
                         .WithMany()
-                        .HasForeignKey("wechatAccountId")
+                        .HasForeignKey("ownerWxid")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -3544,7 +3532,7 @@ namespace SCRM.API.Migrations
                 {
                     b.HasOne("SCRM.API.Models.Entities.WechatAccount", "WechatAccount")
                         .WithMany()
-                        .HasForeignKey("WechatAccountaccountId");
+                        .HasForeignKey("WechatAccountwxid");
 
                     b.Navigation("WechatAccount");
                 });
@@ -3559,11 +3547,11 @@ namespace SCRM.API.Migrations
 
                     b.HasOne("SCRM.API.Models.Entities.WechatAccount", "receiver")
                         .WithMany()
-                        .HasForeignKey("receiverId");
+                        .HasForeignKey("receiverWxid");
 
                     b.HasOne("SCRM.API.Models.Entities.WechatAccount", "sender")
                         .WithMany()
-                        .HasForeignKey("senderId");
+                        .HasForeignKey("senderWxid");
 
                     b.Navigation("account");
 

@@ -3,7 +3,7 @@ using Jubo.JuLiao.IM.Wx.Proto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SCRM.API.Models.Entities;
-using SCRM.API.Models.Events;
+using SCRM.SHARED.Models.Events;
 using SCRM.API.Services.Core;
 using SCRM.API.Services.Netty.Handlers.Abstractions;
 using SCRM.Services.Data;
@@ -51,8 +51,17 @@ namespace SCRM.API.Services.Netty.Handlers
                     case EnumMsgType.FriendDelNotice:
                         await HandleFriendDel(message.Content.Unpack<FriendDelNoticeMessage>(), context);
                         break;
+                    case EnumMsgType.FriendChangeNotice: // 1017
+                        await HandleFriendChange(message.Content.Unpack<FriendChangeNoticeMessage>(), context);
+                        break;
+                    case EnumMsgType.BizContactAddNotice: // 2038
+                        await HandleBizContactAdd(message.Content.Unpack<BizContactAddNoticeMessage>(), context);
+                        break;
+                    case EnumMsgType.BizContactPushNotice: // 2071 (Existing but unhandled?)
+                        _logger.LogInformation("Received BizContactPushNotice (2071). To be implemented.");
+                        break;
                     default:
-                        _logger.LogWarning("Unhandled Contact Message Type: {Type}", message.MsgType);
+                        _logger.LogWarning("Unhandled Contact Message Type: {Type} ({Id})", message.MsgType, (int)message.MsgType);
                         break;
                 }
             }
@@ -60,6 +69,108 @@ namespace SCRM.API.Services.Netty.Handlers
             {
                 _logger.LogError(ex, "Error handling Contact Message");
             }
+        }
+
+        // [Fix] Handle Friend Change (Update Friend Info)
+        private async Task HandleFriendChange(FriendChangeNoticeMessage msg, IChannelHandlerContext context)
+        {
+            if (string.IsNullOrEmpty(msg.WeChatId)) return;
+            var account = await _db.WechatAccounts.FirstOrDefaultAsync(w => w.wxid == msg.WeChatId);
+            if (account == null) return;
+
+            // Typically FriendChangeNoticeMessage contains a single 'Friend' object or 'Friends' list.
+            // Assuming standard pattern: single 'Friend' update. If 'Friends' list, adapted below.
+            // Based on Proto naming, it likely has 'Friend' property.
+            // Using a helper to process the update.
+            if (msg.Friend != null) 
+            {
+                await ProcessFriendUpdate(account, msg.Friend);
+                await _db.SaveChangesAsync();
+                _logger.LogInformation("Updated Friend Info: {Wxid} (ChangeNotice)", msg.Friend.FriendId);
+                
+                // Notify UI
+                var connId = context.Channel.Id.AsLongText();
+                var connInfo = await _connectionManager.GetConnectionAsync(connId);
+                if (connInfo != null) await _eventBus.PublishAsync(new ContactsReceivedEvent(connInfo.deviceUuid, account.wxid, connInfo.userId));
+            }
+        }
+
+        // [Fix] Handle Biz Contact Add (New Business Friend)
+        private async Task HandleBizContactAdd(BizContactAddNoticeMessage msg, IChannelHandlerContext context)
+        {
+            if (string.IsNullOrEmpty(msg.WeChatId)) return;
+            var account = await _db.WechatAccounts.FirstOrDefaultAsync(w => w.wxid == msg.WeChatId);
+            if (account == null) return;
+
+            if (msg.Contact != null)
+            {
+                // BizContactMessage might have different fields than FriendMessage.
+                // For MVP: manual mapping or overload.
+                // Assuming basic fields exist: UserName, NickName, etc. 
+                // Proto: BizContactMessage typically has UserName, NickName, Pinyin, Avatar, etc.
+                
+                var contact = await _db.Contacts.FirstOrDefaultAsync(c => c.ownerWxid == account.wxid && c.wxid == msg.Contact.Username);
+                if (contact == null)
+                {
+                    contact = new Contact
+                    {
+                        ownerWxid = account.wxid,
+                        wxid = msg.Contact.Username, // BizContact often uses UserName
+                        isFriend = 1,
+                        createdAt = DateTime.UtcNow
+                    };
+                    _db.Contacts.Add(contact);
+                }
+
+                // Update fields
+                contact.nickname = msg.Contact.Nickname ?? "";
+                contact.remarks = ""; // Biz often has no remark initially
+                contact.avatar = msg.Contact.Avatar ?? "";
+                contact.gender = 0; // Often not available
+                contact.signature = msg.Contact.Desc ?? ""; // Desc
+                // type = 2? (Biz)
+                contact.updatedAt = DateTime.UtcNow;
+
+                await _db.SaveChangesAsync();
+                _logger.LogInformation("Added Biz Contact: {Wxid}", msg.Contact.Username);
+
+                // Notify UI
+                var connId = context.Channel.Id.AsLongText();
+                var connInfo = await _connectionManager.GetConnectionAsync(connId);
+                if (connInfo != null) await _eventBus.PublishAsync(new ContactsReceivedEvent(connInfo.deviceUuid, account.wxid, connInfo.userId));
+            }
+        }
+
+        // Helper to process a FriendMessage object (reusable logic)
+        private async Task ProcessFriendUpdate(WechatAccount account, FriendMessage friendMsg)
+        {
+            var contact = await _db.Contacts.FirstOrDefaultAsync(c => c.ownerWxid == account.wxid && c.wxid == friendMsg.FriendId);
+            if (contact == null)
+            {
+                contact = new Contact
+                {
+                    ownerWxid = account.wxid,
+                    wxid = friendMsg.FriendId,
+                    isFriend = 1,
+                    createdAt = DateTime.UtcNow
+                };
+                _db.Contacts.Add(contact);
+            }
+
+            // Update fields
+            contact.nickname = friendMsg.FriendNick ?? "";
+            contact.remarks = friendMsg.Remark ?? "";
+            contact.avatar = friendMsg.Avatar ?? "";
+            contact.gender = (int)friendMsg.Gender;
+            contact.country = friendMsg.Country ?? "";
+            contact.province = friendMsg.Province ?? "";
+            contact.city = friendMsg.City ?? "";
+            contact.signature = friendMsg.Desc ?? "";
+            contact.isDeleted = false;
+            contact.updatedAt = DateTime.UtcNow;
+            
+            // Biz Specific?
+            // if (friendMsg.Type == ... ) contact.type = ...
         }
 
         private async Task HandleFriendPush(FriendPushNoticeMessage msg, IChannelHandlerContext context)
@@ -78,12 +189,12 @@ namespace SCRM.API.Services.Netty.Handlers
             {
                 try 
                 {
-                    var contact = await _db.Contacts.FirstOrDefaultAsync(c => c.wechatAccountId == account.accountId && c.wxid == friend.FriendId);
+                    var contact = await _db.Contacts.FirstOrDefaultAsync(c => c.ownerWxid == account.wxid && c.wxid == friend.FriendId);
                     if (contact == null)
                     {
                         contact = new Contact
                         {
-                            wechatAccountId = account.accountId,
+                            ownerWxid = account.wxid,
                             wxid = friend.FriendId,
                             isFriend = 1,
                             createdAt = DateTime.UtcNow
@@ -128,7 +239,7 @@ namespace SCRM.API.Services.Netty.Handlers
             var connInfo = await _connectionManager.GetConnectionAsync(connId);
             if (connInfo != null)
             {
-                await _eventBus.PublishAsync(new ContactsReceivedEvent(connInfo.deviceUuid, account.accountId, connInfo.userId));
+                await _eventBus.PublishAsync(new ContactsReceivedEvent(connInfo.deviceUuid, account.wxid, connInfo.userId));
             }
         }
 
@@ -139,7 +250,7 @@ namespace SCRM.API.Services.Netty.Handlers
             var account = await _db.WechatAccounts.FirstOrDefaultAsync(w => w.wxid == msg.WeChatId);
             if (account == null) return;
 
-            var contact = await _db.Contacts.FirstOrDefaultAsync(c => c.wechatAccountId == account.accountId && c.wxid == msg.FriendId);
+            var contact = await _db.Contacts.FirstOrDefaultAsync(c => c.ownerWxid == account.wxid && c.wxid == msg.FriendId);
             if (contact != null)
             {
                 contact.isDeleted = true;
@@ -154,7 +265,7 @@ namespace SCRM.API.Services.Netty.Handlers
                 if (connInfo != null)
                 {
                     // Typically might want a specific 'ContactDeletedEvent', but reusing list reload is safe KISS
-                    await _eventBus.PublishAsync(new ContactsReceivedEvent(connInfo.deviceUuid, account.accountId, connInfo.userId));
+                    await _eventBus.PublishAsync(new ContactsReceivedEvent(connInfo.deviceUuid, account.wxid, connInfo.userId));
                 }
             }
         }

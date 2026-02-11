@@ -30,7 +30,6 @@ namespace SCRM.API.Services.Netty.Handlers.Abstractions
             {
                 var response = new TransportMessage
                 {
-                    Id = 0,
                     MsgType = EnumMsgType.MsgReceivedAck,
                     RefMessageId = message.Id
                 };

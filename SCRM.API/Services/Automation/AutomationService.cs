@@ -5,7 +5,7 @@ using SCRM.Services.Events;
 using SCRM.API.Services.Data;
 using SCRM.Services.Data;
 using SCRM.SHARED.Models;
-using SCRM.API.Models.Events;
+using SCRM.SHARED.Models.Events;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -87,7 +87,7 @@ namespace SCRM.Services.Automation
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    var account = await db.GetWechatAccount(e.accountId);
+                    var account = await db.GetWechatAccount(e.weChatId);
                     if (account != null && !string.IsNullOrEmpty(account.settings))
                     {
                         var settings = JsonSerializer.Deserialize<WechatAccountSettings>(account.settings);
@@ -116,7 +116,7 @@ namespace SCRM.Services.Automation
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    var account = await db.GetWechatAccount(e.accountId);
+                    var account = await db.GetWechatAccount(e.weChatId);
                     if (account != null && !string.IsNullOrEmpty(account.settings))
                     {
                         var settings = JsonSerializer.Deserialize<WechatAccountSettings>(account.settings);
@@ -138,14 +138,14 @@ namespace SCRM.Services.Automation
         /// <summary>
         /// 处理消息自动化 (自动回复与抢红包)
         /// </summary>
-        public async Task HandleMessageAutomation(long accountId, string connectionId, string weChatId, string friendId, string contentXml, int contentType)
+        public async Task HandleMessageAutomation(string accountId, string connectionId, string weChatId, string friendId, string contentXml, int contentType)
         {
              try
             {
                 using (var scope = _scopeFactory.CreateScope())
                 {
                     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                    var account = await db.GetWechatAccount(accountId);
+                    var account = await db.GetWechatAccount(weChatId);
                     if (account != null && !string.IsNullOrEmpty(account.settings))
                     {
                         var settings = JsonSerializer.Deserialize<WechatAccountSettings>(account.settings);

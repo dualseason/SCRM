@@ -17,7 +17,7 @@ public class Conversation
     /// 所属微信账号 ID
     /// </summary>
     [Column("wechat_account_id")]
-    public long wechatAccountId { get; set; }
+    public string wechatAccountId { get; set; }
 
     /// <summary>
     /// 会话对方的 WXID (好友 ID 或群聊 ID)

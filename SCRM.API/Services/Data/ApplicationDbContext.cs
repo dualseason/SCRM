@@ -193,7 +193,7 @@ namespace SCRM.Services.Data
             modelBuilder.Entity<WechatAccount>(entity =>
             {
                 entity.ToTable("wechat_accounts");
-                entity.HasKey(e => e.accountId);
+                entity.HasKey(e => e.wxid);
                 entity.HasIndex(e => e.wxid).IsUnique();
                 entity.HasIndex(e => e.accountStatus);
                 entity.HasIndex(e => e.isDeleted);

@@ -19,7 +19,7 @@ public class Message
     /// 所属微信账号 ID
     /// </summary>
     [Column("account_id")]
-    public long accountId { get; set; }
+    public string accountId { get; set; }
 
     /// <summary>
     /// 服务器消息 ID (MsgSvrId)
@@ -37,7 +37,7 @@ public class Message
     /// 发送者用户 ID (后端系统用户)
     /// </summary>
     [Column("sender_id")]
-    public long? senderId { get; set; }
+    public string? senderId { get; set; }
 
     /// <summary>
     /// 发送者微信 WXID
@@ -49,7 +49,7 @@ public class Message
     /// 接收者用户 ID (后端系统用户)
     /// </summary>
     [Column("receiver_id")]
-    public long? receiverId { get; set; }
+    public string? receiverId { get; set; }
 
     /// <summary>
     /// 接收者微信 WXID

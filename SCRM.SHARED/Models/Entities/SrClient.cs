@@ -89,7 +89,8 @@ public class SrClient : ICacheable<SrClient>
     /// 当前绑定的微信 ID (非持久化)
     /// </summary>
     [NotMapped]
-    public string? weChatId { get; set; }
+    //public string? weChatId { get; set; }
+    public string? weChatId => wx?.wechatAccount?.wxid;
 
     /// <summary>
     /// 绑定的微信昵称 (非持久化)

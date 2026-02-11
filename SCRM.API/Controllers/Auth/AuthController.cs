@@ -105,17 +105,20 @@ namespace SCRM.Controllers.Auth
                 if (user == null)
                 {
                     // 尝试旧版用户
+                    /*
                     if (long.TryParse(request.userId, out var legacyUserId))
                     {
-                        var legacyUser = await _context.LegacyWechatUsers.FirstOrDefaultAsync(u => u.Id == legacyUserId && u.IsActive);
-                        if (legacyUser != null)
-                        {
-                            var legacyTokenResponse = await _authService.GenerateTokenResponseAsync(legacyUser);
-                            legacyTokenResponse.tcpHost = _nettySettings.Host;
-                            legacyTokenResponse.tcpPort = _nettySettings.Port;
-                            return Ok(new { success = true, data = legacyTokenResponse });
-                        }
+                        // Legacy logic disabled due to schema change: Id is now string
+                        // var legacyUser = await _context.LegacyWechatUsers.FirstOrDefaultAsync(u => u.Id == legacyUserId && u.IsActive);
+                        // if (legacyUser != null)
+                        // {
+                        //     var legacyTokenResponse = await _authService.GenerateTokenResponseAsync(legacyUser);
+                        //     legacyTokenResponse.tcpHost = _nettySettings.Host;
+                        //     legacyTokenResponse.tcpPort = _nettySettings.Port;
+                        //     return Ok(new { success = true, data = legacyTokenResponse });
+                        // }
                     }
+                    */
                     return Unauthorized(new { message = "用户不存在或已被禁用" });
                 }
 
@@ -187,13 +190,14 @@ namespace SCRM.Controllers.Auth
                 }
 
                 // 旧版兼容逻辑
+                /*
                 if (long.TryParse(userIdClaim.Value, out var userId))
                 {
                     var legacyUser = await _context.WechatAccounts
-                        .Where(u => u.accountId == userId)
+                        .Where(u => u.wxid == userIdClaim.Value) // Potential Fix: query by wxid directly if possible, else disable
                         .Select(u => new
                         {
-                            id = u.accountId,
+                            id = u.wxid,
                             userName = u.wxid,
                             email = (string?)null,
                             firstName = u.nickname,
@@ -210,6 +214,7 @@ namespace SCRM.Controllers.Auth
                         return Ok(new { success = true, data = legacyUser });
                     }
                 }
+                */
 
                 return NotFound(new { message = "用户不存在" });
             }

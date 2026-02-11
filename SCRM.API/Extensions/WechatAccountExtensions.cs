@@ -23,8 +23,8 @@ namespace SCRM.API.Models.Entities // Trick: Same namespace as Entity for auto-d
 
             return await db.Contacts
                 .AsNoTracking()
-                .Where(c => c.wechatAccountId == account.accountId)
-                .OrderByDescending(c => c.lastInteractionTime)
+                .Where(c => c.ownerWxid == account.wxid)
+                .OrderByDescending(c => c.createdAt)
                 .ToListAsync();
         }
         
@@ -33,9 +33,9 @@ namespace SCRM.API.Models.Entities // Trick: Same namespace as Entity for auto-d
         /// </summary>
         public static async Task<Contact?> GetContactAsync(this WechatAccount account, ApplicationDbContext db, string targetWxid)
         {
-             return await db.Contacts
+            return await db.Contacts
                 .AsNoTracking()
-                .FirstOrDefaultAsync(c => c.wechatAccountId == account.accountId && c.wxid == targetWxid);
+                .FirstOrDefaultAsync(c => c.ownerWxid == account.wxid && c.wxid == targetWxid);
         }
 
         // ========== 消息 (Messages) ==========
@@ -47,7 +47,7 @@ namespace SCRM.API.Models.Entities // Trick: Same namespace as Entity for auto-d
         {
              return await db.Messages
                 .AsNoTracking()
-                .Where(m => m.accountId == account.accountId && (m.senderWxid == friendWxid || m.receiverWxid == friendWxid)) 
+                .Where(m => m.accountId == account.wxid && (m.senderWxid == friendWxid || m.receiverWxid == friendWxid)) 
                 .OrderByDescending(m => m.createdAt)
                 .Take(count)
                 .OrderBy(m => m.createdAt) // Re-sort for display

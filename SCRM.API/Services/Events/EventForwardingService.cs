@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 using SCRM.API.Hubs;
 using System.Threading;
 using System.Threading.Tasks;
-using SCRM.API.Models.Events;
+using SCRM.SHARED.Models.Events;
 using SCRM.Shared.Interfaces;
 using SCRM.Services.Events;
 
@@ -95,6 +95,17 @@ namespace SCRM.API.Services.Events
                      await _hubContext.Clients.Group(e.DeviceUuid).SendAsync("OnScreenShotUploaded", e.Url, stoppingToken);
                      _logger.LogInformation("转发截屏事件: -> SignalR组 {DeviceUuid}", e.DeviceUuid);
                  }
+            });
+
+            // 订阅微信上线事件 (WeChatOnlineEvent)
+            _eventBus.Subscribe<WeChatOnlineEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.deviceUuid))
+                {
+                    _logger.LogInformation("转发微信上线事件: {WxId} -> SignalR组 {DeviceUuid}", e.weChatId, e.deviceUuid);
+                    // Push to clients viewing this device
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("OnWeChatOnline", e, stoppingToken);
+                }
             });
 
             return Task.CompletedTask;

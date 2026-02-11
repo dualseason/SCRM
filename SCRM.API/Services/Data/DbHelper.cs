@@ -289,55 +289,64 @@ namespace SCRM.API.Services.Data
 
         // ==================== WechatAccount ====================
 
-        public static async Task<WechatAccount?> GetWechatAccount(this DbContext context, long accountId)
+        // ==================== WechatAccount (Key = WxId) ====================
+        
+        /// <summary>
+        /// 根据 WxId 获取账号 (支持缓存)
+        /// </summary>
+        public static async Task<WechatAccount?> GetWechatAccount(this DbContext context, string wxid)
         {
-            if (GlobalCache.wechatAccounts.TryGetValue(accountId, out var cached)) return cached;
+            if (string.IsNullOrEmpty(wxid)) return null;
 
-            return await AsyncLockManager.ExecuteWithLockAsync($"WechatAccount_{accountId}", async () =>
+            if (GlobalCache.wechatAccounts.TryGetValue(wxid, out var cached)) return cached;
+
+            return await AsyncLockManager.ExecuteWithLockAsync($"WechatAccount_{wxid}", async () =>
             {
-                if (GlobalCache.wechatAccounts.TryGetValue(accountId, out var item)) return item;
+                if (GlobalCache.wechatAccounts.TryGetValue(wxid, out var item)) return item;
 
                 var dbItem = await context.Set<WechatAccount>()
                     .Include(w => w.Client)
-                    .FirstOrDefaultAsync(w => w.accountId == accountId);
+                    .FirstOrDefaultAsync(w => w.wxid == wxid);
 
                 if (dbItem != null)
                 {
-                    GlobalCache.wechatAccounts.TryAdd(accountId, dbItem);
+                    GlobalCache.wechatAccounts.TryAdd(wxid, dbItem);
                 }
                 return dbItem;
             });
         }
 
+
+
         public static async Task<WechatAccount?> SaveWechatAccount(this DbContext context, WechatAccount account)
         {
-            // Note: WechatAccount Key is long
-            if (!GlobalCache.wechatAccounts.ContainsKey(account.accountId))
+            // Key is now WxId (from account.GetId())
+            if (!GlobalCache.wechatAccounts.ContainsKey(account.GetId()))
             {
-                return await context.AddAtomicGeneric(account, account.accountId, GlobalCache.wechatAccounts);
+                return await context.AddAtomicGeneric(account, GlobalCache.wechatAccounts);
             }
-            return await context.UpdateAtomicGeneric(account.accountId, GlobalCache.wechatAccounts, c => c.CopyFrom(account));
+            return await context.UpdateAtomicGeneric(account.GetId(), GlobalCache.wechatAccounts, c => c.CopyFrom(account));
         }
 
         public static async Task DeleteWechatAccount(this DbContext context, WechatAccount account)
         {
-            await context.DeleteAtomicGeneric(account.accountId, GlobalCache.wechatAccounts);
+            await context.DeleteAtomicGeneric(account.GetId(), GlobalCache.wechatAccounts);
         }
         // ==================== Contacts ====================
 
-        public static async Task<List<Contact>> GetContacts(this DbContext context, long accountId)
+        public static async Task<List<Contact>> GetContacts(this DbContext context, string ownerWxid)
         {
             // Direct DB Query - No Memory Cache due to large data size
             // Robustness: Deduplicate by Wxid in case DB contains legacy duplicates
             var rawList = await context.Set<Contact>()
-                .Where(c => c.wechatAccountId == accountId && !c.isDeleted)
+                .Where(c => c.ownerWxid == ownerWxid && !c.isDeleted)
                 .OrderByDescending(c => c.createdAt) 
                 .ToListAsync();
 
             return rawList.DistinctBy(c => c.wxid).ToList();
         }
 
-        public static async Task SaveContacts(this DbContext context, long accountId, List<Contact> contacts)
+        public static async Task SaveContacts(this DbContext context, string ownerWxid, List<Contact> contacts)
         {
             if (contacts == null || !contacts.Any()) return;
 
@@ -346,7 +355,7 @@ namespace SCRM.API.Services.Data
             // This prevents duplicates when syncing the same friend multiple times.
             var bulkConfig = new BulkConfig 
             { 
-                UpdateByProperties = new List<string> { nameof(Contact.wechatAccountId), nameof(Contact.wxid) },
+                UpdateByProperties = new List<string> { nameof(Contact.ownerWxid), nameof(Contact.wxid) },
                 SetOutputIdentity = true,
                 BatchSize = 1000
             };
@@ -371,7 +380,7 @@ namespace SCRM.API.Services.Data
                         foreach (var contact in contacts)
                         {
                             var existing = await context.Set<Contact>()
-                                .FirstOrDefaultAsync(c => c.wechatAccountId == contact.wechatAccountId && c.wxid == contact.wxid);
+                                .FirstOrDefaultAsync(c => c.ownerWxid == contact.ownerWxid && c.wxid == contact.wxid);
 
                             if (existing != null)
                             {

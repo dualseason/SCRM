@@ -65,15 +65,20 @@
                         }
                         
                         @{
-                            bool isWxOnline = ((SrClient)device).wx?.wechatAccount != null ;
-                            string dotColor = isWxOnline ? "#52c41a" : (device.isOnline ? "#faad14" : "#ff4d4f");
+                            bool isDeviceOnline = device.isOnline;
+                            // Check if WeChat account is bound AND status is Online (1)
+                            bool isWxOnline = isDeviceOnline && (device.wx?.wechatAccount?.accountStatus == 1);
+                            
+                            // Color Logic:
+                            // Offline -> Red
+                            // Device Online + WeChat Online -> Green
+                            // Device Online + WeChat Offline -> Yellow
+                            string dotColor = !isDeviceOnline ? "#ff4d4f" : (isWxOnline ? "#52c41a" : "#faad14");
+                            string statusText = !isDeviceOnline ? "离线" : (isWxOnline ? "微信在线" : "设备在线");
+                            string statusColor = !isDeviceOnline ? "#ff4d4f" : (isWxOnline ? "#52c41a" : "#faad14");
                         }
                         <span class="device-status-dot" style="background-color: @dotColor;"></span>
                     </div>
-
-                    <RadzenText TextStyle="TextStyle.Caption" Style="@($"font-size: 10px; line-height: 1.2; font-weight: bold; color: {(device.isOnline ? "#52c41a" : "#ff4d4f")}")">
-                        @(device.isOnline ? "在线" : "离线")
-                    </RadzenText>
 
                     <RadzenText TextStyle="TextStyle.Caption" Style="font-size: 10px; line-height: 1.2; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;" 
                                 Text="@(string.IsNullOrEmpty(device.wx?.wechatAccount?.nickname) ? (string.IsNullOrEmpty(device.wx?.wechatAccount?.wxid ?? device.weChatId) ? "未登录" : $"未知微信号({device.wx?.wechatAccount?.wxid ?? device.weChatId})") : device.wx?.wechatAccount?.nickname)" />
@@ -193,7 +198,7 @@
     @* Pane 3: Chat Content *@
     <RadzenSplitterPane>
         <RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%; background: #f5f5f5;">
-             @if (Store.SelectedDevice == null && Store.SelectedContact == null && Store.SelectedConversation == null)
+             @if (Store.SelectedContact == null && Store.SelectedConversation == null)
              {
                  <!-- Empty State -->
                  <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="height: 100%;">

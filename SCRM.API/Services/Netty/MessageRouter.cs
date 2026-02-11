@@ -79,6 +79,7 @@ namespace SCRM.Services.Netty
                     case EnumMsgType.PostMessageReadNotice:
                     case EnumMsgType.HistoryMsgPushNotice:
                     case EnumMsgType.ConversationPushNotice:
+                    case EnumMsgType.ConvDelNotice: // [Fix] 1055
                         var chatHandler = sp.GetService<ChatMessageHandler>();
                          if (chatHandler != null)await chatHandler.HandleMessage(message, context);
                          else _logger.LogWarning("Handler for {MsgType} not registered.", msgType);
@@ -91,6 +92,7 @@ namespace SCRM.Services.Netty
                     case EnumMsgType.FriendPushNotice: // 1050
                     // case EnumMsgType.ContactPushNotice: // Missing in Proto
                     case EnumMsgType.BizContactPushNotice: // 2071
+                    case EnumMsgType.BizContactAddNotice: // [Fix] 2038
                         var contactHandler = sp.GetService<ContactMessageHandler>();
                         if (contactHandler != null) await contactHandler.HandleMessage(message, context);
                          else _logger.LogWarning("Handler for {MsgType} not registered.", msgType);
@@ -101,6 +103,7 @@ namespace SCRM.Services.Netty
                     // case (EnumMsgType)1025: // ChatRoomMembersNotice (Potential Duplicate with ChatRoomChangeNotice or AddNotice)
                     case EnumMsgType.ChatRoomAddNotice:
                     case EnumMsgType.ChatRoomDelNotice:
+                    case EnumMsgType.ChatRoomMembersNotice: // [Fix] 2034
                     // case EnumMsgType.ChatRoomChangeNotice: // Error: Definition missing
                         var groupHandler = sp.GetService<GroupMessageHandler>();
                          if (groupHandler != null) await groupHandler.HandleMessage(message, context);

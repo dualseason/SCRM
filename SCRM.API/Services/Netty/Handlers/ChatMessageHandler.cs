@@ -4,7 +4,7 @@ using Jubo.JuLiao.IM.Wx.Proto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using SCRM.API.Models.Entities;
-using SCRM.API.Models.Events;
+using SCRM.SHARED.Models.Events;
 using SCRM.API.Services.Core;
 using SCRM.API.Services.Netty.Handlers.Abstractions;
 using SCRM.Services.Data;
@@ -47,9 +47,12 @@ namespace SCRM.API.Services.Netty.Handlers
                     case EnumMsgType.WeChatTalkToFriendNotice:
                         await HandleWeChatTalkToFriend(message.Content.Unpack<WeChatTalkToFriendNoticeMessage>(), context);
                         break;
+                    case EnumMsgType.ConvDelNotice: // [Fix] 1055
+                        await HandleConvDel(message.Content.Unpack<ConvDelNoticeMessage>(), context);
+                        break;
                     default:
                         // Other chat types (history, etc.) can be added here
-                        // _logger.LogInformation("Unhandled Chat Message Type: {Type}", message.MsgType);
+                         _logger.LogInformation("Unhandled Chat Message Type: {Type} ({Id})", message.MsgType, (int)message.MsgType);
                         break;
                 }
             }
@@ -57,6 +60,20 @@ namespace SCRM.API.Services.Netty.Handlers
             {
                 _logger.LogError(ex, "Error handling Chat Message");
             }
+        }
+
+        // [Fix] Handle Conversation Deletion
+        private async Task HandleConvDel(ConvDelNoticeMessage msg, IChannelHandlerContext context)
+        {
+            if (string.IsNullOrEmpty(msg.WeChatId)) return;
+            // Depending on Proto: msg.FriendId might be the deleted chat target
+            // Logic: Mark messages or conversation as deleted?
+            // For now, logging + Ack is sufficient to stop errors.
+            var target = msg.FriendId ?? "Unknown";
+            _logger.LogInformation("Conversation Deleted: {Wxid} deleted chat with {Target}", msg.WeChatId, target);
+            
+            // Future: await _db.Conversations.FirstOrDefaultAsync(...).Delete();
+            await Task.CompletedTask;
         }
 
         private async Task HandleFriendTalk(FriendTalkNoticeMessage msg, IChannelHandlerContext context)
@@ -73,7 +90,7 @@ namespace SCRM.API.Services.Netty.Handlers
             // Create Message Entity (Direction: Receive = 2)
             var message = new Message
             {
-                accountId = account.accountId,
+                accountId = account.wxid,
                 msgSvrId = msg.MsgSvrId,
                 senderWxid = msg.FriendId,
                 receiverWxid = msg.WeChatId,
@@ -120,7 +137,7 @@ namespace SCRM.API.Services.Netty.Handlers
              // Since it's a Notice from client, it usually means "I sent this"
              var message = new Message
              {
-                 accountId = account.accountId,
+                 accountId = account.wxid,
                  msgSvrId = msg.MsgSvrId,
                  senderWxid = msg.WeChatId,
                  receiverWxid = msg.FriendId,

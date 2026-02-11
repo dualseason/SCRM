@@ -67,12 +67,34 @@ namespace SCRM.UI.Services
                 _ = LoadDevicesAsync(); 
             }));
 
+            // Subscribe to Contacts Received using Wx object context
+            _subscriptions.Add(_events.SubscribeToContactsReceived(async (accountId) =>
+            {
+                _logger.LogInformation($"[CrmStore] Received Contacts Update for Account {accountId}");
+                if (SelectedDevice?.wx?.wechatAccount?.wxid == accountId)
+                {
+                    if (SelectedDevice.wx == null) SelectedDevice.wx = new Wx { srClient=SelectedDevice};
+                    
+                    // Reload contacts into the Wx object
+                    SelectedDevice.wx.contacts = await _service.GetContactsAsync(SelectedDevice.weChatId);
+                    NotifyStateChanged();
+                }
+            }));
+
             // [New] Subscribe to Screenshot Uploaded Event
-            _subscriptions.Add(_events.SubscribeToEvent("OnScreenShotUploaded", (string url) =>
+            _subscriptions.Add(_events.SubscribeToEvent<string>("OnScreenShotUploaded", (url) =>
             {
                 _logger.LogInformation($"[CrmStore] Received Screenshot: {url}");
                 LastScreenShotUrl = url;
                 NotifyStateChanged();
+            }));
+
+            // [New] Subscribe to WeChat Online Event
+            _subscriptions.Add(_events.SubscribeToEvent<SCRM.SHARED.Models.Events.WeChatOnlineEvent>("OnWeChatOnline", (e) =>
+            {
+                _logger.LogInformation($"[CrmStore] WeChat Online: {e.nickName} ({e.weChatId})");
+                OnNotification?.Invoke($"微信已上线: {e.nickName}", true);
+                _ = LoadDevicesAsync();
             }));
         }
 
@@ -86,6 +108,19 @@ namespace SCRM.UI.Services
             try 
             {
                 Devices = await _service.GetDevicesAsync();
+                
+                // Refresh SelectedDevice reference if it exists
+                if (SelectedDevice != null)
+                {
+                    var freshDevice = Devices.FirstOrDefault(d => d.uuid == SelectedDevice.uuid);
+                    if (freshDevice != null)
+                    {
+                        SelectedDevice = freshDevice;
+                        // Determine if we need to reload contacts (e.g. if we switch objects)
+                        // For now, assume Wx object is fresh from DB or Service
+                    }
+                }
+
                 _logger.LogInformation($"[CrmStore] Loaded {Devices.Count} devices via ICrmService.");
                 NotifyStateChanged();
             }
@@ -158,7 +193,22 @@ namespace SCRM.UI.Services
         }
         public async Task<bool> SendMessageAsync(string content) 
         { 
-            if (SelectedConversation == null) return false;
+            // AntiGravity Fix: Support sending to Contact directly (Conversation might be null)
+            string targetWxid = "";
+            if (SelectedConversation != null)
+            {
+                targetWxid = SelectedConversation.conversationWxid;
+            }
+            else if (SelectedContact != null)
+            {
+                targetWxid = SelectedContact.wxid;
+            }
+            else
+            {
+                _logger.LogWarning("[SendMessageAsync] No Conversation or Contact selected.");
+                return false;
+            }
+
             // Best effort to find DeviceUUID:
             // 1. From SelectedDevice
             // 2. Or from Conversation's Account (if loaded)
@@ -171,12 +221,12 @@ namespace SCRM.UI.Services
                  return false;
             }
             
-            var success = await _service.SendMessageAsync(deviceUuid, SelectedConversation.conversationWxid, content);
+            var success = await _service.SendMessageAsync(deviceUuid, targetWxid, content);
             if (success)
             {
                 // Optimistic UI Update or Wait for Event
                 // For now, reload messages
-                 CurrentMessages = await _service.GetMessagesAsync(SelectedConversation.conversationWxid, 50);
+                 CurrentMessages = await _service.GetMessagesAsync(targetWxid, 50);
                  NotifyStateChanged();
             }
             return success;
@@ -213,7 +263,7 @@ namespace SCRM.UI.Services
         public Task DeleteDeviceAsync(string uuid) { return Task.CompletedTask; }
         public Task LoadMomentsAsync() { return Task.CompletedTask; }
 
-        public Task DeleteWeChatAccountAsync(long accountId) { return Task.CompletedTask; }
+        public Task DeleteWeChatAccountAsync(string wxid) { return Task.CompletedTask; }
         public Task<List<SrClient>> LoadAllDevicesAsync() { return _service.GetDevicesAsync(); }
         public Task<List<SrClient>> GetDevicesAsync() => _service.GetDevicesAsync();
         public Task<List<WechatAccount>> LoadAllWeChatAccountsAsync() { return Task.FromResult(new List<WechatAccount>()); }

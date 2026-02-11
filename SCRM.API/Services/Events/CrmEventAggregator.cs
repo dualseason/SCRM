@@ -1,7 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using SCRM.API.Models.Entities;
-using SCRM.API.Models.Events;
+using SCRM.SHARED.Models.Events;
 using SCRM.Services.Events;
 using SCRM.Shared.Interfaces;
 
@@ -96,8 +96,32 @@ namespace SCRM.API.Services.Events
                  });
             }
 
+            if (eventName == "OnWeChatOnline" && typeof(T) == typeof(WeChatOnlineEvent))
+            {
+                 return _eventBus.Subscribe<WeChatOnlineEvent>(async e => 
+                 {
+                     if (handler is Action<WeChatOnlineEvent> typedHandler)
+                     {
+                         typedHandler(e);
+                     }
+                     await Task.CompletedTask;
+                 });
+            }
+
             // Return empty disposable instead of null to prevent null reference exceptions in caller 'using' blocks
             return _emptyDisposable; 
+        }
+
+        /// <summary>
+        /// 订阅联系人列表更新
+        /// </summary>
+        public IDisposable SubscribeToContactsReceived(Action<string> handler)
+        {
+            return _eventBus.Subscribe<ContactsReceivedEvent>(async e => 
+            {
+                handler?.Invoke(e.accountId);
+                await Task.CompletedTask;
+            });
         }
 
         #endregion

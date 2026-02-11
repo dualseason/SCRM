@@ -11,9 +11,7 @@ namespace SCRM.API.Models.Entities
     public partial class WechatAccount : ICacheable<WechatAccount>
     {
         /// <summary>账号ID</summary>
-        [Key]
-        [Column("account_id")]
-        public long accountId { get; set; }
+
 
         /// <summary>
         /// 所属用户ID (ApplicationUser)
@@ -24,7 +22,8 @@ namespace SCRM.API.Models.Entities
         [ForeignKey("ownerId")]
         public virtual ApplicationUser? owner { get; set; }
 
-        /// <summary>微信WXID</summary>
+        /// <summary>微信WXID (Primary Key)</summary>
+        [Key]
         [Required]
         [Column("wxid")]
         [StringLength(100)]
@@ -124,7 +123,8 @@ namespace SCRM.API.Models.Entities
             get { return vipExpiryDate.HasValue && vipExpiryDate.Value > DateTime.UtcNow; }
         }
 
-        public string GetId() => accountId.ToString();
+        // Fix: Use WxId for Cache Key as per user request
+        public string GetId() => this.wxid;
 
         public WechatAccount CopyFrom(WechatAccount other)
         {

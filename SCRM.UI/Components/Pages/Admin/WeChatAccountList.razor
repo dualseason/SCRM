@@ -67,7 +67,7 @@
         var result = await DialogService.Confirm("Are you sure you want to delete this account?", "Delete Account", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
         if (result == true)
         {
-            await Store.DeleteWeChatAccountAsync(account.accountId);
+            await Store.DeleteWeChatAccountAsync(account.wxid);
             await LoadData();
             NoticeService.Notify(NotificationSeverity.Success, "Account Deleted");
         }

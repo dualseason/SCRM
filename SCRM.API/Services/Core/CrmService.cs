@@ -93,9 +93,9 @@ namespace SCRM.API.Services.Core
             return await _deviceCommandService.RequestScreenShotAsync(deviceUuid);
         }
 
-        public async Task<WechatAccountSettings> GetAccountSettingsAsync(long accountId)
+        public async Task<WechatAccountSettings> GetAccountSettingsAsync(string accountId)
         {
-            var account = await _db.WechatAccounts.AsNoTracking().FirstOrDefaultAsync(a => a.accountId == accountId);
+            var account = await _db.WechatAccounts.AsNoTracking().FirstOrDefaultAsync(a => a.wxid == accountId);
             if (account == null || string.IsNullOrEmpty(account.settings))
             {
                 return new WechatAccountSettings();
@@ -111,9 +111,9 @@ namespace SCRM.API.Services.Core
             }
         }
 
-        public async Task<bool> UpdateAccountSettingsAsync(long accountId, WechatAccountSettings settings)
+        public async Task<bool> UpdateAccountSettingsAsync(string accountId, WechatAccountSettings settings)
         {
-            var account = await _db.WechatAccounts.FirstOrDefaultAsync(a => a.accountId == accountId);
+            var account = await _db.WechatAccounts.FirstOrDefaultAsync(a => a.wxid == accountId);
             if (account == null) return false;
 
             try

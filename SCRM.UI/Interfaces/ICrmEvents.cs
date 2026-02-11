@@ -17,6 +17,12 @@ namespace SCRM.Shared.Interfaces
         /// </summary>
         IDisposable SubscribeToDeviceStatus(Action<string, bool> handler);
 
+        /// <summary>
+        /// 订阅联系人列表更新
+        /// Action 参数: (accountId)
+        /// </summary>
+        IDisposable SubscribeToContactsReceived(Action<string> handler);
+
         // --- 铺开模块 ---
         // IDisposable SubscribeToMessages(Action<MessageDto> handler);
 

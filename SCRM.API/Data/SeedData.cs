@@ -51,24 +51,16 @@ namespace SCRM.API.Data
 
         public static async Task EnsureSystemConfigAsync(ApplicationDbContext db, IConfiguration config)
         {
-            var nettyHost = config["NettySettings:Host"] ?? "127.0.0.1";
-            var nettyPort = config["NettySettings:Port"] ?? "8647";
-            var nettyHttpPort = config["NettySettings:HttpPort"] ?? "42718";
+            // [AntiGravity] 重构: 移除了 Netty 配置对 AppSettings 的依赖。
+            // 数据库现在是唯一的配置来源。
             
-            // Smart Default: Use configured HTTP port, not 5000
-            var apiBaseUrl = config["ApiSettings:BaseUrl"] ?? $"http://{nettyHost}:{nettyHttpPort}";
-
-            // Critical Settings that MUST match appsettings.json if changed
-            var criticalKeys = new HashSet<string> 
-            { 
-                "tcpServerHost", "tcpServerPort", "httpApiBaseUrl", "fileUploadUrl", "autoUpdateUrl" 
-            };
+            var apiBaseUrl = config["ApiSettings:BaseUrl"] ?? "http://192.168.2.226:42718";
 
             var defaults = new Dictionary<string, (string value, string desc)>
             {
-                { "tcpServerHost", (nettyHost, "TCP服务器地址 (Synced with AppSettings)") },
-                { "tcpServerPort", (nettyPort, "TCP服务器端口 (Synced with AppSettings)") },
-                { "httpApiBaseUrl", (apiBaseUrl, "API基础URL (Synced with AppSettings)") },
+                { "server_port", ("8647", "TCP监听端口 (主数据源: DB)") },
+                { "tcpServerHost", ("192.168.2.226", "TCP服务器地址 (主数据源: DB. 客户端连接此处)") },
+                { "httpApiBaseUrl", (apiBaseUrl, "API基础URL") },
                 { "autoLogin", ("false", "自动登录") },
                 { "autoPic", ("true", "自动下载图片") },
                 { "silentFunc", ("false", "静默功能") },
@@ -98,17 +90,8 @@ namespace SCRM.API.Data
                     });
                     changesMade = true;
                 }
-                else
-                {
-                    // For Critical Keys, force update if value changed in AppSettings
-                    if (criticalKeys.Contains(key) && existing.value != val)
-                    {
-                        existing.value = val;
-                        // existing.description = desc; // Optional: update description too
-                        existing.updatedAt = DateTime.UtcNow;
-                        changesMade = true;
-                    }
-                }
+                // [AntiGravity] 移除了从代码/AppSettings 覆盖数据库值的逻辑。
+                // 我们尊重数据库中的现有值。
             }
 
             if (changesMade)

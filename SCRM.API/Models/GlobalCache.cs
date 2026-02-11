@@ -14,8 +14,8 @@ namespace SCRM.API.Models
         // 客户端设备缓存 (SrClient)
         public static ConcurrentDictionary<string, SrClient> srClients { get; set; } = new();
 
-        // 微信账号缓存 (WechatAccount) - Key: AccountId
-        public static ConcurrentDictionary<long, WechatAccount> wechatAccounts { get; set; } = new();
+        // 微信账号缓存 (WechatAccount) - Key: WxId (由于业务层主要依赖 WxId，缓存改用 WxId 为 Key)
+        public static ConcurrentDictionary<string, WechatAccount> wechatAccounts { get; set; } = new();
 
         /// <summary>
         /// 全局统一的 JSON 序列化选项 (CamelCase + CaseInsensitive)

@@ -36,8 +36,8 @@ namespace SCRM.Shared.Interfaces
         /// </summary>
         Task<bool> RequestScreenShotAsync(string deviceUuid); 
         // ... existing methods ...
-        Task<WechatAccountSettings> GetAccountSettingsAsync(long accountId);
-        Task<bool> UpdateAccountSettingsAsync(long accountId, WechatAccountSettings settings);
+        Task<WechatAccountSettings> GetAccountSettingsAsync(string accountId);
+        Task<bool> UpdateAccountSettingsAsync(string accountId, WechatAccountSettings settings);
         Task<bool> ExecuteGroupActionAsync(string deviceUuid, string chatRoomId, int action, string content, int intValue);
         Task<bool> AcceptFriendRequestAsync(string deviceUuid, string friendId, string friendNick);
     }
