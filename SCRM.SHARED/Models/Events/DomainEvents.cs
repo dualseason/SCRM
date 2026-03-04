@@ -27,6 +27,21 @@ namespace SCRM.SHARED.Models.Events
         }
     }
 
+    // 微信已离线事件
+    public class WeChatOfflineEvent
+    {
+        public string deviceUuid { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public WeChatOfflineEvent() { }
+
+        public WeChatOfflineEvent(string deviceUuid)
+        {
+            this.deviceUuid = deviceUuid;
+            this.timestamp = DateTime.UtcNow;
+        }
+    }
+
     // 设备已连接事件
     public class DeviceConnectedEvent
     {

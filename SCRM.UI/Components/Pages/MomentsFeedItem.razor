@@ -3,17 +3,19 @@
 @using Radzen
 @using Radzen.Blazor
 
+@inject IJSRuntime JSRuntime
+
 <RadzenCard Style="margin-bottom: 20px; border-radius: 8px;">
-    <div style="display: flex;">
-        <RadzenImage Path="@(string.IsNullOrEmpty(Moment.userName) ? "" : "")" Style="width: 50px; height: 50px; background-color: #87d068; flex-shrink: 0; border-radius: 50%;" />
-        <div style="margin-left: 15px; flex: 1;">
-            <div style="font-weight: bold; color: #576b95; margin-bottom: 5px;">
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Start" Gap="15px">
+        <RadzenImage Path="@(string.IsNullOrEmpty(Moment.userName) ? "" : "")" Style="width: 50px; height: 50px; background-color: var(--rz-success); flex-shrink: 0; border-radius: 50%;" />
+        <RadzenStack Orientation="Orientation.Vertical" Gap="5px" Style="flex: 1;">
+            <RadzenText TextStyle="TextStyle.Subtitle2" Style="font-weight: bold; color: var(--rz-primary);">
                 @(string.IsNullOrEmpty(Moment.nickName) ? Moment.userName : Moment.nickName)
-            </div>
+            </RadzenText>
             
-            <div style="font-size: 15px; margin-bottom: 10px; white-space: pre-wrap;">
+            <RadzenText TextStyle="TextStyle.Body1" Style="margin-bottom: 5px; white-space: pre-wrap;">
                 @Moment.content
-            </div>
+            </RadzenText>
 
             <!-- Images Grid -->
             @if (Images.Any())
@@ -22,7 +24,7 @@
                     @foreach (var img in Images)
                     {
                         <div class="image-item">
-                            <RadzenImage Path="@img" Style="width: 100%; height: 100%; object-fit: cover;" Click="(args) => OpenImage(img)" />
+                            <RadzenImage Path="@img" Style="width: 100%; height: 100%; object-fit: cover;" Click="@((args) => OpenImage(img))" />
                         </div>
                     }
                 </div>
@@ -39,62 +41,49 @@
             <!-- Link Card -->
             @if (Link != null)
             {
-                 <div style="margin-top: 10px; background: #f2f2f2; padding: 5px; display: flex; align-items: center; border-radius: 4px; cursor: pointer;" onclick="window.open('@Link.url', '_blank')">
-                     <div style="width: 40px; height: 40px; background: #ddd; margin-right: 10px;">
+                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Style="margin-top: 10px; background: var(--rz-base-200); padding: 5px; border-radius: 4px; cursor: pointer;" @onclick="@(() => OpenLink(Link.url))">
+                     <div style="width: 40px; height: 40px; background: var(--rz-base-0); margin-right: 10px; flex-shrink: 0;">
                          <img src="@Link.thumb" style="width: 100%; height: 100%; object-fit: cover;" />
                      </div>
-                     <div style="flex: 1; font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                     <RadzenText TextStyle="TextStyle.Caption" Style="flex: 1; color: var(--rz-text-title-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 0;">
                          @Link.title
-                     </div>
-                 </div>
+                     </RadzenText>
+                 </RadzenStack>
             }
 
-            <div style="margin-top: 10px; color: #999; font-size: 12px; display: flex; justify-content: space-between;">
-                <span>@GetTimeAgo(Moment.createTime)</span>
+            <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="margin-top: 10px;">
+                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">
+                    @GetTimeAgo(Moment.createTime)
+                </RadzenText>
                 <!-- Actions -->
-                <div>
-                     <RadzenIcon Icon="chat_bubble_outline" Style="cursor: pointer;" />
-                     <RadzenIcon Icon="favorite_border" Style="margin-left: 15px; cursor: pointer;" />
-                </div>
-            </div>
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="15px">
+                     <RadzenIcon Icon="chat_bubble_outline" Style="cursor: pointer; color: var(--rz-text-secondary-color);" />
+                     <RadzenIcon Icon="favorite_border" Style="cursor: pointer; color: var(--rz-text-secondary-color);" />
+                </RadzenStack>
+            </RadzenStack>
 
             <!-- Comments & Likes Area (Simplified) -->
             @if (Comments.Any() || Likes.Any())
             {
-                 <div style="background: #f7f7f7; padding: 10px; margin-top: 10px; border-radius: 4px;">
+                 <RadzenStack Orientation="Orientation.Vertical" Gap="5px" Style="background: var(--rz-base-200); padding: 10px; margin-top: 10px; border-radius: 4px;">
                      @if(Likes.Any())
                      {
-                         <div style="color: #576b95; font-size: 12px; margin-bottom: 5px;">
+                         <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-primary); margin-bottom: 5px;">
                              <RadzenIcon Icon="favorite_border" Style="font-size: 12px; vertical-align: middle;" /> @string.Join(", ", Likes.Select(l => l.nickName))
-                         </div>
+                         </RadzenText>
                      }
                      
                      @foreach(var c in Comments)
                      {
-                         <div style="font-size: 12px;">
-                             <span style="color: #576b95; font-weight: bold;">@c.authorName:</span> @c.content
-                         </div>
+                         <RadzenText TextStyle="TextStyle.Caption" Style="margin-bottom: 0;">
+                             <span style="color: var(--rz-primary); font-weight: bold;">@c.authorName:</span> @c.content
+                         </RadzenText>
                      }
-                 </div>
+                 </RadzenStack>
             }
-        </div>
-    </div>
+        </RadzenStack>
+    </RadzenStack>
 </RadzenCard>
-
-<style>
-    .moments-images-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 5px;
-        max-width: 300px;
-    }
-    .image-item {
-        aspect-ratio: 1; 
-        overflow: hidden;
-        border-radius: 4px;
-        background: #f0f0f0;
-    }
-</style>
 
 @code {
     [Parameter]
@@ -147,5 +136,13 @@
     private void OpenImage(string src)
     {
         // Placeholder for potentially opening a lightbox
+    }
+
+    private async Task OpenLink(string url)
+    {
+        if (!string.IsNullOrEmpty(url))
+        {
+            await JSRuntime.InvokeVoidAsync("window.open", url, "_blank");
+        }
     }
 }

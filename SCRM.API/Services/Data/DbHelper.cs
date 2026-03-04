@@ -418,5 +418,41 @@ namespace SCRM.API.Services.Data
                 });
             }
         }
+
+        // ==================== System Initialization ====================
+
+        /// <summary>
+        /// 服务端启动时，重置所有设备和微信账号为离线状态
+        /// </summary>
+        /// <returns>返回重置的设备数量和微信账号数量元组</returns>
+        public static async Task<(int resetClientCount, int resetWechatCount)> ResetAllDevicesToOffline(this DbContext context)
+        {
+            int clientCount = 0;
+            int wechatCount = 0;
+            try
+            {
+                // 1. 批量更新数据库状态为离线
+                clientCount = await context.Set<SrClient>()
+                    .Where(c => c.isOnline)
+                    .ExecuteUpdateAsync(s => s.SetProperty(c => c.isOnline, false)
+                                              .SetProperty(c => c.updatedAt, DateTime.UtcNow));
+
+                wechatCount = await context.Set<WechatAccount>()
+                    .Where(a => a.accountStatus != 0) // 将所有非离线状态(0=Offline)重置
+                    .ExecuteUpdateAsync(s => s.SetProperty(a => a.accountStatus, (short)0) 
+                                              .SetProperty(a => a.updatedAt, DateTime.UtcNow));
+
+                // 2. 清理相关全局缓存，强制后续请求重新从数据库加载最新状态
+                GlobalCache.srClients.Clear();
+                GlobalCache.wechatAccounts.Clear();
+                
+                return (clientCount, wechatCount);
+            }
+            catch (Exception ex)
+            {
+                // 异常抛出交由上层 SeedData 统一处理并记录日志
+                throw new Exception($"Failed to reset device and wechat account status on startup: {ex.Message}", ex);
+            }
+        }
     }
 }

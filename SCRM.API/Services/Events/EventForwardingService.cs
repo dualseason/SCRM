@@ -108,6 +108,16 @@ namespace SCRM.API.Services.Events
                 }
             });
 
+            // 订阅微信下线事件 (WeChatOfflineEvent)
+            _eventBus.Subscribe<WeChatOfflineEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.deviceUuid))
+                {
+                    _logger.LogInformation("转发微信离线事件: -> SignalR组 {DeviceUuid}", e.deviceUuid);
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("OnWeChatOffline", e, stoppingToken);
+                }
+            });
+
             return Task.CompletedTask;
         }
 

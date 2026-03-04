@@ -1,0 +1,200 @@
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@implements IDisposable
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%;">
+    
+    @* Custom Text Tabs *@
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceAround" 
+                 Style="height: 48px; border-bottom: 1px solid var(--rz-border-color); background: var(--rz-base-0);">
+        <div @onclick="@(() => ChangeTab("chats"))" 
+             style="@($"cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: {(ActiveTab == "chats" ? "var(--rz-primary)" : "var(--rz-text-secondary-color)")}; border-bottom: 2px solid {(ActiveTab == "chats" ? "var(--rz-primary)" : "transparent")}")">
+            会话
+        </div>
+        <div @onclick="@(() => ChangeTab("contacts"))" 
+             style="@($"cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: {(ActiveTab == "contacts" ? "var(--rz-primary)" : "var(--rz-text-secondary-color)")}; border-bottom: 2px solid {(ActiveTab == "contacts" ? "var(--rz-primary)" : "transparent")}")">
+            通讯录
+        </div>
+        <div @onclick="@(() => ChangeTab("groups"))" 
+             style="@($"cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: {(ActiveTab == "groups" ? "var(--rz-primary)" : "var(--rz-text-secondary-color)")}; border-bottom: 2px solid {(ActiveTab == "groups" ? "var(--rz-primary)" : "transparent")}")">
+            群聊
+        </div>
+    </RadzenStack>
+
+    @* Search & Actions *@
+    <RadzenStack Orientation="Orientation.Vertical" Gap="8px" Style="padding: 10px; border-bottom: 1px solid var(--rz-border-color); background: var(--rz-base-200);">
+        <RadzenTextBox Placeholder="搜索" @bind-Value="_searchText" Change="@(args => OnSearchContact())" Style="width: 100%; height: 32px; font-size: 13px; border-radius: 4px;" />
+        
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="5px">
+             <RadzenButton Text="一键群发" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: var(--rz-text-secondary-color);" Disabled="true" />
+             <RadzenButton Text="群发未读" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: var(--rz-text-secondary-color);" Disabled="true" />
+        </RadzenStack>
+    </RadzenStack>
+
+    @* Content List *@
+    <div style="flex: 1; overflow-y: auto;">
+        @if (ActiveTab == "chats")
+        {
+             @if (Store.SelectedDevice == null)
+             {
+                 <div class="rz-p-4 rz-text-align-center rz-color-secondary">请选择设备</div>
+             }
+             else if (Store.Conversations.Count == 0)
+             {
+                 <div class="rz-p-4 rz-text-align-center rz-color-secondary">暂无会话</div>
+             }
+             else
+             {
+                 <RadzenListBox Data="@Store.Conversations" Value="@Store.SelectedConversation" 
+                                TValue="Conversation" SelectedItemsText="Selected"
+                                Change="@(EventCallback.Factory.Create<object>(this, OnConversationChange))"
+                                Style="width: 100%; border: none;">
+                     <Template Context="conv">
+                         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" Style="padding: 8px 0;">
+                             <RadzenImage Path="@conv.displayAvatar" Style="width: 40px; height: 40px; border-radius: 4px;" />
+                             <RadzenStack Orientation="Orientation.Vertical" Gap="2px" Style="overflow: hidden; flex: 1;">
+                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                                     <RadzenText Text="@conv.displayName" TextStyle="TextStyle.Body2" Style="font-weight: 500; color: var(--rz-text-title-color);" />
+                                     <RadzenText Text="@FormatDate(conv.lastMessageTime)" TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color); font-size: 11px;" />
+                                 </RadzenStack>
+                                 <RadzenText Text="@(conv.conversationType == 2 ? "[群] " + conv.lastMessageContent : conv.lastMessageContent)" 
+                                             TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px;" />
+                             </RadzenStack>
+                             @if (conv.unreadCount > 0)
+                             {
+                                 <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@(conv.unreadCount > 99 ? "99+" : conv.unreadCount.ToString())" />
+                             }
+                         </RadzenStack>
+                     </Template>
+                 </RadzenListBox>
+             }
+        }
+        else if (ActiveTab == "contacts")
+        {
+             @if (Store.SelectedDevice == null)
+             {
+                 <div class="rz-p-4 rz-text-align-center rz-color-secondary">请选择设备</div>
+             }
+             else if (Store.SelectedDevice.wx?.contacts?.Count == 0)
+             {
+                 <div class="rz-p-4 rz-text-align-center">
+                    <RadzenButton Text="同步联系人" ButtonStyle="ButtonStyle.Secondary" Click="SyncContacts" Size="ButtonSize.Small" />
+                 </div>
+             }
+             else
+             {
+                 <RadzenListBox Data="@_filteredContacts" Value="@Store.SelectedContact"
+                                TValue="Contact"
+                                Change="@(EventCallback.Factory.Create<object>(this, OnContactChange))"
+                                Style="width: 100%; border: none;">
+                     <Template Context="contact">
+                         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" Style="padding: 8px 0;">
+                             <RadzenImage Path="@(string.IsNullOrEmpty(contact.avatar) ? "images/default-avatar.png" : contact.avatar)"
+                                          Style="width: 36px; height: 36px; border-radius: 4px;" />
+                             <RadzenStack Orientation="Orientation.Vertical" Gap="0">
+                                 <RadzenText Text="@(string.IsNullOrEmpty(contact.remarks) ? contact.nickname : contact.remarks)"
+                                             TextStyle="TextStyle.Body2" Style="font-weight: 500; color: var(--rz-text-title-color);" />
+                                 <RadzenText Text="@contact.nickname" TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);" />
+                             </RadzenStack>
+                         </RadzenStack>
+                     </Template>
+                 </RadzenListBox>
+             }
+        }
+        else if (ActiveTab == "groups")
+        {
+            <div class="rz-p-4 rz-text-align-center rz-color-secondary">请选择群聊会话</div>
+        }
+    </div>
+
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public string ActiveTab { get; set; } = "chats";
+
+    [Parameter]
+    public EventCallback<string> ActiveTabChanged { get; set; }
+
+    private string _searchText = "";
+
+    private List<Contact> _filteredContacts
+    {
+        get
+        {
+            var source = Store.SelectedDevice?.wx?.contacts ?? new List<Contact>();
+            return string.IsNullOrWhiteSpace(_searchText)
+                ? source
+                : source.Where(c => (c.nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+                                 || (c.remarks?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        Store.OnChange += HandleStoreChange;
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleStoreChange;
+    }
+
+    private void HandleStoreChange()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ChangeTab(string tab)
+    {
+        ActiveTab = tab;
+        Store.ActiveImTab = tab; // Update global store state
+        await ActiveTabChanged.InvokeAsync(tab);
+    }
+
+    private void OnSearchContact()
+    {
+        StateHasChanged();
+    }
+
+    private async Task SyncContacts()
+    {
+        if (Store.SelectedDevice == null) return;
+        await Store.SyncContactsAsync();
+        NoticeService.Notify(NotificationSeverity.Info, "Sync Command Sent");
+    }
+
+    private async Task OnConversationChange(object value)
+    {
+        if (value is Conversation conv)
+        {
+            await Store.SelectContactAsync(null);
+            await Store.SelectConversationAsync(conv);
+        }
+    }
+
+    private async Task OnContactChange(object value)
+    {
+        if (value is Contact contact)
+        {
+            if (contact != null) 
+                await Store.SelectContactAsync(contact);
+        }
+    }
+
+    private string FormatDate(DateTime dt)
+    {
+        if (dt.Date == DateTime.Today)
+            return dt.ToString("HH:mm");
+        if (dt.Date == DateTime.Today.AddDays(-1))
+            return "Yesterday";
+        if (dt.Year == DateTime.Now.Year)
+            return dt.ToString("MM-dd");
+        return dt.ToString("yyyy-MM-dd");
+    }
+}

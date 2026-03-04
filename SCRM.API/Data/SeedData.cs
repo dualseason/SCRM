@@ -2,9 +2,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using SCRM.SHARED.Models;
 using SCRM.API.Models.Entities;
 using SCRM.Services.Data;
+using SCRM.API.Services.Data;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
@@ -19,6 +21,7 @@ namespace SCRM.API.Data
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var config = serviceProvider.GetRequiredService<IConfiguration>();
             var dbContext = serviceProvider.GetRequiredService<ApplicationDbContext>();
+            var logger = serviceProvider.GetService<ILoggerFactory>()?.CreateLogger(typeof(SeedData));
 
             // Ensure Admin Role exists
             if (!await roleManager.RoleExistsAsync("Admin"))
@@ -47,6 +50,17 @@ namespace SCRM.API.Data
             
             // Seed System Config from appsettings.json
             await EnsureSystemConfigAsync(dbContext, config);
+
+            // [新增调用] 服务端启动时清理“假在线”设备缓存并更新数据库状态
+            try 
+            {
+                var (clientCount, wechatCount) = await dbContext.ResetAllDevicesToOffline();
+                logger?.LogInformation("[System Initialized] 启动重置完成，已重置上线设备数: {ClientCount}，重置在线微信数: {WechatCount}", clientCount, wechatCount);
+            }
+            catch(Exception ex)
+            {
+                logger?.LogError(ex, "[System Initialization Error] 启动时重置设备离线状态失败");
+            }
         }
 
         public static async Task EnsureSystemConfigAsync(ApplicationDbContext db, IConfiguration config)

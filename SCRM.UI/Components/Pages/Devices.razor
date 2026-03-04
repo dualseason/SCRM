@@ -26,14 +26,14 @@
                         }
                         else
                         {
-                            <RadzenText TextStyle="TextStyle.Subtitle2" Style="color: var(--rz-danger)">未登录</RadzenText>
+                            <RadzenText TextStyle="TextStyle.Subtitle2" Text="未登录" Class="rz-color-danger" />
                         }
                     </RadzenStack>
                     <RadzenBadge BadgeStyle="@(device.isOnline ? BadgeStyle.Success : BadgeStyle.Danger)" Text="@(device.isOnline ? "在线" : "离线")" />
                 </RadzenStack>
                 
-                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color); margin-top: 0.5rem;">UUID: @device.uuid</RadzenText>
-                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color)">在线时间: @(device.lastLoginAt?.ToString("yyyy-MM-dd HH:mm:ss"))</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mt-2">UUID: @device.uuid</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">在线时间: @(device.lastLoginAt?.ToString("yyyy-MM-dd HH:mm:ss"))</RadzenText>
 
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Style="margin-top: 1rem;">
                     <RadzenButton Text="管理" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" Click="@(() => SelectDevice(device))" />
@@ -53,9 +53,9 @@
        </RadzenStack>
        
        @if(!string.IsNullOrEmpty(Store.LastScreenShotUrl)) {
-           <div style="margin-top:1rem;">
+           <div class="rz-mt-4">
                <RadzenText TextStyle="TextStyle.Subtitle2">最新截屏:</RadzenText>
-               <RadzenImage Path="@Store.LastScreenShotUrl" Style="width: 100%; max-width: 300px; margin-top: 0.5rem; border: 1px solid #eee;" />
+               <RadzenImage Path="@Store.LastScreenShotUrl" Style="width: 100%; max-width: 300px;" Class="rz-mt-2 rz-border-radius-1" />
            </div>
        }
   </RadzenCard>

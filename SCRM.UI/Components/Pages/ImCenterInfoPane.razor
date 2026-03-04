@@ -1,0 +1,50 @@
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+
+<RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%; background: var(--rz-base-0);">
+    <!-- Simple Tab Header -->
+     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceAround" 
+                 Style="height: 48px; border-bottom: 1px solid var(--rz-border-color); background: var(--rz-base-100);">
+        <div style="cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: var(--rz-primary); border-bottom: 2px solid var(--rz-primary);">
+            公共话术
+        </div>
+        <div style="cursor: pointer; font-weight: 500; font-size: 14px; padding: 10px 0; color: var(--rz-text-secondary-color);">
+            信息管理
+        </div>
+    </RadzenStack>
+
+    <!-- Search -->
+    <div style="padding: 10px; border-bottom: 1px solid var(--rz-border-color);">
+        <RadzenTextBox Placeholder="请输入内容" Style="width: 100%; height: 30px; font-size: 12px;" />
+    </div>
+
+    <!-- Accordion Content -->
+    <div style="flex: 1; overflow-y: auto;">
+        <RadzenAccordion Multiple="true">
+            <Items>
+                <RadzenAccordionItem Text="文本" Icon="text_fields" Selected="true">
+                     <div class="rz-p-2" style="font-size: 12px; color: var(--rz-text-secondary-color);">暂无文本话术</div>
+                </RadzenAccordionItem>
+                <RadzenAccordionItem Text="笑话一则" Icon="mood">
+                     <div class="rz-p-2" style="font-size: 12px; color: var(--rz-text-secondary-color);">暂无内容</div>
+                </RadzenAccordionItem>
+                <RadzenAccordionItem Text="产品介绍" Icon="description">
+                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="padding: 5px 0; border-bottom: 1px dashed var(--rz-border-color);">
+                         <span style="font-size: 12px;">语音文件</span>
+                         <RadzenIcon Icon="send" Style="font-size: 14px; color: var(--rz-text-secondary-color); cursor: pointer;" />
+                     </RadzenStack>
+                </RadzenAccordionItem>
+                <RadzenAccordionItem Text="文件" Icon="attach_file">
+                     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="padding: 5px 0; border-bottom: 1px dashed var(--rz-border-color);">
+                         <span style="font-size: 12px;">xlsx文件测试</span>
+                         <RadzenIcon Icon="send" Style="font-size: 14px; color: var(--rz-text-secondary-color); cursor: pointer;" />
+                     </RadzenStack>
+                </RadzenAccordionItem>
+                <RadzenAccordionItem Text="图片" Icon="image">
+                     <div class="rz-p-2" style="font-size: 12px; color: var(--rz-text-secondary-color);">暂无图片</div>
+                </RadzenAccordionItem>
+            </Items>
+        </RadzenAccordion>
+    </div>
+</RadzenStack>

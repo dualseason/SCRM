@@ -39,7 +39,7 @@
                                 @contact.nickname
                                 @if(!string.IsNullOrEmpty(contact.remarks))
                                 {
-                                    <span style="color: grey; font-size: 0.8em; margin-left: 0.5rem;">(@contact.remarks)</span>
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-tertiary-color); margin-left: 0.5rem;" TagName="TagName.Span" Text="@($"({contact.remarks})")" />
                                 }
                             </RadzenText>
                             <RadzenText TextStyle="TextStyle.Caption">ID: @contact.wxid</RadzenText>

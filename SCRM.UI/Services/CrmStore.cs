@@ -7,6 +7,7 @@ using SCRM.UI.Services.Data;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SCRM.UI.Services
@@ -35,10 +36,20 @@ namespace SCRM.UI.Services
         public Conversation? SelectedConversation { get; private set; }
         public List<Message> CurrentMessages { get; private set; } = new();
         
+        // Active IM Tab Context
+        public string ActiveImTab { get; set; } = "chats";
+
         // Additional Stubs
         public bool HasInitialized { get; set; } = true;
         public List<MomentsTimeline> CurrentMoments { get; private set; } = new();
         public string? LastScreenShotUrl { get; set; }
+
+        // Contacts reload concurrency control
+        private readonly SemaphoreSlim _contactsReloadLock = new(1, 1);
+        private CancellationTokenSource? _contactsReloadCts;
+        private readonly object _contactsReloadSync = new();
+        private readonly TimeSpan _contactsDebounceWindow = TimeSpan.FromMilliseconds(300);
+        private volatile bool _isDisposed;
 
         // --- Events ---
         public event Action? OnChange;
@@ -68,17 +79,10 @@ namespace SCRM.UI.Services
             }));
 
             // Subscribe to Contacts Received using Wx object context
-            _subscriptions.Add(_events.SubscribeToContactsReceived(async (accountId) =>
+            _subscriptions.Add(_events.SubscribeToContactsReceived((accountId) =>
             {
-                _logger.LogInformation($"[CrmStore] Received Contacts Update for Account {accountId}");
-                if (SelectedDevice?.wx?.wechatAccount?.wxid == accountId)
-                {
-                    if (SelectedDevice.wx == null) SelectedDevice.wx = new Wx { srClient=SelectedDevice};
-                    
-                    // Reload contacts into the Wx object
-                    SelectedDevice.wx.contacts = await _service.GetContactsAsync(SelectedDevice.weChatId);
-                    NotifyStateChanged();
-                }
+                _logger.LogInformation("[CrmStore] Received Contacts Update for Account {AccountId}", accountId);
+                QueueContactsReload(accountId);
             }));
 
             // [New] Subscribe to Screenshot Uploaded Event
@@ -96,6 +100,99 @@ namespace SCRM.UI.Services
                 OnNotification?.Invoke($"微信已上线: {e.nickName}", true);
                 _ = LoadDevicesAsync();
             }));
+
+            // [New] Subscribe to WeChat Offline Event
+            _subscriptions.Add(_events.SubscribeToEvent<SCRM.SHARED.Models.Events.WeChatOfflineEvent>("OnWeChatOffline", (e) =>
+            {
+                _logger.LogInformation($"[CrmStore] WeChat Offline: ({e.deviceUuid})");
+                OnNotification?.Invoke("微信已离线/未登录", false);
+                _ = LoadDevicesAsync();
+            }));
+
+            // [New] Subscribe to specific Messages
+            _subscriptions.Add(_events.SubscribeToEvent<Message>("OnMessageReceived", (msg) =>
+            {
+                _logger.LogInformation($"[CrmStore] Message Received from {msg.senderWxid} to {msg.receiverWxid}: {msg.content}");
+                
+                // If the message belongs to the currently active conversation/contact, append it directly
+                bool isRelevantToConversation = SelectedConversation != null && 
+                    (SelectedConversation.conversationWxid == msg.senderWxid || SelectedConversation.conversationWxid == msg.receiverWxid);
+                bool isRelevantToContact = SelectedContact != null && 
+                    (SelectedContact.wxid == msg.senderWxid || SelectedContact.wxid == msg.receiverWxid);
+
+                if (isRelevantToConversation || isRelevantToContact)
+                {
+                    CurrentMessages.Add(msg);
+                    NotifyStateChanged();
+                }
+
+                // Generic message event for decoupled consumers
+                MessageReceived?.Invoke(msg);
+            }));
+        }
+
+        private void QueueContactsReload(string accountId)
+        {
+            if (_isDisposed) return;
+
+            CancellationTokenSource? oldCts;
+            CancellationTokenSource newCts;
+
+            lock (_contactsReloadSync)
+            {
+                oldCts = _contactsReloadCts;               // 拿到旧引用
+                newCts = new CancellationTokenSource();    // 创建新令牌
+                _contactsReloadCts = newCts;               // 先交换（关键）
+            }
+
+            // 在锁外取消并释放旧 CTS，避免持锁做潜在慢操作
+            if (oldCts != null)
+            {
+                try { oldCts.Cancel(); } catch { }
+                try { oldCts.Dispose(); } catch { }
+            }
+
+            _ = ReloadContactsDebouncedAsync(accountId, newCts.Token);
+        }
+
+        private async Task ReloadContactsDebouncedAsync(string accountId, CancellationToken token)
+        {
+            try
+            {
+                await Task.Delay(_contactsDebounceWindow, token);
+
+                var entered = false;
+                try
+                {
+                    await _contactsReloadLock.WaitAsync(token);
+                    entered = true;
+
+                    if (_isDisposed || token.IsCancellationRequested) return;
+                    if (SelectedDevice?.weChatId != accountId) return;
+
+                    if (SelectedDevice.wx == null)
+                        SelectedDevice.wx = new Wx { srClient = SelectedDevice };
+
+                    SelectedDevice.wx.contacts = await _service.GetContactsAsync(accountId);
+                    NotifyStateChanged();
+                }
+                finally
+                {
+                    if (entered) _contactsReloadLock.Release();
+                }
+            }
+            catch (OperationCanceledException)
+            {
+                // 防抖覆盖导致的正常取消
+            }
+            catch (ObjectDisposedException ex)
+            {
+                _logger.LogDebug(ex, "[CrmStore] Reload canceled after disposal for Account {AccountId}", accountId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[CrmStore] Reload contacts failed for Account {AccountId}", accountId);
+            }
         }
 
         public async Task InitializeAsync()
@@ -167,6 +264,23 @@ namespace SCRM.UI.Services
 
         public void Dispose()
         {
+            _isDisposed = true;
+
+            CancellationTokenSource? oldCts;
+            lock (_contactsReloadSync)
+            {
+                oldCts = _contactsReloadCts;
+                _contactsReloadCts = null;
+            }
+
+            if (oldCts != null)
+            {
+                try { oldCts.Cancel(); } catch { }
+                try { oldCts.Dispose(); } catch { }
+            }
+
+            _contactsReloadLock.Dispose();
+
             foreach(var sub in _subscriptions)
             {
                 sub.Dispose();
@@ -185,7 +299,7 @@ namespace SCRM.UI.Services
             }
             NotifyStateChanged();
         }
-        public Task SelectContactAsync(Contact contact) 
+        public Task SelectContactAsync(Contact? contact) 
         { 
             SelectedContact = contact;
             NotifyStateChanged();

@@ -179,7 +179,7 @@ namespace SCRM.API.Services.Netty.Handlers
                 var syncMsg = new TransportMessage
                 {
                     MsgType = EnumMsgType.TriggerWechatPushTask,
-                    Content = Any.Pack(new TriggerWechatPushTaskMessage
+                    Content = Any.Pack(new  TriggerWechatPushTaskMessage
                     {
                         WeChatId = "" // Empty ID force client to report self
                     })

@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using SCRM.Shared.Core;
 using SCRM.Models;
 using DotNetty.Transport.Channels;
+using Jubo.JuLiao.IM.Wx.Proto;
+using Google.Protobuf;
+using Google.Protobuf.WellKnownTypes;
 
 
 namespace SCRM.API.Services.Core
@@ -52,9 +55,16 @@ namespace SCRM.API.Services.Core
         /// </summary>
         private readonly ConcurrentDictionary<string, IChannel> _activeChannels = new ConcurrentDictionary<string, IChannel>();
 
+        /// <summary>
+        /// 定时器：定期检查沉默客户端（已连接但未上报微信ID）
+        /// </summary>
+        private readonly System.Threading.Timer _silentClientCheckTimer;
+
         public ConnectionManager(ILogger<ConnectionManager> logger)
         {
             _logger = logger;
+            // 初始化定时器：每30秒检查一次
+            _silentClientCheckTimer = new System.Threading.Timer(CheckSilentClients, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
         }
 
         /// <summary>
@@ -401,12 +411,58 @@ namespace SCRM.API.Services.Core
                 lastUpdated = DateTime.UtcNow
             };
         }
+
+
+        /// <summary>
+        /// 检查沉默客户端的任务
+        /// <para>如果客户端连接超过40秒仍未上报WeChatId，则主动发送 TriggerWechatPushTask 指令进行探测。</para>
+        /// </summary>
+        private void CheckSilentClients(object state)
+        {
+            try
+            {
+                var now = DateTime.UtcNow;
+                foreach (var conn in _connections.Values)
+                {
+                    // 筛选条件：
+                    // 1. WeChatId 为空 (说明还没上报)
+                    // 2. 连接时长 > 40秒 (给足启动时间)
+                    // 3. (可选) 可以增加 LastActivityAt 判断，这里主要关注初始启动
+                    if (string.IsNullOrEmpty(conn.wechatId) && (now - conn.connectedAt).TotalSeconds > 40)
+                    {
+                        var channel = GetChannel(conn.connectionId);
+                        if (channel != null && channel.Active)
+                        {
+                            _logger.LogWarning($"[SilentClientCheck] Client {conn.connectionId} (Dev:{conn.deviceType}) silent for >40s. Sending TriggerWechatPushTask...");
+
+                            // 构造 TriggerWechatPushTask 消息 (参考 AuthMessageHandler.cs)
+                            // 客户端会使用此空ID来触发自身状态上报
+                            var syncMsg = new TransportMessage
+                            {
+                                MsgType = EnumMsgType.TriggerWechatPushTask,
+                                Content = Any.Pack(new TriggerWechatPushTaskMessage
+                                {
+                                    WeChatId = "" // Empty ID force client to report self
+                                })
+                            };
+
+                            // 发送指令
+                            channel.WriteAndFlushAsync(syncMsg);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[SilentClientCheck] Error occurred while checking silent clients.");
+            }
+        }
     }
 
     /// <summary>
     /// 连接统计数据模型
     /// </summary>
-    public class ConnectionStatistics
+    public class ConnectionStatistics 
     {
         public int totalConnections { get; set; }
         public int totalUsers { get; set; }

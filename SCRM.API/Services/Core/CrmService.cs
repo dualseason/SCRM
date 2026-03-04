@@ -38,7 +38,7 @@ namespace SCRM.API.Services.Core
             //        device.wechatAccountId = activeAccount.accountId;
             //        // device.isOnline = true; // Use connection status or logic as needed
             //    }
-            //}
+            //} 
             
             return devices;
         }

@@ -12,8 +12,8 @@
 
 <PageTitle>登录 - SCRM</PageTitle>
 
-<div class="rz-p-12 rz-text-align-center" style="height: 100vh; display: flex; align-items: center; justify-content: center; background-color: #f5f5f5;">
-    <RadzenCard style="width: 400px; padding: 2rem;">
+<RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" class="rz-p-4" Style="min-height: calc(100vh - 56px);">
+    <RadzenCard Style="width: min(400px, 92vw);" class="rz-p-4 rz-text-align-center">
         <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1" Class="rz-mb-4">SCRM 登录</RadzenText>
         
         <RadzenTemplateForm Data="@loginModel" Submit="@(async (LoginRequest args) => await HandleLogin(args))">
@@ -39,7 +39,7 @@
             </RadzenAlert>
         }
     </RadzenCard>
-</div>
+</RadzenStack>
 
 @code {
     private LoginRequest loginModel = new LoginRequest();

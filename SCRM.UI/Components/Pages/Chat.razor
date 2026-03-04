@@ -31,16 +31,13 @@ else
                 </RadzenText>
              </RadzenStack>
 
-            <div style="flex: 1; overflow-y: auto; padding: 1rem; background-color: var(--rz-base-background-color);">
+            <div class="chat-list-container">
                 @foreach (var msg in Store.CurrentMessages)
                 {
-                    <div style="display: flex; justify-content: @(msg.direction == 1 ? "flex-end" : "flex-start"); margin-bottom: 10px;">
-                        <div style="max-width: 80%; padding: 10px 15px; border-radius: 12px;
-                                    background: @(msg.direction == 1 ? "var(--rz-primary)" : "var(--rz-base-200)");
-                                    color: @(msg.direction == 1 ? "var(--rz-white)" : "var(--rz-text-title-color)");
-                                    border: 1px solid @(msg.direction == 1 ? "var(--rz-primary)" : "var(--rz-border-color));");">
-                            <div style="word-break: break-all;">@msg.content</div>
-                            <div style="font-size: 0.75rem; opacity: 0.7; text-align: right; margin-top: 4px;">
+                    <div class="chat-row @(msg.direction == 1 ? "self" : "other")">
+                        <div class="chat-bubble">
+                            <div>@msg.content</div>
+                            <div class="chat-time">
                                 @msg.createdAt.ToLocalTime().ToString("HH:mm")
                             </div>
                         </div>
@@ -48,12 +45,10 @@ else
                 }
             </div>
 
-            <div style="padding: 1rem; border-top: 1px solid var(--rz-border-color);">
-                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
-                    <RadzenTextArea @bind-Value="_msgContent" Placeholder="输入消息..." Style="flex: 1;" Rows="2" @onkeydown="@Enter" />
-                    <RadzenButton Icon="send" ButtonStyle="ButtonStyle.Primary" Click="Send" IsBusy="@_sending" Style="height: auto;" />
-                </RadzenStack>
-            </div>
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Style="padding: 1rem; border-top: 1px solid var(--rz-border-color);">
+                <RadzenTextArea @bind-Value="_msgContent" Placeholder="输入消息..." Style="flex: 1;" Rows="2" @onkeydown="@Enter" />
+                <RadzenButton Icon="send" ButtonStyle="ButtonStyle.Primary" Click="Send" IsBusy="@_sending" Style="height: auto;" />
+            </RadzenStack>
         </RadzenCard>
     </RadzenStack>
 }

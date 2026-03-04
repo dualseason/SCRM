@@ -5,27 +5,27 @@
     <RadzenImage Path="@Contact.avatar" Style="width: 100px; height: 100px; border-radius: 50%;" />
     
     <RadzenText TextStyle="TextStyle.H5">@Contact.nickname</RadzenText>
-    <RadzenText TextStyle="TextStyle.Body2" Style="color: #666;">@Contact.wxid</RadzenText>
+    <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">@Contact.wxid</RadzenText>
 
     <div style="width: 100%; margin-top: 10px;">
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
-            <span style="color: #888;">Remarks</span>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--rz-border-color); padding: 8px 0;">
+            <span style="color: var(--rz-text-secondary-color);">Remarks</span>
             <span>@Contact.remarks</span>
         </div>
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
-            <span style="color: #888;">Gender</span>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--rz-border-color); padding: 8px 0;">
+            <span style="color: var(--rz-text-secondary-color);">Gender</span>
             <span>@(Contact.gender == 1 ? "Male" : (Contact.gender == 2 ? "Female" : "Unknown"))</span>
         </div>
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
-            <span style="color: #888;">Region</span>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--rz-border-color); padding: 8px 0;">
+            <span style="color: var(--rz-text-secondary-color);">Region</span>
             <span>@($"{Contact.province} {Contact.city}")</span>
         </div>
-        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 8px 0;">
-            <span style="color: #888;">Phone</span>
+        <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--rz-border-color); padding: 8px 0;">
+            <span style="color: var(--rz-text-secondary-color);">Phone</span>
             <span>@Contact.phone</span>
         </div>
-         <div style="display: flex; flex-direction: column; border-bottom: 1px solid #eee; padding: 8px 0;">
-            <span style="color: #888; margin-bottom: 4px;">Signature</span>
+         <div style="display: flex; flex-direction: column; border-bottom: 1px solid var(--rz-border-color); padding: 8px 0;">
+            <span style="color: var(--rz-text-secondary-color); margin-bottom: 4px;">Signature</span>
             <span style="white-space: pre-wrap;">@Contact.signature</span>
         </div>
     </div>

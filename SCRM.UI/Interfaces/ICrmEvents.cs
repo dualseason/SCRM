@@ -24,7 +24,11 @@ namespace SCRM.Shared.Interfaces
         IDisposable SubscribeToContactsReceived(Action<string> handler);
 
         // --- 铺开模块 ---
-        // IDisposable SubscribeToMessages(Action<MessageDto> handler);
+        /// <summary>
+        /// 订阅消息到达事件
+        /// Action 参数: (Message)
+        /// </summary>
+        IDisposable SubscribeToMessages(Action<Message> handler);
 
         /// <summary>
         /// 通用事件订阅

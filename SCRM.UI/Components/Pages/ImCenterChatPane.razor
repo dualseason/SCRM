@@ -1,0 +1,250 @@
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@inject IJSRuntime JS
+@implements IDisposable
+
+<div style="width: 100%; height: 100%; display: flex; flex-direction: column; background: var(--rz-base-100);">
+    @* 场景一：当前在通讯录列表页 *@
+    @if (ActiveTab == "contacts")
+    {
+        if (Store.SelectedContact == null)
+        {
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center;">
+                <RadzenText Text="请选择联系人" TextStyle="TextStyle.Body1" Style="color:var(--rz-text-secondary-color);" />
+            </div>
+        }
+        else
+        {
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center; background:var(--rz-base-0); padding:20px; overflow-y: auto;">
+                <div style="width: 400px; max-width: 100%; text-align:center;">
+                    <RadzenImage Path="@(string.IsNullOrEmpty(Store.SelectedContact.avatar) ? "images/default-avatar.png" : Store.SelectedContact.avatar)" Style="width:120px; height:120px; border-radius:8px; margin-bottom:20px;" />
+                    <RadzenText Text="@(string.IsNullOrEmpty(Store.SelectedContact.remarks) ? Store.SelectedContact.nickname : Store.SelectedContact.remarks)" TextStyle="TextStyle.H5" Style="font-weight:600; color:var(--rz-text-title-color);" />
+                    
+                    <div style="margin-top:30px; text-align:left; background:var(--rz-base-200); padding:20px; border-radius:8px;">
+                        <div>
+                            <span style="color:var(--rz-text-secondary-color); display:inline-block; width:70px;">微信号</span>
+                            <span style="color:var(--rz-text-title-color);">@Store.SelectedContact.wxid</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:40px;">
+                        <RadzenButton Text="发消息" Icon="chat" Click="StartChatWithContact" ButtonStyle="ButtonStyle.Success" Style="width:140px; height:40px; font-size:16px;" />
+                    </div>
+                </div>
+            </div>
+        }
+    }
+    @* 场景二：当前在会话列表页 *@
+    else if (ActiveTab == "chats")
+    {
+        if (Store.SelectedConversation == null)
+        {
+            <!-- Empty State -->
+            <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="height: 100%;">
+                <RadzenIcon Icon="chat_bubble_outline" Style="font-size: 4rem; color: var(--rz-text-disabled-color);" />
+                <RadzenText Text="请选择会话开始聊天" TextStyle="TextStyle.Body1" Style="color: var(--rz-text-disabled-color); margin-top: 10px;" />
+            </RadzenStack>
+        }
+        else
+        {
+            <RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%; width: 100%;">
+                <!-- Chat Header -->
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" 
+                             Style="height: 50px; min-height: 50px; padding: 0 1rem; border-bottom: 1px solid var(--rz-border-color); background: var(--rz-base-0);">
+                    <RadzenText Text="@(Store.SelectedConversation?.displayName ?? "Unknown")" 
+                                TextStyle="TextStyle.Subtitle1" Style="margin: 0; font-weight: 600;" />
+                    <RadzenButton Icon="more_horiz" ButtonStyle="ButtonStyle.Light" Variant="Variant.Text" Size="ButtonSize.Medium" />
+                </RadzenStack>
+
+                <!-- Chat Messages (Scrollable) -->
+                <div id="im-chat-box" class="rz-p-4" style="flex: 1; overflow-y: auto;">
+                    <RadzenStack Orientation="Orientation.Vertical" Gap="1rem">
+                        @foreach (var msg in Store.CurrentMessages)
+                       {
+                           bool isMine = IsMyMessage(msg);
+
+                           <RadzenStack Orientation="Orientation.Horizontal"
+                                        JustifyContent="@(isMine ? JustifyContent.End : JustifyContent.Start)"
+                                        Style="width: 100%;">
+                               <RadzenStack Orientation="Orientation.Vertical"
+                                            AlignItems="@(isMine ? AlignItems.End : AlignItems.Start)"
+                                            Style="max-width: 70%;">
+                                   <RadzenImage Path="@(isMine ? (Store.SelectedDevice?.wx?.wechatAccount?.avatarUrl ?? "images/default-avatar.png") : ContextAvatar())"
+                                                Style="width:36px; height:36px; border-radius: 4px; margin-bottom: 6px;" />
+
+                                   <RadzenCard Style="@($"max-width: 100%; padding: 8px 12px; border-radius: 4px; position: relative; font-size: 14px; line-height: 1.5; background-color: {(isMine ? "var(--rz-primary-light)" : "var(--rz-base-0)")}; border: {(isMine ? "none" : "1px solid var(--rz-border-color)")}; box-shadow: none;")">
+                                       @msg.content
+                                       @if (msg.sendStatus == 1)
+                                       {
+                                           <RadzenIcon Icon="sync" Style="font-size: 12px; margin-left: 8px; animation: rz-spin 1s infinite linear;" />
+                                       }
+                                   </RadzenCard>
+                               </RadzenStack>
+                           </RadzenStack>
+                       }
+                       <div id="im-scroll-anchor"></div>
+                    </RadzenStack>
+                </div>
+
+                <!-- Chat Input Area (Fixed Bottom) -->
+                <div style="background: var(--rz-base-0); border-top: 1px solid var(--rz-border-color); padding: 0; min-height: 150px;">
+                    <!-- Toolbar -->
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="15px" Style="padding: 10px 15px; border-bottom: 1px solid var(--rz-border-color);">
+                        <RadzenIcon Icon="sentiment_satisfied_alt" Style="cursor: pointer; color: var(--rz-text-secondary-color); font-size: 20px;" />
+                        <RadzenIcon Icon="folder_open" Style="cursor: pointer; color: var(--rz-text-secondary-color); font-size: 20px;" />
+                        <RadzenIcon Icon="image" Style="cursor: pointer; color: var(--rz-text-secondary-color); font-size: 20px;" />
+                        <RadzenIcon Icon="content_cut" Style="cursor: pointer; color: var(--rz-text-secondary-color); font-size: 20px;" Click="CaptureScreen" />
+                        <RadzenIcon Icon="history" Style="cursor: pointer; color: var(--rz-text-secondary-color); font-size: 20px;" />
+                    </RadzenStack>
+
+                    <!-- TextArea -->
+                    <RadzenTextArea @bind-Value="_msgContent" Rows="4" Style="width: 100%; border: none; box-shadow: none; padding: 10px 15px; resize: none;" 
+                                  Placeholder="请输入内容..." @onkeydown="HandleKeyPress" />
+                    
+                    <!-- Footer Send Button -->
+                    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center" Style="padding: 5px 15px 10px;">
+                        <RadzenText Text="按Ctrl + Enter换行" TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);" />
+                        <RadzenButton Text="发送 (Enter)" Click="Send" IsBusy="@_sending" ButtonStyle="ButtonStyle.Warning" Size="ButtonSize.Small" Style="padding-left: 20px; padding-right: 20px;" />
+                    </RadzenStack>
+                </div>
+            </RadzenStack>
+        }
+    }
+    @* 场景三：群聊（或其它） *@
+    else
+    {
+        <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="height: 100%;">
+            <RadzenText Text="请选择群聊会话" TextStyle="TextStyle.Body1" Style="color:var(--rz-text-secondary-color);" />
+        </RadzenStack>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string ActiveTab { get; set; } = "chats";
+
+    [Parameter]
+    public EventCallback<string> ActiveTabChanged { get; set; }
+
+    private string _msgContent = "";
+    private bool _sending = false;
+
+    protected override void OnInitialized()
+    {
+        Store.OnChange += HandleStoreChange;
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleStoreChange;
+    }
+
+    private void HandleStoreChange()
+    {
+        InvokeAsync(async () =>
+        {
+            StateHasChanged();
+            await ScrollToBottom();
+        });
+    }
+
+    private string ContextAvatar()
+    {
+        if (Store.SelectedContact != null) return Store.SelectedContact.avatar ?? "images/default-avatar.png";
+        if (Store.SelectedConversation != null) return Store.SelectedConversation.displayAvatar ?? "images/default-avatar.png";
+        return "images/default-avatar.png";
+    }
+
+    private bool IsMyMessage(Message msg)
+    {
+        var myWxid = Store.SelectedDevice?.wx?.wechatAccount?.wxid;
+        
+        // 优先根据实际 WXID 判断真理
+        if (!string.IsNullOrEmpty(myWxid) && !string.IsNullOrEmpty(msg.senderWxid))
+        {
+            if (msg.senderWxid == myWxid) return true;
+        }
+        
+        // 兜底降级：依靠由于某些原因缺失 senderWxid 但是设定了 direction 的情况
+        if (msg.direction == 1) return true;
+
+        // 以上皆不满足，则判定为对方消息
+        return false;
+    }
+
+    private async Task CaptureScreen()
+    {
+        if (Store.SelectedDevice == null) return;
+        await Store.RequestScreenShotAsync(Store.SelectedDevice.uuid);
+        NoticeService.Notify(NotificationSeverity.Info, "Screenshot Requested");
+    }
+
+    private async Task Send()
+    {
+        if (string.IsNullOrWhiteSpace(_msgContent) || Store.SelectedDevice == null || (Store.SelectedContact == null && Store.SelectedConversation == null)) return;
+
+        _sending = true;
+        var result = await Store.SendMessageAsync(_msgContent);
+        if (result)
+        {
+            _msgContent = "";
+        }
+        else
+        {
+            NoticeService.Notify(NotificationSeverity.Error, "Failed to send", "消息发送失败");
+        }
+        _sending = false;
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.CtrlKey && (e.Key == "Enter" || e.Key == "NumpadEnter"))
+        {
+            await Send();
+        }
+    }
+
+    private async Task ScrollToBottom()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("eval", "const el = document.getElementById('im-chat-box'); if(el) el.scrollTop = el.scrollHeight;");
+        }
+        catch { }
+    }
+
+    private async Task StartChatWithContact()
+    {
+        if (Store.SelectedContact == null || Store.SelectedDevice == null) return;
+    
+        var contact = Store.SelectedContact;
+    
+        ActiveTab = "chats";
+        await ActiveTabChanged.InvokeAsync("chats");
+    
+        var conv = Store.Conversations.FirstOrDefault(c => c.conversationWxid == contact.wxid);
+    
+        if (conv == null)
+        {
+            conv = new Conversation
+            {
+                wechatAccountId = Store.SelectedDevice.weChatId ?? string.Empty,
+                conversationWxid = contact.wxid,
+                displayName = string.IsNullOrEmpty(contact.remarks) ? contact.nickname ?? contact.wxid : contact.remarks,
+                displayAvatar = string.IsNullOrEmpty(contact.avatar) ? "images/default-avatar.png" : contact.avatar,
+                conversationType = 1,
+                lastMessageTime = DateTime.UtcNow,
+                lastMessageContent = string.Empty
+            };
+    
+            Store.Conversations.Insert(0, conv);
+        }
+    
+        await Store.SelectConversationAsync(conv);
+    }
+}

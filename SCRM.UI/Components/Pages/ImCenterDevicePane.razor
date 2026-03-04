@@ -1,0 +1,96 @@
+@using SCRM.UI.Services
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject DialogService DialogService
+@implements IDisposable
+
+<RadzenListBox Data="@Store.Devices" Value="@Store.SelectedDevice" TValue="SrClient"
+               Change="@(EventCallback.Factory.Create<object>(this, OnDeviceChange))"
+               Style="height: 100%; width: 100%; border: none; text-align: center;"
+               Class="im-device-list">
+    <Template Context="device">
+        @{
+            bool isDeviceOnline = device.isOnline;
+            bool isWxOnline = isDeviceOnline && (device.wx?.wechatAccount?.accountStatus == 1);
+            
+            string dotColor = !isDeviceOnline ? ColorOffline : (isWxOnline ? ColorWxOnline : ColorWxPending);
+            string statusText = !isDeviceOnline ? "设备离线" : (isWxOnline ? "微信在线" : "微信未登录");
+            string avatarStyle = isWxOnline ? "" : "filter: grayscale(100%); opacity: 0.6;";
+        }
+        <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="2px" Style="width: 100%; overflow: hidden; padding-top: 5px; padding-bottom: 5px; position: relative;">
+            <!-- Device Settings Gear Icon -->
+            <div style="position: absolute; right: 4px; top: 4px; z-index: 10;" title="设备控制">
+                <span class="rz-color-tertiary" style="cursor:pointer;" 
+                      @onclick:stopPropagation="true" 
+                      @onclick="@((args) => OpenDeviceControl(device))">
+                    <RadzenIcon Icon="settings" Style="font-size: 14px;" />
+                </span>
+            </div>
+
+            <div title="@($"{device.wx?.wechatAccount?.nickname ?? device.device?.PhoneModel ?? "Device"} ({statusText})")" 
+                 style="position: relative; display: inline-block;">
+                 
+                @if (!string.IsNullOrEmpty(device.wx?.wechatAccount?.avatarUrl))
+                {
+                    <RadzenImage Path="@device.wx?.wechatAccount?.avatarUrl" Style="@($"width: 40px; height: 40px; border-radius: 6px; object-fit: cover; {avatarStyle}")" />
+                }
+                else
+                {
+                    <RadzenIcon Icon="smartphone" Style="@($"font-size: 24px; width: 40px; height: 40px; background-color: var(--rz-base-200); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--rz-text-secondary-color); {avatarStyle}")" />
+                }
+                
+                <span class="device-status-dot" style="background-color: @dotColor;"></span>
+            </div>
+
+            <RadzenText TextStyle="TextStyle.Caption" Style="@($"color: {(isWxOnline ? "var(--rz-text-title-color)" : "var(--rz-text-secondary-color)")}; font-size: 10px; line-height: 1.2; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;")" 
+                        Text="@(string.IsNullOrEmpty(device.wx?.wechatAccount?.nickname) ? (string.IsNullOrEmpty(device.wx?.wechatAccount?.wxid ?? device.weChatId) ? "未关联" : $"未知微信({device.wx?.wechatAccount?.wxid ?? device.weChatId})") : device.wx?.wechatAccount?.nickname)" />
+            @if (!isWxOnline)
+            {
+                <RadzenText TextStyle="TextStyle.Caption" Style="@($"color: {dotColor}; font-size: 9px; line-height: 1; margin-top: -2px;")" Text="@statusText" />
+            }
+        </RadzenStack>
+    </Template>
+</RadzenListBox>
+
+@code {
+    private const string ColorOffline = "var(--rz-danger)";
+    private const string ColorWxOnline = "var(--rz-success)";
+    private const string ColorWxPending = "var(--rz-warning)";
+
+    protected override void OnInitialized()
+    {
+        Store.OnChange += HandleStoreChange;
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleStoreChange;
+    }
+
+    private void HandleStoreChange()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    private async Task OnDeviceChange(object value)
+    {
+        if (value is SrClient device)
+        {
+            await Store.SelectDeviceAsync(device);
+        }
+    }
+
+    private async Task OpenDeviceControl(SrClient? device = null)
+    {
+        var target = device ?? Store.SelectedDevice;
+        if (target == null) return;
+        
+        await DialogService.OpenAsync<SCRM.UI.Components.Dialogs.DeviceControlDialog>(
+            $"Device Control: {target?.wx?.wechatAccount?.nickname}",
+            new Dictionary<string, object>() { { "Device", target } },
+            new DialogOptions() { Width = "700px", Height = "auto", Resizable = true, Draggable = true });
+    }
+}

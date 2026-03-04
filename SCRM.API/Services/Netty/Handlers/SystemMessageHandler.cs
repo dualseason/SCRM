@@ -14,6 +14,9 @@ using SCRM.Services.Events;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Collections.Concurrent;
+using System.Threading;
+using Microsoft.Extensions.Configuration;
 
 using SCRM.API.Services.Netty.Handlers.Abstractions;
 using SCRM.API.Services.Data;
@@ -37,17 +40,74 @@ namespace SCRM.API.Services.Netty.Handlers
         private readonly ApplicationDbContext _db;
         private readonly ConnectionManager _connectionManager;
         private readonly IEventBus _eventBus;
+        private readonly int _debounceSeconds;
+
+        private static readonly ConcurrentDictionary<string, long> _onlineDebounceUntilTicks = new();
+        private static int _debounceCleanupCounter = 0;
 
         public SystemMessageHandler(
             ILogger<SystemMessageHandler> logger,
             ApplicationDbContext db,
             ConnectionManager connectionManager,
-            IEventBus eventBus) : base(logger)
+            IEventBus eventBus,
+            IConfiguration config) : base(logger)
         {
             _logger = logger;
             _db = db;
             _connectionManager = connectionManager;
             _eventBus = eventBus;
+            _debounceSeconds = config.GetValue<int>("WeChatOnlineDebounceSeconds", 15);
+        }
+
+        private static bool TryEnterDebounceWindow(string key, int debounceSeconds)
+        {
+            var nowTicks = DateTime.UtcNow.Ticks;
+            var untilTicks = nowTicks + TimeSpan.FromSeconds(debounceSeconds).Ticks;
+
+            while (true)
+            {
+                if (_onlineDebounceUntilTicks.TryGetValue(key, out var oldUntil))
+                {
+                    if (oldUntil > nowTicks) return false;
+
+                    if (_onlineDebounceUntilTicks.TryUpdate(key, untilTicks, oldUntil))
+                        return true;
+
+                    continue;
+                }
+
+                if (_onlineDebounceUntilTicks.TryAdd(key, untilTicks))
+                    return true;
+            }
+        }
+
+        private static void CleanupDebounceCacheIfNeeded()
+        {
+            if ((Interlocked.Increment(ref _debounceCleanupCounter) & 0xFF) != 0) return;
+
+            var nowTicks = DateTime.UtcNow.Ticks;
+            foreach (var kv in _onlineDebounceUntilTicks)
+            {
+                if (kv.Value <= nowTicks)
+                    _onlineDebounceUntilTicks.TryRemove(kv.Key, out _);
+            }
+        }
+
+        private void SafeFireAndForget(Task task, string eventName, string deviceUuid, string wxid)
+        {
+            task.ContinueWith(t =>
+            {
+                try
+                {
+                    if (t.Exception != null)
+                    {
+                        _logger.LogError(t.Exception,
+                            "[EventBus] 事件发布失败: {EventName}, Device={Device}, WxId={WxId}",
+                            eventName, deviceUuid, wxid);
+                    }
+                }
+                catch { }
+            }, CancellationToken.None, TaskContinuationOptions.OnlyOnFaulted, TaskScheduler.Default);
         }
 
         public async Task HandleMessage(TransportMessage message, IChannelHandlerContext context)
@@ -92,6 +152,21 @@ namespace SCRM.API.Services.Netty.Handlers
 
             _logger.LogInformation("WeChat Online: {WxId}, Device: {Uuid}", wechatId, deviceUuid);
 
+            // 第一道门：单实例并发防抖拦截
+            if (!string.IsNullOrEmpty(deviceUuid) && !string.IsNullOrEmpty(notice.WeChatId))
+            {
+                var debounceKey = $"wx_online:{deviceUuid}:{notice.WeChatId}";
+                CleanupDebounceCacheIfNeeded();
+
+                if (!TryEnterDebounceWindow(debounceKey, _debounceSeconds))
+                {
+                    _logger.LogWarning("[防抖拦截] Device={Device}, WxId={WxId}, Window={Sec}s",
+                        deviceUuid, notice.WeChatId, _debounceSeconds);
+                    await SendAckAsync(message, context); // 拦截后也要回复 ACK
+                    return;
+                }
+            }
+
 
             if (!string.IsNullOrEmpty(deviceUuid))
             {
@@ -119,6 +194,9 @@ namespace SCRM.API.Services.Netty.Handlers
 
                     var account = srClient.wx.wechatAccount;
 
+                    // [Fix] 根据审核建议：记录旧状态，基于真实的状态翻转(Offline -> Online)来进行判定
+                    bool wasOnline = account.accountStatus == 1;
+
                     // Update Mapping
                     account.wxid = notice.WeChatId;
                     account.nickname = notice.WeChatNick;
@@ -141,40 +219,51 @@ namespace SCRM.API.Services.Netty.Handlers
                     await DbHelper.SaveWechatAccount(_db, account);
                     await DbHelper.SaveSrClient(_db, srClient);
 
-                    // New Event: WeChat Online (Rich Data)
-                    _eventBus.PublishAsync(new WeChatOnlineEvent(
-                        deviceUuid, 
-                        account.wxid, 
-                        account.nickname, 
-                        account.wxid, // Use WxId as AccountId
-                        account.ownerId
-                    ));
-
-                    // [Fix] Trigger Contact Sync (Real-time)
-                    // Configured SystemHandler to trigger this because AuthHandler no longer assumes login status.
-                    try 
+                    if (!wasOnline)
                     {
-                        var syncMsg = new TransportMessage
+                        // 第二道门：仅真实状态翻转 (Offline -> Online) 时才发布核心事件与触发业务
+                        // New Event: WeChat Online (Rich Data) - 仅状态翻转时发布，防止心跳周期引发的事件风暴
+                        SafeFireAndForget(
+                            _eventBus.PublishAsync(new WeChatOnlineEvent(
+                                deviceUuid, 
+                                account.wxid, 
+                                account.nickname, 
+                                account.wxid, // Use WxId as AccountId
+                                account.ownerId
+                            )),
+                            "WeChatOnlineEvent", deviceUuid, account.wxid);
+
+                        // [Fix] Trigger Contact Sync (Real-time) - 仅真首登/断线重连时下发拉取指令
+                        try 
                         {
-                            MsgType = EnumMsgType.TriggerFriendPushTask,
-                            Content = Any.Pack(new TriggerFriendPushTaskMessage
+                            var syncMsg = new TransportMessage
                             {
-                                WeChatId = account.wxid,
-                                TaskId = DateTime.Now.Ticks
-                            })
-                        };
-                        await context.WriteAndFlushAsync(syncMsg);
-                        _logger.LogInformation("[业务同步] 收到设备({Device})微信上线通知({WxId})，已触发联系人同步指令。", deviceUuid, account.wxid);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Failed to trigger friend sync after WeChat online notice.");
-                    }
+                                MsgType = EnumMsgType.TriggerFriendPushTask,
+                                Content = Any.Pack(new TriggerFriendPushTaskMessage
+                                {
+                                    WeChatId = account.wxid,
+                                    TaskId = DateTime.Now.Ticks
+                                })
+                            };
+                            await context.WriteAndFlushAsync(syncMsg);
+                            _logger.LogInformation("[业务同步] 收到设备({Device})首次/重连微信上线通知({WxId})，已触发联系人同步指令。", deviceUuid, account.wxid);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, "Failed to trigger friend sync after WeChat online notice.");
+                        }
 
-                    _eventBus.PublishAsync(new DeviceConnectedEvent(deviceUuid, account.wxid, account.wxid, account.ownerId)
+                        SafeFireAndForget(
+                            _eventBus.PublishAsync(new DeviceConnectedEvent(deviceUuid, account.wxid, account.wxid, account.ownerId)
+                            {
+                                connectionId = connId
+                            }),
+                            "DeviceConnectedEvent", deviceUuid, account.wxid);
+                    }
+                    else
                     {
-                        connectionId = connId
-                    });
+                        _logger.LogInformation("[业务同步] 设备({Device})微信({WxId})心跳上线通知，已跳过下发联系人同步与在线事件重复发布。", deviceUuid, account.wxid);
+                    }
                 }
 
 
@@ -207,12 +296,15 @@ namespace SCRM.API.Services.Netty.Handlers
                 var account = await _db.WechatAccounts.FirstOrDefaultAsync(a => a.clientUuid == deviceUuid);
                 if (account != null)
                 {
-                    // account.isOnline = false; // Read-only
-                    account.lastOnlineAt = DateTime.UtcNow;
-                    await _db.SaveChangesAsync();
+                    // [Fix] 离线时明确 accountStatus = 0 (Offline)，并通过 DbHelper 同步更新缓存
+                    account.accountStatus = 0;
+                    account.updatedAt = DateTime.UtcNow;
+                    await DbHelper.SaveWechatAccount(_db, account);
                 }
-                // Publish Event
-                _eventBus.PublishAsync(new DeviceStatusChangedEvent(deviceUuid, false));
+                // Publish Event: 只发布微信下线事件，设备的红点掉线走底层TCP断开逻辑
+                SafeFireAndForget(
+                    _eventBus.PublishAsync(new WeChatOfflineEvent(deviceUuid)),
+                    "WeChatOfflineEvent", deviceUuid, "Offline");
             }
 
             await SendAckAsync(message, context);

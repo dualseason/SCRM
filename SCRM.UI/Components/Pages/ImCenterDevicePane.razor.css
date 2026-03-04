@@ -1,0 +1,16 @@
+/* ImCenterDevicePane.razor.css */
+
+.im-device-list .rz-listbox-item {
+    padding: 5px !important;
+    justify-content: center;
+}
+
+.device-status-dot {
+    position: absolute;
+    bottom: -2px;
+    right: -2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 2px solid white;
+}

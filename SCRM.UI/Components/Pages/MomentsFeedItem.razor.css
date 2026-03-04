@@ -1,0 +1,19 @@
+.moments-images-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    max-width: 300px;
+}
+
+.image-item {
+    aspect-ratio: 1; 
+    overflow: hidden;
+    border-radius: 4px;
+    background: var(--rz-base-200);
+}
+
+@media (max-width: 768px) {
+    .moments-images-grid {
+        max-width: 100%;
+    }
+}

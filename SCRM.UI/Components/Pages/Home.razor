@@ -5,23 +5,25 @@
 @attribute [Authorize]
 @inject CrmStore Store
 
-<h1>Device Management</h1>
+<RadzenStack Gap="1rem" class="rz-p-4">
+    <RadzenText TextStyle="TextStyle.H3" TagName="TagName.H1" class="rz-mb-0">Device Management</RadzenText>
 
-<RadzenCard>
-    <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Device List</RadzenText>
-    <RadzenDataGrid Data="@devices" TItem="SrClient" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true" IsLoading="@isLoading">
-        <Columns>
-            <RadzenDataGridColumn TItem="SrClient" Property="uuid" Title="UUID" Width="200px" />
-            <RadzenDataGridColumn TItem="SrClient" Title="Device Name">
-                <Template Context="data">
-                    @($"{data.device?.PhoneBrand} {data.device?.PhoneModel}")
-                </Template>
-            </RadzenDataGridColumn>
-            <RadzenDataGridColumn TItem="SrClient" Property="isOnline" Title="Online" />
-            <RadzenDataGridColumn TItem="SrClient" Property="createdAt" Title="Created At" FormatString="{0:d}" />
-        </Columns>
-    </RadzenDataGrid>
-</RadzenCard>
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Device List</RadzenText>
+        <RadzenDataGrid Data="@devices" TItem="SrClient" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true" IsLoading="@isLoading">
+            <Columns>
+                <RadzenDataGridColumn TItem="SrClient" Property="uuid" Title="UUID" Width="200px" />
+                <RadzenDataGridColumn TItem="SrClient" Title="Device Name">
+                    <Template Context="data">
+                        @($"{data.device?.PhoneBrand} {data.device?.PhoneModel}")
+                    </Template>
+                </RadzenDataGridColumn>
+                <RadzenDataGridColumn TItem="SrClient" Property="isOnline" Title="Online" />
+                <RadzenDataGridColumn TItem="SrClient" Property="createdAt" Title="Created At" FormatString="{0:d}" />
+            </Columns>
+        </RadzenDataGrid>
+    </RadzenCard>
+</RadzenStack>
 
 @code {
     IEnumerable<SrClient> devices;

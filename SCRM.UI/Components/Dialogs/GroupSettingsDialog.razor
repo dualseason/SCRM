@@ -21,7 +21,7 @@
              <RadzenTextBox @bind-Value="inviteWxid" Placeholder="Friend Wxid to Invite" Style="flex: 1;" />
              <RadzenButton Text="Invite" Icon="person_add" ButtonStyle="ButtonStyle.Secondary" Click="@InviteMember" Disabled="@string.IsNullOrWhiteSpace(inviteWxid)" />
         </div>
-        <RadzenText TextStyle="TextStyle.Caption" Style="color: #888;">Enter the Wxid of the friend you want to invite.</RadzenText>
+        <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">Enter the Wxid of the friend you want to invite.</RadzenText>
     </RadzenCard>
 </div>
 

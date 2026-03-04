@@ -108,6 +108,27 @@ namespace SCRM.API.Services.Events
                  });
             }
 
+            if (eventName == "OnWeChatOffline" && typeof(T) == typeof(WeChatOfflineEvent))
+            {
+                 return _eventBus.Subscribe<WeChatOfflineEvent>(async e => 
+                 {
+                     if (handler is Action<WeChatOfflineEvent> typedHandler)
+                     {
+                         typedHandler(e);
+                     }
+                     await Task.CompletedTask;
+                 });
+            }
+
+            if (eventName == "OnMessageReceived" && typeof(T) == typeof(Message))
+            {
+                 if (handler is Action<Message> msgHandler)
+                 {
+                     return SubscribeToMessages(msgHandler);
+                 }
+                 return _emptyDisposable;
+            }
+
             // Return empty disposable instead of null to prevent null reference exceptions in caller 'using' blocks
             return _emptyDisposable; 
         }
@@ -120,6 +141,23 @@ namespace SCRM.API.Services.Events
             return _eventBus.Subscribe<ContactsReceivedEvent>(async e => 
             {
                 handler?.Invoke(e.accountId);
+                await Task.CompletedTask;
+            });
+        }
+
+        /// <summary>
+        /// 订阅消息到达事件
+        /// </summary>
+        public IDisposable SubscribeToMessages(Action<Message> handler)
+        {
+            if (handler == null) return _emptyDisposable;
+
+            return _eventBus.Subscribe<MessageReceivedEvent>(async e => 
+            {
+                if (e?.message is Message msg)
+                {
+                    handler(msg);
+                }
                 await Task.CompletedTask;
             });
         }

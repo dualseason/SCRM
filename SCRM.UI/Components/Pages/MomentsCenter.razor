@@ -10,12 +10,20 @@
 
 <PageTitle>朋友圈</PageTitle>
 
-<div class="moments-layout" style="height: calc(100vh - 50px); display: flex; overflow: hidden;">
-    <div class="device-sider" style="width: 80px; background: #2e2e2e; flex-shrink: 0; overflow-y: auto;">
+<RadzenRow Gap="0" Style="height: calc(100vh - 56px); margin: 0; background: var(--rz-base-100); overflow: hidden;">
+    @* Device List Sider *@
+    <RadzenColumn Size="3" SizeMD="2" Style="background: var(--rz-base-0); border-right: 1px solid var(--rz-border-color); overflow-y: auto;">
          <RadzenListBox Data="@Store.Devices" Value="@Store.SelectedDevice" TValue="SrClient"
                        Change="@(EventCallback.Factory.Create<object>(this, OnDeviceChange))"
                        Style="height: 100%; width: 100%; border: none; text-align: center; background-color: transparent;">
             <Template Context="device">
+                @{
+                    bool isDeviceOnline = device.isOnline;
+                    bool isWxOnline = isDeviceOnline && (device.wx?.wechatAccount?.accountStatus == 1);
+                    string dotColor = !isDeviceOnline ? "var(--rz-danger)" : (isWxOnline ? "var(--rz-success)" : "var(--rz-warning)");
+                    string statusText = !isDeviceOnline ? "离线" : (isWxOnline ? "微信在线" : "设备在线");
+                    string statusColor = dotColor;
+                }
                 <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="2px" Style="width: 100%; overflow: hidden; padding-top: 5px; padding-bottom: 5px;">
                     <div title="@(device.wx?.wechatAccount?.nickname ?? device.device?.PhoneModel ?? "Device")" style="position: relative; display: inline-block;">
                         @if (!string.IsNullOrEmpty(device.wx?.wechatAccount?.avatarUrl))
@@ -24,14 +32,14 @@
                         }
                         else
                         {
-                            <RadzenIcon Icon="smartphone" Style="font-size: 24px; width: 40px; height: 40px; background-color: #f0f0f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #999;" />
+                            <RadzenIcon Icon="smartphone" Style="font-size: 24px; width: 40px; height: 40px; background-color: var(--rz-base-200); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--rz-text-secondary-color);" />
                         }
                         
-                        <span style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid #2e2e2e; background-color: @( (device.wx?.isOnline ?? false) ? "#52c41a" : (device.isOnline ? "#faad14" : "#ff4d4f") );"></span>
+                        <span style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--rz-base-0); background-color: @dotColor;"></span>
                     </div>
 
-                    <RadzenText TextStyle="TextStyle.Caption" Style="@($"font-size: 10px; line-height: 1.2; font-weight: bold; color: {((device.wx?.isOnline ?? false) ? "#52c41a" : "#ff4d4f")}")">
-                        @((device.wx?.isOnline ?? false) ? "在线" : "离线")
+                    <RadzenText TextStyle="TextStyle.Caption" Style="@($"font-size: 10px; line-height: 1.2; font-weight: bold; color: {statusColor}")">
+                        @statusText
                     </RadzenText>
 
                     <RadzenText TextStyle="TextStyle.Caption" Style="font-size: 10px; line-height: 1.2; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;" 
@@ -39,28 +47,29 @@
                 </RadzenStack>
             </Template>
         </RadzenListBox>
-    </div>
+    </RadzenColumn>
 
-    <div class="feed-content" style="flex: 1; background: #f0f2f5; padding: 1rem; overflow-y: auto; height: 100%;">
+    @* Feed Content *@
+    <RadzenColumn Size="9" SizeMD="10" Style="padding: 1rem; overflow-y: auto; height: 100%;">
         <div class="feed-container" style="max-width: 600px; margin: 0 auto;">
             @if (Store.SelectedDevice == null)
             {
-                <RadzenCard Class="rz-p-5 rz-text-align-center">
+                <RadzenCard Class="rz-p-5 rz-text-align-center" Style="background: var(--rz-base-0);">
                     <RadzenIcon Icon="smartphone" Style="font-size: 3rem; color: var(--rz-text-disabled-color);" />
-                    <RadzenText TextStyle="TextStyle.Body1" Class="rz-mt-4">请选择一个设备以查看朋友圈</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body1" Class="rz-mt-4" Style="color: var(--rz-text-secondary-color);">请选择一个设备以查看朋友圈</RadzenText>
                 </RadzenCard>
             }
             else
             {
                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4">
-                    <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">@Store.SelectedDevice.wx?.wechatAccount?.nickname 的朋友圈</RadzenText>
+                    <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0" Style="color: var(--rz-text-title-color);">@Store.SelectedDevice.wx?.wechatAccount?.nickname 的朋友圈</RadzenText>
                      <RadzenButton Text="同步朋友圈" Icon="sync" Click="SyncMoments" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
                 </RadzenStack>
 
                 @if (Store.CurrentMoments.Count == 0)
                 {
-                     <RadzenCard Class="rz-p-5 rz-text-align-center">
-                        <RadzenText TextStyle="TextStyle.Body1">暂无朋友圈数据，请点击“同步”</RadzenText>
+                     <RadzenCard Class="rz-p-5 rz-text-align-center" Style="background: var(--rz-base-0);">
+                        <RadzenText TextStyle="TextStyle.Body1" Style="color: var(--rz-text-secondary-color);">暂无朋友圈数据，请点击“同步”</RadzenText>
                     </RadzenCard>
                 }
                 else
@@ -74,8 +83,8 @@
                 }
             }
         </div>
-    </div>
-</div>
+    </RadzenColumn>
+</RadzenRow>
 
 @code {
     protected override void OnInitialized()
