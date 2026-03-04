@@ -67,7 +67,7 @@
                             <RadzenStack Orientation="Orientation.Vertical"
                                          AlignItems="@(isMine ? AlignItems.End : AlignItems.Start)"
                                          Style="max-width: 70%;">
-                                <RadzenImage Path="@(isMine ? (Store.SelectedDevice?.wx?.wechatAccount?.avatarUrl ?? "images/default-avatar.png") : ContextAvatar())"
+                                <RadzenImage Path="@(isMine ? (string.IsNullOrEmpty(Store.SelectedDevice?.wx?.wechatAccount?.avatarUrl) ? "images/default-avatar.png" : Store.SelectedDevice.wx.wechatAccount.avatarUrl) : ContextAvatar())"
                                              Style="width:36px; height:36px; border-radius: 4px; margin-bottom: 6px;" />
 
                                 <RadzenCard Style="@($"max-width: 100%; padding: 8px 12px; border-radius: 4px; position: relative; font-size: 14px; line-height: 1.5; background-color: {(isMine ? "var(--rz-primary-light)" : "var(--rz-base-0)")}; border: {(isMine ? "none" : "1px solid var(--rz-border-color)")}; box-shadow: none;")">
