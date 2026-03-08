@@ -92,6 +92,11 @@ namespace SCRM.Services.Netty
                 // 远程主机强迫关闭了一个现有的连接 - 常见网络波动或强制关闭
                 _logger.LogDebug("Connection reset by client {RemoteAddress} (10054)", ctx.Channel.RemoteAddress);
             }
+            else if (cause is DotNetty.Codecs.TooLongFrameException || cause is DotNetty.Codecs.CorruptedFrameException)
+            {
+                // HTTP/探针强行嗅探 TCP 端口，或发送了过大的数据包
+                _logger.LogWarning("[TCP防刷] 拦截到异常格式探测或过长报文，已主动断开非法连接: {RemoteAddress}. 原因: {Message}", ctx.Channel.RemoteAddress, cause.Message);
+            }
             else
             {
                 _logger.LogError(cause, "Exception in Netty handler from {RemoteAddress}", ctx.Channel.RemoteAddress);

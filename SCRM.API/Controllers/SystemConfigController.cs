@@ -146,9 +146,15 @@ namespace SCRM.API.Controllers
                 var value = prop.GetValue(model)?.ToString() ?? "";
                 if (prop.PropertyType == typeof(bool)) value = value.ToLower();
 
+                string pushKey = prop.Name;
+                // 【修改：服务端批量推送统一键名映射】
+                // 过滤为客户端真实运行时所消费的键名
+                if (pushKey == "httpApiBaseUrl") pushKey = "apiBaseUrl";
+                else if (pushKey == "port") pushKey = "server_port";
+
                 updates.Add(new SystemConfig 
                 { 
-                    key = prop.Name, 
+                    key = pushKey, 
                     value = value 
                 });
             }

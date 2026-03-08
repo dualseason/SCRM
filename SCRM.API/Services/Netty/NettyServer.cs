@@ -103,7 +103,7 @@ namespace SCRM.Services.Netty
                 if (Port <= 0)
                 {
                     _logger.LogError("以前的端口配置无效 (Port={Port}). Defaulting to 8647", Port);
-                    this.Port = 8647;
+                    this.Port = 42719;
                 }
 
                 _logger.LogInformation("正在启动 Netty 服务器，绑定端口: {Port}", Port); // Simplified log

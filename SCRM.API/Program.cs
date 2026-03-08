@@ -392,18 +392,23 @@ public partial class Program
         app.MapBlazorHub();
         app.MapFallbackToPage("/_Host");
 
-        // Initialize Seed Data
+        // Initialize Seed Data and ensure DB exists + migrated
         using (var scope = app.Services.CreateScope())
         {
             var services = scope.ServiceProvider;
             try
             {
+                var dbContext = services.GetRequiredService<ApplicationDbContext>();
+                
+                // 强制优先建立表结构和执行所有堆积的 Migration
+                dbContext.Database.Migrate();
+
                 SCRM.API.Data.SeedData.InitializeAsync(services).Wait();
             }
             catch (Exception ex)
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
-                logger.LogError(ex, "An error occurred seeding the DB.");
+                logger.LogError(ex, "An error occurred seeding the DB or during migration.");
             }
         }
 

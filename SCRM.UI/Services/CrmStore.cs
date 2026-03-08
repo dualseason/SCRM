@@ -239,6 +239,12 @@ namespace SCRM.UI.Services
 
             // 3. 【关键】按需加载联系人
             // 如果联系人列表是空的，并且设备已登录(有WeChatId)，则去服务器拉取
+            SelectedConversation = null;
+            SelectedContact = null;
+            CurrentMessages = new List<Message>();
+            Conversations = new List<Conversation>();
+            Contacts = new List<Contact>();
+
             if ((SelectedDevice.wx.contacts == null || !SelectedDevice.wx.contacts.Any())
                 && !string.IsNullOrEmpty(device.weChatId))
             {
@@ -249,6 +255,7 @@ namespace SCRM.UI.Services
                     // 调用 Service 从 API 获取联系人
                     var contacts = await _service.GetContactsAsync(device.weChatId);
                     SelectedDevice.wx.contacts = contacts;
+                    Contacts = contacts;
                 }
                 catch (Exception ex)
                 {
@@ -293,9 +300,16 @@ namespace SCRM.UI.Services
         public async Task SelectConversationAsync(Conversation conversation) 
         { 
             SelectedConversation = conversation;
-            if (conversation != null)
+            if (conversation != null && !string.IsNullOrWhiteSpace(conversation.wechatAccountId))
             {
-                CurrentMessages = await _service.GetMessagesAsync(conversation.conversationWxid, 50);
+                CurrentMessages = await _service.GetMessagesAsync(
+                    conversation.wechatAccountId,
+                    conversation.conversationWxid,
+                    50);
+            }
+            else
+            {
+                CurrentMessages = new List<Message>();
             }
             NotifyStateChanged();
         }
@@ -305,7 +319,7 @@ namespace SCRM.UI.Services
             NotifyStateChanged();
             return Task.CompletedTask; 
         }
-        public async Task<bool> SendMessageAsync(string content) 
+        public async Task<bool> SendMessageAsync(string content, int type = 1) 
         { 
             // AntiGravity Fix: Support sending to Contact directly (Conversation might be null)
             string targetWxid = "";
@@ -335,13 +349,21 @@ namespace SCRM.UI.Services
                  return false;
             }
             
-            var success = await _service.SendMessageAsync(deviceUuid, targetWxid, content);
+            var success = await _service.SendMessageAsync(deviceUuid, targetWxid, content, type);
             if (success)
             {
                 // Optimistic UI Update or Wait for Event
                 // For now, reload messages
-                 CurrentMessages = await _service.GetMessagesAsync(targetWxid, 50);
-                 NotifyStateChanged();
+                var accountId = SelectedConversation?.wechatAccountId ?? SelectedDevice?.weChatId ?? "";
+                if (!string.IsNullOrWhiteSpace(accountId))
+                {
+                    CurrentMessages = await _service.GetMessagesAsync(accountId, targetWxid, 50);
+                }
+                else
+                {
+                    CurrentMessages = new List<Message>();
+                }
+                NotifyStateChanged();
             }
             return success;
         }
@@ -352,7 +374,7 @@ namespace SCRM.UI.Services
         public async Task LoadConversationsAsync(long accountId) 
         {
              // For now load all, can filter by accountId later
-             Conversations = await _service.GetConversationsAsync();
+             Conversations = await _service.GetConversationsAsync(accountId.ToString());
              NotifyStateChanged();
         }
         public Task ExecuteGroupActionAsync(string chatRoomId, int action, string content, int intValue = 0) { return Task.CompletedTask; }
@@ -360,7 +382,15 @@ namespace SCRM.UI.Services
         public Task DeleteCurrentContactAsync() { return Task.CompletedTask; }
         public async Task SyncContactsAsync() 
         { 
-            Contacts = await _service.GetContactsAsync();
+            var accountId = SelectedDevice?.weChatId;
+            if (string.IsNullOrWhiteSpace(accountId))
+            {
+                Contacts = new List<Contact>();
+            }
+            else
+            {
+                Contacts = await _service.GetContactsAsync(accountId);
+            }
             NotifyStateChanged();
         }
         public Task SyncChatRoomsAsync() { return Task.CompletedTask; }

@@ -92,9 +92,9 @@ namespace SCRM.Controllers.Auth
                     }
                 }
 
-                // 严格从数据库获取配置
-                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost");
-                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port");
+                // 严格从数据库获取配置（增加别名回退防脱钩）
+                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost") ?? await _configService.GetConfigByKeyAsync("host");
+                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port") ?? await _configService.GetConfigByKeyAsync("tcpServerPort") ?? await _configService.GetConfigByKeyAsync("port");
                 string tcpHost = tcpHostCfg?.value ?? "";
                 int tcpPort = 0;
                 if (tcpPortCfg != null) int.TryParse(tcpPortCfg.value, out tcpPort);
@@ -219,9 +219,9 @@ namespace SCRM.Controllers.Auth
                     return Ok(ApiResponse<SrClient>.Fail(1, "注册码不能为空"));
                 }
 
-                // 严格从数据库获取配置
-                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost");
-                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port");
+                // 严格从数据库获取配置（增加别名回退防脱钩）
+                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost") ?? await _configService.GetConfigByKeyAsync("host");
+                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port") ?? await _configService.GetConfigByKeyAsync("tcpServerPort") ?? await _configService.GetConfigByKeyAsync("port");
                 
                 string tcpHost = tcpHostCfg?.value ?? "";
                 int tcpPort = 0;
@@ -455,9 +455,9 @@ namespace SCRM.Controllers.Auth
                     return Ok(ApiResponse<SrClient>.Fail(1, "用户不存在"));
                 }
 
-                // 严格从数据库获取配置
-                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost");
-                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port");
+                // 严格从数据库获取配置（增加别名回退防脱钩）
+                var tcpHostCfg = await _configService.GetConfigByKeyAsync("tcpServerHost") ?? await _configService.GetConfigByKeyAsync("host");
+                var tcpPortCfg = await _configService.GetConfigByKeyAsync("server_port") ?? await _configService.GetConfigByKeyAsync("tcpServerPort") ?? await _configService.GetConfigByKeyAsync("port");
                 string tcpHost = tcpHostCfg?.value ?? "";
                 int tcpPort = 0;
                 if (tcpPortCfg != null) int.TryParse(tcpPortCfg.value, out tcpPort);

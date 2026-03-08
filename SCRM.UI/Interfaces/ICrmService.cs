@@ -17,11 +17,11 @@ namespace SCRM.Shared.Interfaces
         Task<SrClient?> GetDeviceAsync(string uuid);
 
         // --- 铺开模块: 聊天/联系人 (Phase 3) ---
-        Task<List<Contact>> GetContactsAsync(string? deviceId = null);
-        Task<List<Conversation>> GetConversationsAsync(string? deviceId = null);
+        Task<List<Contact>> GetContactsAsync(string? accountId = null);
+        Task<List<Conversation>> GetConversationsAsync(string? accountId = null);
         
         // Chat
-        Task<List<Message>> GetMessagesAsync(string conversationId, int count = 50);
+        Task<List<Message>> GetMessagesAsync(string accountId, string conversationId, int count = 50);
         /// <summary>
         /// 发送消息
         /// </summary>

@@ -23,7 +23,7 @@ namespace SCRM.API.Services.Core
             _logger = logger;
         }
 
-        public async Task<bool> SendMessageAsync(string deviceUuid, string recipientId, string content)
+        public async Task<bool> SendMessageAsync(string deviceUuid, string recipientId, string content, int type = 1)
         {
             var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
             if (string.IsNullOrEmpty(connectionId))
@@ -33,7 +33,10 @@ namespace SCRM.API.Services.Core
             }
 
             // MsgType: 1070 (TalkToFriendTask)
-            var result = await _clientTaskService.SendTalkToFriendTaskAsync(connectionId, recipientId, content);
+            _logger.LogInformation("SendMessageAsync: Dispatching Task to {RecipientId} with ContentType={Type} ({EnumName})", 
+                recipientId, type, ((EnumContentType)type).ToString());
+                
+            var result = await _clientTaskService.SendTalkToFriendTaskAsync(connectionId, recipientId, content, (EnumContentType)type);
             return result.success;
         }
         

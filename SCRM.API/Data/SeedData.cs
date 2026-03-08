@@ -72,7 +72,7 @@ namespace SCRM.API.Data
 
             var defaults = new Dictionary<string, (string value, string desc)>
             {
-                { "server_port", ("8647", "TCP监听端口 (主数据源: DB)") },
+                { "server_port", ("42719", "TCP监听端口 (主数据源: DB)") },
                 { "tcpServerHost", ("192.168.2.226", "TCP服务器地址 (主数据源: DB. 客户端连接此处)") },
                 { "httpApiBaseUrl", (apiBaseUrl, "API基础URL") },
                 { "autoLogin", ("false", "自动登录") },

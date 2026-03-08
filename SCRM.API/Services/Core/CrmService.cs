@@ -50,29 +50,43 @@ namespace SCRM.API.Services.Core
 
         // --- Phase 3 Implementation ---
         
-        public async Task<List<Contact>> GetContactsAsync(string? deviceId = null)
+        public async Task<List<Contact>> GetContactsAsync(string? accountId = null)
         {
-            var query = _db.Contacts.AsNoTracking();
-            // In a real scenario, filter by deviceId if provided (via associated WechatAccount)
-            // For now return top 100 to check UI
-            return await query.OrderByDescending(c => c.id).Take(100).ToListAsync();
+            if (string.IsNullOrWhiteSpace(accountId))
+            {
+                return new List<Contact>();
+            }
+
+            return await _db.GetContacts(accountId);
         }
 
-        public async Task<List<Conversation>> GetConversationsAsync(string? deviceId = null)
+        public async Task<List<Conversation>> GetConversationsAsync(string? accountId = null)
         {
-             var query = _db.Conversations.AsNoTracking();
-             return await query.OrderByDescending(c => c.lastMessageTime).Take(50).ToListAsync();
+            if (string.IsNullOrWhiteSpace(accountId))
+            {
+                return new List<Conversation>();
+            }
+
+            return await _db.Conversations
+                .AsNoTracking()
+                .Where(c => c.wechatAccountId == accountId && !c.isDeleted)
+                .OrderByDescending(c => c.lastMessageTime)
+                .Take(100)
+                .ToListAsync();
         }
 
-        public async Task<List<Message>> GetMessagesAsync(string conversationId, int count = 50)
+        public async Task<List<Message>> GetMessagesAsync(string accountId, string conversationId, int count = 50)
         {
-            // conversationId is expected to be a WXID (e.g., wxid_... or xxxxx@chatroom)
-            // We need to fetch messages where this WXID is involved.
-            // Note: This simple query might return messages from multiple local accounts if they talk to the same person.
-            // In Phase 4, we should filter by current Account Context.
-            
+            if (string.IsNullOrWhiteSpace(accountId) || string.IsNullOrWhiteSpace(conversationId))
+            {
+                return new List<Message>();
+            }
+
             return await _db.Messages
-                .Where(m => m.senderWxid == conversationId || m.receiverWxid == conversationId)
+                .AsNoTracking()
+                .Where(m => m.accountId == accountId
+                    && (m.senderWxid == conversationId || m.receiverWxid == conversationId)
+                    && !m.isDeleted)
                 .OrderByDescending(m => m.createdAt)
                 .Take(count)
                 .OrderBy(m => m.createdAt)
@@ -85,7 +99,7 @@ namespace SCRM.API.Services.Core
             
             // Delegate to DeviceCommandService (Netty)
             // Assuming ServerDeviceCommandService has SendMessageAsync
-            return await _deviceCommandService.SendMessageAsync(deviceUuid, conversationId, content);
+            return await _deviceCommandService.SendMessageAsync(deviceUuid, conversationId, content, type);
         }
 
         public async Task<bool> RequestScreenShotAsync(string deviceUuid)

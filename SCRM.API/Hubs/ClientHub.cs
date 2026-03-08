@@ -124,12 +124,12 @@ namespace SCRM.API.Hubs
             return await _clientTaskService.SendSyncFriendListTaskAsync(connectionId);
         }
 
-        public async Task<TaskResult> SendMessage(string deviceUuid, string friendWxId, string content)
+        public async Task<TaskResult> SendMessage(string deviceUuid, string friendWxId, string content, int type = 1)
         {
              var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
              if (string.IsNullOrEmpty(connectionId)) return TaskResult.Fail("Device offline");
             // Delegate deeply to ClientTaskService
-            return await _clientTaskService.SendTalkToFriendTaskAsync(connectionId, friendWxId, content);
+            return await _clientTaskService.SendTalkToFriendTaskAsync(connectionId, friendWxId, content, (EnumContentType)type);
         }
 
         public async Task<bool> SyncChatRooms(string deviceUuid)

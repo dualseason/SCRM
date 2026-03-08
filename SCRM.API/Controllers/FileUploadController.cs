@@ -36,11 +36,24 @@ namespace SCRM.API.Controllers
             _eventPublisher = eventPublisher;
         }
 
+        private string SanitizePathToken(string input)
+        {
+            if (string.IsNullOrEmpty(input)) return "unknown";
+            var invalidChars = Path.GetInvalidFileNameChars();
+            foreach (var ch in invalidChars)
+            {
+                input = input.Replace(ch, '_');
+            }
+            return input.Replace("..", "_").Replace("/", "_").Replace("\\", "_");
+        }
+
         [HttpPost("fileUpload")]
         public async Task<IActionResult> fileUpload(
             IFormFile myfile,
             [FromForm] string packageName,
-            [FromForm] string device)
+            [FromForm] string device,
+            [FromForm] string? bizType,
+            [FromForm] string? wechatId)
         {
             try
             {
@@ -51,16 +64,36 @@ namespace SCRM.API.Controllers
                 var storePath = _config["FileUploadSettings:StorePath"];
                 if (string.IsNullOrEmpty(storePath)) storePath = "wwwroot/uploads";
 
+                string subDir = "";
+                if (bizType == "screenshot" || bizType == "log")
+                {
+                    if (!string.IsNullOrEmpty(device))
+                        subDir = $"devices/{SanitizePathToken(device)}/{bizType}";
+                }
+                else if (!string.IsNullOrEmpty(wechatId))
+                {
+                    string subFolder = bizType switch
+                    {
+                        "avatar" => "pic",
+                        "chat_pic" => "pic",
+                        "voice" => "voice",
+                        _ => "files"
+                    };
+                    subDir = $"wx/{SanitizePathToken(wechatId)}/{subFolder}";
+                }
+
                 string uploadPath;
                 if (Path.IsPathRooted(storePath))
                 {
-                    uploadPath = storePath;
+                    uploadPath = string.IsNullOrEmpty(subDir) ? storePath : Path.Combine(storePath, subDir);
                 }
                 else
                 {
                     // If relative, assume relative to ContentRoot (Project Root), not wwwroot unless specified
                     // But for "wwwroot/uploads" it works fine relative to ContentRoot
-                    uploadPath = Path.Combine(_env.ContentRootPath, storePath);
+                    uploadPath = string.IsNullOrEmpty(subDir) 
+                        ? Path.Combine(_env.ContentRootPath, storePath)
+                        : Path.Combine(_env.ContentRootPath, storePath, subDir);
                 }
 
                 if (!Directory.Exists(uploadPath))
@@ -81,7 +114,13 @@ namespace SCRM.API.Controllers
                 requestPrefix = requestPrefix.Trim('/');
                 
                 var baseUrl = $"{Request.Scheme}://{Request.Host}";
-                var fileUrl = $"{baseUrl}/{requestPrefix}/{fileName}";
+                
+                string urlPathContent = string.IsNullOrEmpty(subDir) 
+                    ? $"{requestPrefix}/{fileName}" 
+                    : $"{requestPrefix}/{subDir}/{fileName}";
+                urlPathContent = urlPathContent.Replace("\\", "/");
+                
+                var fileUrl = $"{baseUrl}/{urlPathContent}";
 
                 _logger.LogInformation($"File uploaded: {fileName} from {device} to {filePath}");
 

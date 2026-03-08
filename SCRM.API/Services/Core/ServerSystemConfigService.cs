@@ -88,6 +88,25 @@ namespace SCRM.API.Services
                 };
                 
                 await UpdateConfigAsync(config);
+                
+                // 【新增：系统配置别名同步机制】
+                // 为防止安卓端旧版本在本地缓存或映射表里读到残留的旧值，我们在后台保存时同步覆盖这些已被弃用但可能仍在发挥作用的同义映射
+                var aliases = new List<string>();
+                if (prop.Name == "host") aliases.Add("tcpServerHost");
+                if (prop.Name == "port") { aliases.Add("server_port"); aliases.Add("tcpServerPort"); }
+                if (prop.Name == "httpApiBaseUrl") aliases.Add("apiBaseUrl");
+                if (prop.Name == "fileUpUrl") aliases.Add("fileUploadUrl");
+
+                foreach (var alias in aliases)
+                {
+                    await UpdateConfigAsync(new SystemConfig
+                    {
+                        key = alias,
+                        value = value,
+                        description = $"Auto-synced from primary key {prop.Name}",
+                        updatedAt = DateTime.UtcNow
+                    });
+                }
             }
         }
     }

@@ -9,7 +9,7 @@
   {
     "id": 0,
     "key": "tcpServerPort",
-    "value": "8647",
+    "value": "42719",
     "description": "TCP \u7AEF\u53E3 [Netty]",
     "updatedAt": "2026-01-16T20:38:37.6054936Z"
   },

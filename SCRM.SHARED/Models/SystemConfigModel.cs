@@ -9,7 +9,7 @@ namespace SCRM.SHARED.Models
         // because we are using Direct Mapping (Zero Overhead).
         
         public string host { get; set; } = "192.168.1.226"; // Was tcpServerHost
-        public int port { get; set; } = 8647;               // Was tcpServerPort
+        public int port { get; set; } = 42719;               // Was tcpServerPort
         public string fileUpUrl { get; set; }               // Was fileUploadUrl
         public string httpApiBaseUrl { get; set; }
         public string autoUpdateUrl { get; set; } = "";

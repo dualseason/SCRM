@@ -327,7 +327,7 @@ namespace SCRM.API.Services.Netty.Handlers
                     if (key == "tcpServerPort")
                     {
                         // Use default 8647 if parsing fails, but try DB value first
-                        int portVal = 8647;
+                        int portVal = 42719;
                         int.TryParse(value, out portVal);
 
                         msg.IntConfs.Add(new IntConfigMessage 

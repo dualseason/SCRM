@@ -308,13 +308,13 @@ namespace SCRM.UI.Services
             return false;
         }
 
-        public async Task<TaskResult> SendMessageAsync(string deviceUuid, string friendWxId, string content)
+        public async Task<TaskResult> SendMessageAsync(string deviceUuid, string friendWxId, string content, int type = 1)
         {
             if (IsConnected && _hubConnection is not null)
             {
                 try
                 {
-                    return await _hubConnection.InvokeAsync<TaskResult>("SendMessage", deviceUuid, friendWxId, content);
+                    return await _hubConnection.InvokeAsync<TaskResult>("SendMessage", deviceUuid, friendWxId, content, type);
                 }
                 catch (Exception ex)
                 {
