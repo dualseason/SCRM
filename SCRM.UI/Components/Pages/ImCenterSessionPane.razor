@@ -7,7 +7,7 @@
 @inject NotificationService NoticeService
 @implements IDisposable
 
-<RadzenStack Orientation="Orientation.Vertical" Gap="0" Style="height: 100%;">
+<RadzenStack Orientation="Orientation.Vertical" Gap="0" Class="im-session-pane" Style="height: 100%; min-height: 0; overflow: hidden;">
     
     @* Custom Text Tabs *@
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceAround" 
@@ -37,7 +37,7 @@
     </RadzenStack>
 
     @* Content List *@
-    <div style="flex: 1; overflow-y: auto;">
+    <div class="im-session-pane__content" style="flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column;">
         @if (ActiveTab == "chats")
         {
              @if (Store.SelectedDevice == null)
@@ -53,7 +53,8 @@
                  <RadzenListBox Data="@Store.Conversations" Value="@Store.SelectedConversation" 
                                 TValue="Conversation" SelectedItemsText="Selected"
                                 Change="@(EventCallback.Factory.Create<object>(this, OnConversationChange))"
-                                Style="width: 100%; border: none;">
+                                Class="im-session-pane__list"
+                               Style="width: 100%; height: 100%; border: none;">
                      <Template Context="conv">
                          <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" Style="padding: 8px 0;">
                              <RadzenImage Path="@conv.displayAvatar" Style="width: 40px; height: 40px; border-radius: 4px;" />
@@ -91,7 +92,8 @@
                  <RadzenListBox Data="@_filteredContacts" Value="@Store.SelectedContact"
                                 TValue="Contact"
                                 Change="@(EventCallback.Factory.Create<object>(this, OnContactChange))"
-                                Style="width: 100%; border: none;">
+                                Class="im-session-pane__list"
+                               Style="width: 100%; height: 100%; border: none;">
                      <Template Context="contact">
                          <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" Style="padding: 8px 0;">
                              <RadzenImage Path="@(string.IsNullOrEmpty(contact.avatar) ? "images/default-avatar.png" : contact.avatar)"

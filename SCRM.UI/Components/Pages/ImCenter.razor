@@ -22,7 +22,7 @@
     </RadzenColumn>
 
     @* Pane 2: Session/Contact List *@
-    <RadzenColumn Size="3" SizeMD="3" Style="border-right: 1px solid var(--rz-border-color); padding: 0; display: flex; flex-direction: column;">
+    <RadzenColumn Size="3" SizeMD="3" class="rz-p-0 rz-h-100" Style="border-right: 1px solid var(--rz-border-color); display: flex; flex-direction: column; min-height: 0; overflow: hidden;">
         <ImCenterSessionPane @bind-ActiveTab="Store.ActiveImTab" />
     </RadzenColumn>
 

@@ -26,8 +26,14 @@
                     <RadzenText Text="@(string.IsNullOrEmpty(Store.SelectedContact.remarks) ? Store.SelectedContact.nickname : Store.SelectedContact.remarks)" TextStyle="TextStyle.H5" Style="font-weight:600; color:var(--rz-text-title-color);" />
                     
                     <div style="margin-top:30px; text-align:left; background:var(--rz-base-200); padding:20px; border-radius:8px;">
-                        <div>
+                        <div style="margin-bottom: 10px;">
                             <span style="color:var(--rz-text-secondary-color); display:inline-block; width:70px;">微信号</span>
+                            <span style="color:var(--rz-text-title-color);">
+                                @(string.IsNullOrWhiteSpace(Store.SelectedContact.friendNo) ? "-" : Store.SelectedContact.friendNo)
+                            </span>
+                        </div>
+                        <div>
+                            <span style="color:var(--rz-text-secondary-color); display:inline-block; width:70px;">微信ID</span>
                             <span style="color:var(--rz-text-title-color);">@Store.SelectedContact.wxid</span>
                         </div>
                     </div>
