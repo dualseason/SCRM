@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 评论项
+message CommentMessage {
+  int64 CommentId = 1;
+  int32 Type = 2;
+  int64 FeedId = 3;
+  string UserName = 4;
+  string NickName = 5;
+  string Avatar = 6;
+  string Content = 7;
+  int32 ContentType = 8;
+  int64 CreateTime = 9;
+  int32 LikeCount = 10;
+  int64 ReplyId = 11;
+}
+
+// 评论列表通知
+message SphCommentListNoticeMessage {
+  string WeChatId = 1;
+  string SphUserName = 2;
+  bool Success = 3;
+  string ErrMsg = 4;
+  repeated CommentMessage CommentList = 5;
+  int64 TaskId = 6;
+}

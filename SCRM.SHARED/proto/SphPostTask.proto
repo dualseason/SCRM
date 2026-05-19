@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 视频号发帖任务
+message SphPostTaskMessage {
+  message PoiMessage {
+    string City = 1;
+    string Name = 2;
+    string Address = 3;
+    float Lat = 4;
+    float Lng = 5;
+    string PoiId = 6;
+  }
+
+  string WeChatId = 1;
+  string Content = 2;
+  int32 MediaType = 3;
+  repeated string Medias = 4;
+  string Cover = 5;
+  PoiMessage Poi = 8;
+  int64 TaskId = 10;
+}

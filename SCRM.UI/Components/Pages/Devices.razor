@@ -33,6 +33,9 @@
                 </RadzenStack>
                 
                 <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mt-2">UUID: @device.uuid</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">设备: @GetDeviceModelSummary(device)</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">IMEI: @GetDeviceImei(device)</RadzenText>
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">网络/Hook: @GetDeviceRuntimeSummary(device)</RadzenText>
                 <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">在线时间: @(device.lastLoginAt?.ToString("yyyy-MM-dd HH:mm:ss"))</RadzenText>
 
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Style="margin-top: 1rem;">
@@ -49,14 +52,44 @@
         <RadzenText TextStyle="TextStyle.H6">设备控制: @(Store.SelectedDevice.wx?.wechatAccount?.nickname ?? "未登录")</RadzenText>
        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Style="margin-top: 1rem;">
            <RadzenButton Icon="camera_alt" Text="截屏" ButtonStyle="ButtonStyle.Primary" Click="@(() => CaptureScreen(Store.SelectedDevice))" />
-           <RadzenButton Icon="sync" Text="同步联系人" ButtonStyle="ButtonStyle.Secondary" Click="@Store.SyncContactsAsync" />
+           <RadzenButton Icon="manage_accounts" Text="刷新微信状态" ButtonStyle="ButtonStyle.Light" Click="@RefreshSelectedWeChatAccounts" />
+           <RadzenButton Icon="sync" Text="同步联系人" ButtonStyle="ButtonStyle.Secondary" Click="@(() => Store.SyncContactsAsync())" />
        </RadzenStack>
        
        @if(!string.IsNullOrEmpty(Store.LastScreenShotUrl)) {
            <div class="rz-mt-4">
                <RadzenText TextStyle="TextStyle.Subtitle2">最新截屏:</RadzenText>
-               <RadzenImage Path="@Store.LastScreenShotUrl" Style="width: 100%; max-width: 300px;" Class="rz-mt-2 rz-border-radius-1" />
+               @if (!string.IsNullOrWhiteSpace(Store.LastScreenShotAccessUrl))
+               {
+                   <a href="@Store.LastScreenShotAccessUrl" target="_blank" rel="noopener" title="打开短期截图链接">
+                       <RadzenImage Path="@Store.LastScreenShotAccessUrl" Style="width: 100%; max-width: 300px;" Class="rz-mt-2 rz-border-radius-1" />
+                   </a>
+                   <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">@FormatScreenShotTokenExpires()</RadzenText>
+               }
+               else
+               {
+                   <div style="font-size: 12px; color: var(--rz-text-secondary-color); margin-top: 4px;">截图已通过短期链接保护</div>
+               }
+               <RadzenButton Text="@GetScreenShotAccessButtonText()"
+                             Icon="visibility"
+                             ButtonStyle="ButtonStyle.Light"
+                             Variant="Variant.Outlined"
+                             Size="ButtonSize.ExtraSmall"
+                             Class="rz-mt-2"
+                             Click="@PrepareScreenShotPreview"
+                             Disabled="@Store.IsPreparingScreenShotAccess" />
            </div>
+       }
+
+       @if (HasSelectedDeviceScreenShotState())
+       {
+           <RadzenAlert AlertStyle="@(Store.LastScreenShotSuccess == false ? AlertStyle.Warning : AlertStyle.Success)" Variant="Variant.Flat" class="rz-mt-3">
+               <div>@(Store.LastScreenShotStatusMessage ?? "截图状态未知")</div>
+               @if (Store.LastScreenShotUpdatedAt.HasValue)
+               {
+                   <div style="font-size: 12px; opacity: 0.85;">更新时间：@Store.LastScreenShotUpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</div>
+               }
+           </RadzenAlert>
        }
   </RadzenCard>
 }
@@ -91,7 +124,16 @@
         {
             await Store.SelectDeviceAsync(dev);
         }
-        await Store.RequestScreenShotAsync(dev.uuid);
+        var result = await Store.RequestScreenShotAsync(dev.uuid);
+        if (!result.success)
+        {
+            NoticeService.Notify(NotificationSeverity.Error, "截图失败", result.message ?? "截图任务执行失败");
+        }
+    }
+
+    private async Task RefreshSelectedWeChatAccounts()
+    {
+        await Store.RefreshSelectedWeChatAccountsAsync();
     }
     
     private void HandleNotification(string msg, bool success)
@@ -105,5 +147,69 @@
                 Duration = 4000
             });
         });
+    }
+
+    private bool HasSelectedDeviceScreenShotState()
+    {
+        return Store.SelectedDevice != null
+            && !string.IsNullOrWhiteSpace(Store.LastScreenShotDeviceUuid)
+            && string.Equals(Store.LastScreenShotDeviceUuid, Store.SelectedDevice.uuid, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetScreenShotAccessButtonText()
+    {
+        if (Store.IsPreparingScreenShotAccess)
+        {
+            return "生成中...";
+        }
+
+        return string.IsNullOrWhiteSpace(Store.LastScreenShotAccessUrl)
+            ? "预览截图"
+            : "刷新截图链接";
+    }
+
+    private string FormatScreenShotTokenExpires()
+    {
+        return Store.LastScreenShotAccessExpiresAt.HasValue
+            ? $"截图链接有效期至：{Store.LastScreenShotAccessExpiresAt.Value.ToLocalTime():HH:mm:ss}"
+            : "截图链接将在短时间后失效";
+    }
+
+    private async Task PrepareScreenShotPreview()
+    {
+        var token = await Store.PrepareLastScreenShotAccessAsync(5);
+        NoticeService.Notify(
+            token.Success ? NotificationSeverity.Success : NotificationSeverity.Warning,
+            token.Success ? "截图短期链接已生成" : "截图预览失败",
+            token.Success ? "已切换为后端短期 token 链接。" : token.Message,
+            duration: 2500);
+    }
+
+    private static string GetDeviceModelSummary(SrClient device)
+    {
+        var brand = device.device?.PhoneBrand ?? string.Empty;
+        var model = device.device?.PhoneModel ?? string.Empty;
+        var osVersion = device.device?.OSVerNumber ?? 0;
+        var summary = $"{brand} {model}".Trim();
+
+        if (string.IsNullOrWhiteSpace(summary))
+        {
+            summary = "未上报";
+        }
+
+        return osVersion > 0 ? $"{summary} / Android API {osVersion}" : summary;
+    }
+
+    private static string GetDeviceImei(SrClient device)
+    {
+        return string.IsNullOrWhiteSpace(device.device?.IMEI) ? "未上报" : device.device.IMEI;
+    }
+
+    private static string GetDeviceRuntimeSummary(SrClient device)
+    {
+        var netType = string.IsNullOrWhiteSpace(device.device?.NetType) ? "未知网络" : device.device.NetType;
+        var hookText = device.device?.IsHook == true ? "Hook已启用" : "Hook未启用";
+        var supportText = device.device?.WxSupport == true ? "微信支持" : "微信未确认";
+        return $"{netType} / {hookText} / {supportText}";
     }
 }

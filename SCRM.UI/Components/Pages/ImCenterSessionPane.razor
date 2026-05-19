@@ -1,10 +1,11 @@
-@using SCRM.UI.Services
+﻿@using SCRM.UI.Services
 @using SCRM.API.Models.Entities
 @using SCRM.SHARED.Models
 @using Radzen
 @using Radzen.Blazor
 @inject CrmStore Store
 @inject NotificationService NoticeService
+@inject NavigationManager NavManager
 @implements IDisposable
 
 <RadzenStack Orientation="Orientation.Vertical" Gap="0" Class="im-session-pane" Style="height: 100%; min-height: 0; overflow: hidden;">
@@ -31,8 +32,21 @@
         <RadzenTextBox Placeholder="搜索" @bind-Value="_searchText" Change="@(args => OnSearchContact())" Style="width: 100%; height: 32px; font-size: 13px; border-radius: 4px;" />
         
         <RadzenStack Orientation="Orientation.Horizontal" Gap="5px">
-             <RadzenButton Text="一键群发" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: var(--rz-text-secondary-color);" Disabled="true" />
-             <RadzenButton Text="群发未读" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: var(--rz-text-secondary-color);" Disabled="true" />
+            @if (ActiveTab == "contacts")
+            {
+                <RadzenButton Text="添加好友" Icon="person_add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1;" Click="GoAddFriend" />
+                <RadzenButton Text="同步联系人" Icon="sync" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: var(--rz-text-secondary-color);" Click="SyncContacts" />
+            }
+            else if (ActiveTab == "groups")
+            {
+                <RadzenButton Text="同步群聊" Icon="sync" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1;" Click="SyncChatRooms" />
+                <RadzenButton Text="刷新列表" Icon="refresh" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: var(--rz-text-secondary-color);" Click="RefreshConversations" />
+            }
+            else
+            {
+                <RadzenButton Text="添加好友" Icon="person_add" ButtonStyle="ButtonStyle.Success" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1;" Click="GoAddFriend" />
+                <RadzenButton Text="一键群发" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Variant="Variant.Outlined" Style="flex: 1; color: var(--rz-text-secondary-color);" Disabled="true" />
+            }
         </RadzenStack>
     </RadzenStack>
 
@@ -44,13 +58,13 @@
              {
                  <div class="rz-p-4 rz-text-align-center rz-color-secondary">请选择设备</div>
              }
-             else if (Store.Conversations.Count == 0)
+             else if (Store.Conversations.ToList().Count == 0)
              {
                  <div class="rz-p-4 rz-text-align-center rz-color-secondary">暂无会话</div>
              }
              else
              {
-                 <RadzenListBox Data="@Store.Conversations" Value="@Store.SelectedConversation" 
+                  <RadzenListBox Data="@Store.Conversations.ToList()" Value="@Store.SelectedConversation" 
                                 TValue="Conversation" SelectedItemsText="Selected"
                                 Change="@(EventCallback.Factory.Create<object>(this, OnConversationChange))"
                                 Class="im-session-pane__list"
@@ -110,7 +124,43 @@
         }
         else if (ActiveTab == "groups")
         {
-            <div class="rz-p-4 rz-text-align-center rz-color-secondary">请选择群聊会话</div>
+             @if (Store.SelectedDevice == null)
+             {
+                 <div class="rz-p-4 rz-text-align-center rz-color-secondary">请选择设备</div>
+             }
+             else if (_filteredGroupConversations.Count == 0)
+             {
+                 <div class="rz-p-4 rz-text-align-center">
+                    <div class="rz-color-secondary" style="margin-bottom: 8px;">暂无群聊会话</div>
+                    <RadzenButton Text="同步群聊" Icon="sync" ButtonStyle="ButtonStyle.Secondary" Click="SyncChatRooms" Size="ButtonSize.Small" />
+                 </div>
+             }
+             else
+             {
+                 <RadzenListBox Data="@_filteredGroupConversations" Value="@Store.SelectedConversation"
+                                TValue="Conversation"
+                                Change="@(EventCallback.Factory.Create<object>(this, OnConversationChange))"
+                                Class="im-session-pane__list"
+                                Style="width: 100%; height: 100%; border: none;">
+                     <Template Context="conv">
+                         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px" Style="padding: 8px 0;">
+                             <RadzenImage Path="@GetConversationAvatar(conv)" Style="width: 40px; height: 40px; border-radius: 4px;" />
+                             <RadzenStack Orientation="Orientation.Vertical" Gap="2px" Style="overflow: hidden; flex: 1;">
+                                 <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween">
+                                     <RadzenText Text="@GetConversationName(conv)" TextStyle="TextStyle.Body2" Style="font-weight: 500; color: var(--rz-text-title-color);" />
+                                     <RadzenText Text="@FormatDate(conv.lastMessageTime)" TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color); font-size: 11px;" />
+                                 </RadzenStack>
+                                 <RadzenText Text="@conv.lastMessageContent"
+                                             TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px;" />
+                             </RadzenStack>
+                             @if (conv.unreadCount > 0)
+                             {
+                                 <RadzenBadge BadgeStyle="BadgeStyle.Danger" Text="@(conv.unreadCount > 99 ? "99+" : conv.unreadCount.ToString())" />
+                             }
+                         </RadzenStack>
+                     </Template>
+                 </RadzenListBox>
+             }
         }
     </div>
 
@@ -134,6 +184,23 @@
                 ? source
                 : source.Where(c => (c.nickname?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)
                                  || (c.remarks?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)).ToList();
+        }
+    }
+
+
+    private List<Conversation> _filteredGroupConversations
+    {
+        get
+        {
+            var source = Store.Conversations.ToList()
+                .Where(c => c.conversationType == 2 || IsChatRoom(c.conversationWxid));
+
+            return string.IsNullOrWhiteSpace(_searchText)
+                ? source.ToList()
+                : source.Where(c => (c.displayName?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+                                 || (c.conversationWxid?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false)
+                                 || (c.lastMessageContent?.Contains(_searchText, StringComparison.OrdinalIgnoreCase) ?? false))
+                    .ToList();
         }
     }
 
@@ -171,6 +238,39 @@
         NoticeService.Notify(NotificationSeverity.Info, "Sync Command Sent");
     }
 
+
+    private async Task SyncChatRooms()
+    {
+        if (Store.SelectedDevice == null) return;
+        await Store.SyncChatRoomsAsync();
+        NoticeService.Notify(NotificationSeverity.Info, "群聊同步指令已下发");
+    }
+
+    /// <summary>
+    /// 手动刷新当前微信账号的会话列表。
+    /// <para>只读刷新，不直接写数据库；群聊是否入库仍以后端 DbHelper 的群资料/消息处理链路为准。</para>
+    /// </summary>
+    private async Task RefreshConversations()
+    {
+        var accountId = Store.SelectedDevice?.weChatId
+            ?? Store.SelectedDevice?.wx?.wechatAccount?.wxid
+            ?? string.Empty;
+
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "当前设备未绑定微信账号，请先校准微信状态");
+            return;
+        }
+
+        await Store.LoadConversationsAsync(accountId);
+        NoticeService.Notify(NotificationSeverity.Info, "会话列表已刷新");
+    }
+
+    private void GoAddFriend()
+    {
+        NavManager.NavigateTo("/features/add-friend");
+    }
+
     private async Task OnConversationChange(object value)
     {
         if (value is Conversation conv)
@@ -198,5 +298,26 @@
         if (dt.Year == DateTime.Now.Year)
             return dt.ToString("MM-dd");
         return dt.ToString("yyyy-MM-dd");
+    }
+
+
+    private static bool IsChatRoom(string? wxid)
+    {
+        return !string.IsNullOrWhiteSpace(wxid)
+            && wxid.EndsWith("@chatroom", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string GetConversationName(Conversation conversation)
+    {
+        return string.IsNullOrWhiteSpace(conversation.displayName)
+            ? conversation.conversationWxid
+            : conversation.displayName;
+    }
+
+    private static string GetConversationAvatar(Conversation conversation)
+    {
+        return string.IsNullOrWhiteSpace(conversation.displayAvatar)
+            ? "images/default-avatar.png"
+            : conversation.displayAvatar;
     }
 }

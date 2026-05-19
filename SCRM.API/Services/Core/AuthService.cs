@@ -445,7 +445,7 @@ namespace SCRM.API.Services.Core
                 return false;
             }
             
-            _logger.LogWarning("ValidateDeviceOwnership: 连接用户ID为空", connectionInfo.userId);
+            _logger.LogWarning("ValidateDeviceOwnership: 连接用户ID为空，ConnectionUserId={ConnectionUserId}", connectionInfo.userId);
             return false;
         }
 
@@ -460,54 +460,54 @@ namespace SCRM.API.Services.Core
         {
             IQueryable<SrClient> query = _context.SrClients;
 
-            if (!isAdmin && !string.IsNullOrEmpty(userId))
+            if (!isAdmin && string.IsNullOrWhiteSpace(userId))
             {
-                query = query.Where(c => c.ownerId == userId || c.ownerId == null);
+                return new List<SrClient>();
             }
 
-            var clientData = await query
-                .GroupJoin(_context.WechatAccounts.Where(w => !w.isDeleted),
-                    client => client.uuid,
-                    account => account.clientUuid,
-                    (client, accounts) => new { Client = client, Accounts = accounts })
-                .SelectMany(
-                    x => x.Accounts.DefaultIfEmpty(),
-                    (x, account) => new { x.Client, Account = account })
-                .ToListAsync();
-
-            var result = new List<SrClient>();
-
-            foreach (var item in clientData)
+            if (!isAdmin)
             {
-                var client = item.Client;
-                var account = item.Account;
+                query = query.Where(c => c.ownerId == userId || c.ownerId == null || c.ownerId == string.Empty);
+            }
 
-                if (account != null)
+            var clients = await query.ToListAsync();
+            var deviceUuids = clients
+                .Select(c => c.uuid)
+                .Where(uuid => !string.IsNullOrWhiteSpace(uuid))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            var accountsByDevice = await _context.WechatAccounts
+                .Where(w => !w.isDeleted && w.clientUuid != null && deviceUuids.Contains(w.clientUuid))
+                .GroupBy(w => w.clientUuid!)
+                .Select(g => g
+                    .OrderByDescending(w => w.accountStatus == 1)
+                    .ThenByDescending(w => w.lastOnlineAt)
+                    .ThenByDescending(w => w.updatedAt)
+                    .First())
+                .ToDictionaryAsync(w => w.clientUuid!, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var client in clients)
+            {
+                // 在线态以当前 Netty 活跃通道为准，不依赖是否已经选到微信账号，避免 UI 显示“未登录/离线”的旧对象。
+                var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(client.uuid);
+                client.connectionId = string.IsNullOrWhiteSpace(connectionId) ? null : connectionId;
+                client.isOnline = !string.IsNullOrWhiteSpace(connectionId);
+
+                if (accountsByDevice.TryGetValue(client.uuid, out var account))
                 {
-                    if (client.wx == null) client.wx = new Wx{ wechatAccount = account,srClient=client};
-                    //client.weChatNick = account.nickname;
-                    //client.wechatAccountId = account.accountId;
-
-                    var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(client.uuid);
-                    if (!string.IsNullOrEmpty(connectionId))
-                    {
-                        client.connectionId = connectionId;
-                        client.isOnline = true;
-                    }
-                    else
-                    {
-                        client.connectionId = null;
-                        client.isOnline = false;
-                    }
+                    client.wx = new Wx { wechatAccount = account, srClient = client };
                 }
-
-                if (!result.Any(r => r.uuid == client.uuid))
+                else if (client.wx == null)
                 {
-                    result.Add(client);
+                    client.wx = new Wx { srClient = client };
                 }
             }
 
-            return result;
+            return clients
+                .GroupBy(c => c.uuid, StringComparer.OrdinalIgnoreCase)
+                .Select(g => g.First())
+                .ToList();
         }
 
         /// <summary>
@@ -518,29 +518,34 @@ namespace SCRM.API.Services.Core
             var client = await _context.SrClients.FirstOrDefaultAsync(c => c.uuid == deviceUuid);
             if (client == null) return null;
 
-            if (!isAdmin && client.ownerId != null && client.ownerId != userId)
+            if (!isAdmin && string.IsNullOrWhiteSpace(userId))
             {
                 return null;
             }
 
-            var account = await _context.WechatAccounts.FirstOrDefaultAsync(w => w.clientUuid == deviceUuid && !w.isDeleted);
+            if (!isAdmin && !string.IsNullOrWhiteSpace(client.ownerId) && !string.Equals(client.ownerId, userId, StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            var account = await _context.WechatAccounts
+                .Where(w => w.clientUuid == deviceUuid && !w.isDeleted)
+                .OrderByDescending(w => w.accountStatus == 1)
+                .ThenByDescending(w => w.lastOnlineAt)
+                .ThenByDescending(w => w.updatedAt)
+                .FirstOrDefaultAsync();
+
+            var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
+            client.connectionId = string.IsNullOrWhiteSpace(connectionId) ? null : connectionId;
+            client.isOnline = !string.IsNullOrWhiteSpace(connectionId);
+
             if (account != null)
             {
-
-                //client.weChatNick = account.nickname;
-                //client.wechatAccountId = account.accountId;
-
-                var connectionId = await _connectionManager.GetConnectionIdByDeviceUuidAsync(deviceUuid);
-                if (!string.IsNullOrEmpty(connectionId))
-                {
-                    client.connectionId = connectionId;
-                    client.isOnline = true;
-                }
-                else
-                {
-                    client.connectionId = null;
-                    client.isOnline = false;
-                }
+                client.wx = new Wx { wechatAccount = account, srClient = client };
+            }
+            else if (client.wx == null)
+            {
+                client.wx = new Wx { srClient = client };
             }
 
             return client;

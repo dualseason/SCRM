@@ -57,6 +57,7 @@ enum EnumMsgType {
   MsgDelNotice = 1054;
   ConvDelNotice = 1055;
   GroupSendHistoryPushNotice = 1056;
+  ChatRoomInvitePushNotice = 1058;
   TalkToFriendTask = 1070;
   PostSNSNewsTask = 1071;
   AddFriendsTask = 1072;
@@ -161,6 +162,9 @@ enum EnumMsgType {
   QueryHbStatusTaskResultNotice = 1288;
   GetPoiListTask = 1290;
   GetPoiListTaskResultNotice = 1291;
+  GetChatRoomInviteListTask = 1292;
+  ChatRoomInviteListNotice = 1293;
+  SetFriendPermissionTask = 1295;
   SendSmsTask = 1289;
   CallLogPushNotice = 1300;
   SmsPushNotice = 1301;
@@ -191,6 +195,18 @@ enum EnumMsgType {
   QwConversPushNotice = 2040;
   BizConversPushNotice = 2041;
   UnreadListPushNotice = 2042;
+  SphGetMentionTask = 2200;
+  SphMentionListNotice = 2201;
+  SphUserPageTask = 2202;
+  SphUserPagePushNotice = 2203;
+  // 本地增强协议：62203 原版存在 SphGetCommentTask.proto，但未公开 transport enum。
+  SphGetCommentTask = 2204;
+  SphPostTask = 2210;
+  SphPostTaskResultNotice = 2211;
+  SphLikeTask = 2212;
+  SphCommentTask = 2213;
+  SphDelCommentTask = 2214;
+  SphCommentListNotice = 2215;
   GetWeChatsReq = 3050;
   GetWeChatsRsp = 3051;
   RecentFriendChangeNotice = 3052;
@@ -322,4 +338,13 @@ enum EnumForceOfflineReason {
   ByReAlloc = 2;
   ByDeviceOffline = 3;
   ByWeChatOffline = 4;
+}
+
+// [新增] 专门用于 62006 未知/残缺结构的证据存证回传外壳
+message RawEvidenceNotice {
+    int32 msg_type = 1;                 // 真实的源 EnumMsgType 值 (如 2211)
+    string task_id = 2;                 // [必选] 用于服务端防重与落库幂等的标识
+    string type_url = 3;                // 预测的微信类名 (梳理嵌套错位的关键依据)
+    int32 payload_len = 4;              // 字节长度，供服务端做拦截审计
+    google.protobuf.Any raw_payload = 5; // 原始脱字节码投递，研发后续离线解码用
 }

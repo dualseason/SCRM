@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "TransportMessage.proto";
+
+// 异步同步好友列表请求。
+// 该协议当前由服务端下发给安卓端；安卓端收到后复用现有 TriggerFriendPushTask/tYp11 链路，最终通过 FriendPushNotice 批量上报联系人。
+message SyncFriendListAsyncReqMessage {
+  string WeChatId = 1;             // 目标微信ID；为空时由安卓端使用当前登录微信。
+  int64 TaskId = 2;                // 同步任务ID；为空时可使用 TransportMessage.Id。
+  int64 UnionId = 3;               // 账号联合ID，预留给 30xx 账号体系。
+  EnumAccountType AccountType = 4; // 账号类型，预留给 30xx 账号体系。
+}

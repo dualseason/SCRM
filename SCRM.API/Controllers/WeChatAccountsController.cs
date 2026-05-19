@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
+using SCRM.API.Services.Security;
 using SCRM.Services.Data;
 using SCRM.SHARED.Models;
 
@@ -15,28 +16,41 @@ namespace SCRM.API.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly AccountAccessGuard _accountAccessGuard;
+        private readonly SensitiveMaskingService _sensitiveMaskingService;
 
-        public WeChatAccountsController(ApplicationDbContext context, UserManager<ApplicationUser> userManager)
+        public WeChatAccountsController(
+            ApplicationDbContext context,
+            UserManager<ApplicationUser> userManager,
+            AccountAccessGuard accountAccessGuard,
+            SensitiveMaskingService sensitiveMaskingService)
         {
             _context = context;
             _userManager = userManager;
+            _accountAccessGuard = accountAccessGuard;
+            _sensitiveMaskingService = sensitiveMaskingService;
         }
 
         // GET: api/WeChatAccounts
         [HttpGet]
         public async Task<ActionResult<IEnumerable<WechatAccount>>> GetWeChatAccounts()
         {
-            var userId = _userManager.GetUserId(User);
-            var isAdmin = User.IsInRole("Admin");
-
-            IQueryable<WechatAccount> query = _context.WechatAccounts.Include(c => c.owner);
-
-            if (!isAdmin)
+            var accessibleAccountIds = await _accountAccessGuard.GetAccessibleAccountIdsAsync(User);
+            if (accessibleAccountIds.Count == 0)
             {
-                query = query.Where(c => c.ownerId == userId);
+                return Ok(Array.Empty<WechatAccount>());
             }
 
-            return await query.OrderByDescending(c => c.lastOnlineAt).ToListAsync();
+            var accounts = await _context.WechatAccounts
+                .AsNoTracking()
+                .Include(c => c.owner)
+                .Include(c => c.Client)
+                .Where(c => accessibleAccountIds.Contains(c.wxid))
+                .OrderByDescending(c => c.lastOnlineAt)
+                .ToListAsync();
+
+            var maskedAccounts = await _sensitiveMaskingService.MaskWechatAccountsAsync(User, accounts);
+            return Ok(maskedAccounts);
         }
 
         // DELETE: api/WeChatAccounts/5

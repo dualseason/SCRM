@@ -159,6 +159,27 @@ public class Message
     [Column("updated_at")]
     public DateTime updatedAt { get; set; } = DateTime.UtcNow;
 
+    /// <summary>
+    /// 消息媒体附件展示数据。
+    /// <para>该字段不入库，由查询接口从 MessageMedias 补齐，供 IM 页面展示图片、语音、视频、文件等补偿 URL。</para>
+    /// </summary>
+    [NotMapped]
+    public List<MessageMediaAttachmentDto> mediaAttachments { get; set; } = new();
+
+    /// <summary>
+    /// 消息扩展上下文展示数据。
+    /// <para>该字段不入库，由查询接口从 MessageExtensions 补齐，供 IM 页面查看媒体补偿、CDN 下载、原消息详情待回填等上下文。</para>
+    /// </summary>
+    [NotMapped]
+    public List<MessageExtensionViewDto> messageExtensions { get; set; } = new();
+
+    /// <summary>
+    /// 语音转文字展示数据。
+    /// <para>该字段不入库，由查询接口从 VoiceToTextLogs 补齐，供 IM 页面在语音气泡下展示识别文本或失败原因。</para>
+    /// </summary>
+    [NotMapped]
+    public VoiceToTextLogViewDto? voiceTransText { get; set; }
+
     #endregion
 
     #region 导航属性
@@ -179,4 +200,160 @@ public class Message
     public virtual WechatAccount? receiver { get; set; }
 
     #endregion
+}
+
+/// <summary>
+/// 消息媒体附件展示 DTO。
+/// <para>对应 MessageMedias 表的只读投影，不参与 EF 持久化映射。</para>
+/// </summary>
+public class MessageMediaAttachmentDto
+{
+    /// <summary>
+    /// 附件记录 ID。
+    /// </summary>
+    public int id { get; set; }
+
+    /// <summary>
+    /// 关联消息表 ID。
+    /// </summary>
+    public int messageId { get; set; }
+
+    /// <summary>
+    /// 媒体类型。
+    /// </summary>
+    public int mediaType { get; set; }
+
+    /// <summary>
+    /// 媒体 URL。
+    /// </summary>
+    public string mediaUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 本地路径。
+    /// </summary>
+    public string localPath { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 媒体哈希或 FileId。
+    /// </summary>
+    public string mediaHash { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 文件大小。
+    /// </summary>
+    public long fileSize { get; set; }
+
+    /// <summary>
+    /// 文件扩展名。
+    /// </summary>
+    public string fileExtension { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 上传状态。
+    /// </summary>
+    public int uploadStatus { get; set; }
+
+    /// <summary>
+    /// 创建时间。
+    /// </summary>
+    public DateTime createdAt { get; set; }
+
+    /// <summary>
+    /// 更新时间。
+    /// </summary>
+    public DateTime updatedAt { get; set; }
+}
+
+/// <summary>
+/// 消息扩展上下文展示 DTO。
+/// <para>对应 MessageExtensions 表的只读投影，不参与 EF 持久化映射。</para>
+/// </summary>
+public class MessageExtensionViewDto
+{
+    /// <summary>
+    /// 扩展记录 ID。
+    /// </summary>
+    public int id { get; set; }
+
+    /// <summary>
+    /// 关联消息表 ID。
+    /// </summary>
+    public int messageId { get; set; }
+
+    /// <summary>
+    /// 扩展键。
+    /// </summary>
+    public string extensionKey { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 扩展值。
+    /// </summary>
+    public string extensionValue { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 创建时间。
+    /// </summary>
+    public DateTime createdAt { get; set; }
+
+    /// <summary>
+    /// 更新时间。
+    /// </summary>
+    public DateTime updatedAt { get; set; }
+}
+
+/// <summary>
+/// 语音转文字展示 DTO。
+/// <para>对应 VoiceToTextLogs 表的只读投影，不参与 EF 持久化映射。</para>
+/// </summary>
+public class VoiceToTextLogViewDto
+{
+    /// <summary>
+    /// 转文字记录 ID。
+    /// </summary>
+    public int id { get; set; }
+
+    /// <summary>
+    /// 关联消息表 ID。
+    /// </summary>
+    public int messageId { get; set; }
+
+    /// <summary>
+    /// 语音文件 URL。
+    /// </summary>
+    public string voiceUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 识别文本。
+    /// </summary>
+    public string transcribedText { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 识别状态：1 成功，-1 失败，其他值保留。
+    /// </summary>
+    public int transcribeStatus { get; set; }
+
+    /// <summary>
+    /// 准确率。
+    /// </summary>
+    public double accuracy { get; set; }
+
+    /// <summary>
+    /// 错误信息。
+    /// </summary>
+    public string errorMessage { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 识别时间。
+    /// </summary>
+    public DateTime transcribeTime { get; set; }
+
+    /// <summary>
+    /// 创建时间。
+    /// </summary>
+    public DateTime createdAt { get; set; }
+
+    /// <summary>
+    /// 更新时间。
+    /// </summary>
+    public DateTime updatedAt { get; set; }
 }

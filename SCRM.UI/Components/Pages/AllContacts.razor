@@ -1,15 +1,30 @@
 @page "/contacts/all"
+@using System
+@using System.Linq
 @using SCRM.API.Models.Entities
+@using SCRM.Shared.Interfaces
 @using SCRM.UI.Services
 @using Microsoft.AspNetCore.Authorization
 @inject ICrmService CrmService
+@inject ICrmEvents CrmEvents
 @inject NotificationService NotificationService
+@inject DialogService DialogService
+@inject NavigationManager NavManager
 @attribute [Authorize]
+@implements IDisposable
 
 <PageTitle>所有联系人</PageTitle>
 
 <RadzenStack>
-    <RadzenText TextStyle="TextStyle.H3">联系人总览</RadzenText>
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.H3">联系人总览</RadzenText>
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+            这是跨微信账号的总览视图。微信号和设备不是硬绑定；删除等操作会按联系人所属微信当前/最近执行设备下发。
+        </RadzenText>
+        <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" ShowIcon="true">
+            当前页面是“总览”，不是某个微信的好友操作页。若要按当前微信查看、同步或删除好友，请使用左侧“好友管理 → 当前微信好友”。
+        </RadzenAlert>
+    </RadzenStack>
     
     <RadzenCard>
         <RadzenRow AlignItems="AlignItems.Center" Class="rz-mb-4">
@@ -19,6 +34,7 @@
             <RadzenColumn Size="12" SizeMD="4">
                 <RadzenButton Icon="search" Text="搜索" Click="@OnSearch" ButtonStyle="ButtonStyle.Primary" />
                 <RadzenButton Icon="refresh" Text="刷新" Click="@ReloadData" ButtonStyle="ButtonStyle.Light" Class="rz-ml-2" />
+                <RadzenButton Icon="person_add" Text="添加好友" Click="@GoAddFriend" ButtonStyle="ButtonStyle.Success" Class="rz-ml-2" />
             </RadzenColumn>
         </RadzenRow>
 
@@ -100,16 +116,39 @@
                 </RadzenDataGridColumn>
 
                  <RadzenDataGridColumn TItem="Contact" Property="lastInteractionTime" Title="最后互动" FormatString="{0:g}" Width="150px" />
+                 <RadzenDataGridColumn TItem="Contact" Title="操作" Width="120px" TextAlign="TextAlign.Center">
+                    <Template Context="data">
+                        <RadzenButton Icon="delete"
+                                      Text="删除"
+                                      ButtonStyle="ButtonStyle.Danger"
+                                      Size="ButtonSize.Small"
+                                      Disabled="@string.IsNullOrWhiteSpace(ResolveDeviceUuid(data))"
+                                      Click="@(() => DeleteContactAsync(data))" />
+                    </Template>
+                </RadzenDataGridColumn>
             </Columns>
         </RadzenDataGrid>
     </RadzenCard>
 </RadzenStack>
 
 @code {
-    RadzenDataGrid<Contact> grid;
-    IEnumerable<Contact> contacts;
+    RadzenDataGrid<Contact>? grid;
+    IEnumerable<Contact> contacts = Enumerable.Empty<Contact>();
+    IDisposable? contactsUpdatedSubscription;
     int totalCount;
-    string searchTerm;
+    string searchTerm = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        // 联系人新增、删除、全量同步最终都由服务端发布 ContactsReceivedEvent。
+        // 总览页不直接写库，只在收到事件后重新拉取列表，保持与 DbHelper 的持久化/缓存口径一致。
+        contactsUpdatedSubscription = CrmEvents.SubscribeToContactsReceived(HandleContactsUpdated);
+    }
+
+    public void Dispose()
+    {
+        contactsUpdatedSubscription?.Dispose();
+    }
 
     async Task OnLoadData(LoadDataArgs args)
     {
@@ -117,10 +156,14 @@
         // 注意：数据量大时应改为服务端分页
         var all = await CrmService.GetContactsAsync();
         
-        var filtered = string.IsNullOrEmpty(searchTerm) 
+        var keyword = searchTerm?.Trim();
+        var filtered = string.IsNullOrEmpty(keyword) 
             ? all 
-            : all.Where(c => (!string.IsNullOrEmpty(c.wxid) && c.wxid.Contains(searchTerm)) || 
-                             (!string.IsNullOrEmpty(c.nickname) && c.nickname.Contains(searchTerm))).ToList();
+            : all.Where(c => ContainsKeyword(c.wxid, keyword)
+                             || ContainsKeyword(c.nickname, keyword)
+                             || ContainsKeyword(c.remarks, keyword)
+                             || ContainsKeyword(c.friendNo, keyword)
+                             || ContainsKeyword(c.phone, keyword)).ToList();
 
         totalCount = filtered.Count;
         
@@ -132,12 +175,85 @@
 
     async Task OnSearch()
     {
-        await grid.Reload();
+        if (grid != null)
+        {
+            await grid.Reload();
+        }
     }
 
     async Task ReloadData()
     {
         searchTerm = "";
-        await grid.Reload();
+        if (grid != null)
+        {
+            await grid.Reload();
+        }
+    }
+
+    void HandleContactsUpdated(string accountId)
+    {
+        _ = InvokeAsync(async () =>
+        {
+            if (grid != null)
+            {
+                await grid.Reload();
+            }
+            else
+            {
+                StateHasChanged();
+            }
+        });
+    }
+
+    void GoAddFriend()
+    {
+        NavManager.NavigateTo("/features/add-friend");
+    }
+
+    async Task DeleteContactAsync(Contact contact)
+    {
+        var deviceUuid = ResolveDeviceUuid(contact);
+        if (string.IsNullOrWhiteSpace(deviceUuid))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "缺少设备信息", "该联系人没有关联设备 UUID，无法下发删除好友任务。");
+            return;
+        }
+
+        var displayName = string.IsNullOrWhiteSpace(contact.remarks)
+            ? (string.IsNullOrWhiteSpace(contact.nickname) ? contact.wxid : contact.nickname)
+            : contact.remarks;
+
+        var confirm = await DialogService.Confirm(
+            $"确定要通过设备删除好友 {displayName} ({contact.wxid}) 吗？",
+            "删除好友",
+            new ConfirmOptions { OkButtonText = "确定", CancelButtonText = "取消" });
+
+        if (confirm != true)
+        {
+            return;
+        }
+
+        // 这里只下发删除任务，不直接修改 contacts.is_deleted。
+        // 真正删除成功后，安卓端会回传 FriendDelNotice，服务端 ContactMessageHandler 再更新数据库；
+        // DbHelper.GetContacts 已过滤 isDeleted，因此后续同步后总览页会自然消失。
+        var result = await CrmService.DeleteFriendAsync(deviceUuid, contact.wxid);
+        var success = result.success;
+        NotificationService.Notify(
+            success ? NotificationSeverity.Success : NotificationSeverity.Error,
+            success ? "指令已下发" : "下发失败",
+            success ? $"删除好友指令已下发，等待安卓端执行回传。TaskId={result.taskId}" : $"删除好友指令下发失败：{result.message}");
+    }
+
+    static string ResolveDeviceUuid(Contact contact)
+    {
+        return contact.Account?.Client?.uuid
+            ?? contact.Account?.clientUuid
+            ?? string.Empty;
+    }
+
+    static bool ContainsKeyword(string? value, string keyword)
+    {
+        return !string.IsNullOrWhiteSpace(value)
+            && value.Contains(keyword, StringComparison.OrdinalIgnoreCase);
     }
 }

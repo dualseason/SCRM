@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 视频号评论任务
+message SphCommentTaskMessage {
+  string WeChatId = 1;
+  int64 FeedId = 2;
+  string NonceId = 3;
+  string FeedAuth = 4;
+  int32 Type = 5;
+  string Content = 6;
+  string Media = 7;
+  int64 ReplyCommentId = 8;
+  string ReplyUsername = 9;
+  int64 TaskId = 12;
+}

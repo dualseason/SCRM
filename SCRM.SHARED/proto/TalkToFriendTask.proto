@@ -15,4 +15,6 @@ message TalkToFriendTaskMessage {
   string Remark = 8;
   int64 MsgId = 9;
   bool Immediate = 10;
+  // 群聊 @ 成员列表，多个 wxid 用英文逗号分隔；62203 对位新增字段。
+  string AtIds = 11;
 }

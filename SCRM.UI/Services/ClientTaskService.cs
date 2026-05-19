@@ -24,7 +24,7 @@ namespace SCRM.UI.Services
             }
         }
 
-        public async Task<bool> SendTalkToFriendAsync(string connectionId, string friendWxId, string content)
+        public async Task<bool> SendTalkToFriendAsync(string connectionId, string friendWxId, string content, int contentType = 1, string atIds = "")
         {
             try
             {
@@ -33,7 +33,9 @@ namespace SCRM.UI.Services
                 { 
                     ConnectionId = connectionId, 
                     FriendWxId = friendWxId, 
-                    Content = content 
+                    Content = content,
+                    ContentType = contentType,
+                    AtIds = atIds
                 });
                 return response.IsSuccessStatusCode;
             }
@@ -45,3 +47,4 @@ namespace SCRM.UI.Services
         }
     }
 }
+

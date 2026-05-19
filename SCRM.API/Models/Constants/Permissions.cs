@@ -42,6 +42,9 @@ namespace SCRM.Models.Constants
             public const string Export = "customer.export";
             public const string Import = "customer.import";
             public const string AssignSales = "customer.assign_sales";
+            public const string ViewPhone = "customer.view_phone";
+            public const string ViewWechatId = "customer.view_wechat_id";
+            public const string ViewSensitive = "customer.view_sensitive";
         }
 
         // 订单管理权限
@@ -89,6 +92,81 @@ namespace SCRM.Models.Constants
             public const string Finance = "report.finance";
         }
 
+        // 风控与审计权限
+        public static class Risk
+        {
+            public const string AuditView = "risk.audit.view";
+        }
+
+        // 设备任务权限
+        public static class DeviceTask
+        {
+            public const string Sync = "device_task.sync";
+            public const string ConfigManage = "device_task.config_manage";
+            public const string SensitiveConfigManage = "device_task.sensitive_config_manage";
+            public const string Screenshot = "device_task.screenshot";
+            public const string DeleteDevice = "device_task.delete_device";
+        }
+
+        // 微信账号操作权限
+        public static class WechatOperation
+        {
+            public const string LocationQuery = "wechat.location.query";
+            public const string WalletQuery = "wechat.wallet.query";
+            public const string Logout = "wechat.account.logout";
+            public const string SettingUpdate = "wechat.setting.update";
+            public const string QrCodePull = "wechat.qrcode.pull";
+            public const string A8KeyQuery = "wechat.a8key.query";
+        }
+
+        // 消息操作权限
+        public static class MessageOperation
+        {
+            public const string Revoke = "message.revoke";
+            public const string ClearWechat = "message.clear_wechat";
+            public const string PullOriginal = "message.pull_original";
+            public const string VoiceTransText = "message.voice_trans_text";
+        }
+
+        // 联系人操作权限
+        public static class ContactOperation
+        {
+            public const string DeleteWechat = "contact.delete_wechat";
+            public const string PermissionSet = "contact.permission_set";
+            public const string LabelManage = "contact.label_manage";
+        }
+
+        // 群操作权限
+        public static class GroupOperation
+        {
+            public const string Manage = "group.manage";
+            public const string MemberAdd = "group.member_add";
+            public const string MemberKick = "group.member_kick";
+            public const string JoinByQr = "group.join_by_qr";
+            public const string InviteApprove = "group.invite_approve";
+            public const string Exit = "group.exit";
+        }
+
+        // 朋友圈操作权限
+        public static class MomentOperation
+        {
+            public const string Post = "moment.post";
+            public const string Delete = "moment.delete";
+            public const string Interact = "moment.interact";
+        }
+
+        // 视频号操作权限
+        public static class FinderOperation
+        {
+            public const string Read = "finder.read";
+            public const string Interact = "finder.interact";
+            public const string DeleteComment = "finder.delete_comment";
+            public const string Export = "finder.export";
+            public const string ViewRaw = "finder.raw.view";
+            public const string ViewMedia = "finder.media.view";
+            public const string ViewMetrics = "finder.metrics.view";
+        }
+
         // 消息权限
         public static class Message
         {
@@ -96,6 +174,16 @@ namespace SCRM.Models.Constants
             public const string Receive = "message.receive";
             public const string Broadcast = "message.broadcast";
             public const string Template = "message.template";
+            public const string ViewContent = "message.view_content";
+            public const string ViewRaw = "message.view_raw";
+        }
+
+        // 手机短信/通话记录权限
+        public static class PhoneRecord
+        {
+            public const string ViewNumber = "phone_record.view_number";
+            public const string ViewSmsContent = "phone_record.view_sms_content";
+            public const string ViewCallRecordUrl = "phone_record.view_call_record_url";
         }
     }
 

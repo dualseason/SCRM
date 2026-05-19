@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 视频号提及拉取任务
+message SphGetMentionTaskMessage {
+  string WeChatId = 1;
+  int64 LastLikeId = 2;
+  int64 LastCommentId = 3;
+  int64 LastFollowId = 4;
+  int64 TaskId = 5;
+}

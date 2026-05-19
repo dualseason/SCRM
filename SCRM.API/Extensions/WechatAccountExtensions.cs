@@ -3,6 +3,7 @@ using SCRM.API.Models.Entities;
 using SCRM.Services.Data; // For ApplicationDbContext
 using SCRM.Shared.Interfaces; // Correct Namespace for ICrmService
 using SCRM.SHARED.Models; // For ContactFilter/DTOs if needed
+using SCRM.API.Services.Data;
 
 namespace SCRM.API.Models.Entities // Trick: Same namespace as Entity for auto-discovery
 {
@@ -45,13 +46,16 @@ namespace SCRM.API.Models.Entities // Trick: Same namespace as Entity for auto-d
         /// </summary>
         public static async Task<List<Message>> GetMessagesAsync(this WechatAccount account, ApplicationDbContext db, string friendWxid, int count = 50)
         {
-             return await db.Messages
+             var messages = await db.Messages
                 .AsNoTracking()
                 .Where(m => m.accountId == account.wxid && (m.senderWxid == friendWxid || m.receiverWxid == friendWxid)) 
                 .OrderByDescending(m => m.createdAt)
                 .Take(count)
                 .OrderBy(m => m.createdAt) // Re-sort for display
                 .ToListAsync();
+
+             await db.EnrichMessagesWithMediaMetadataAsync(messages);
+             return messages;
         }
 
         // ========== 业务操作 (Via CrmService) ==========
@@ -62,7 +66,8 @@ namespace SCRM.API.Models.Entities // Trick: Same namespace as Entity for auto-d
         public static async Task<bool> SendMessageAsync(this WechatAccount account, ICrmService crm, string toWxid, string content)
         {
             if (string.IsNullOrEmpty(account.clientUuid)) return false;
-            return await crm.SendMessageAsync(account.clientUuid, toWxid, content);
+            var result = await crm.SendMessageAsync(account.clientUuid, toWxid, content);
+            return result.success;
         }
 
         /// <summary>
@@ -71,7 +76,8 @@ namespace SCRM.API.Models.Entities // Trick: Same namespace as Entity for auto-d
         public static async Task<bool> AcceptFriendAsync(this WechatAccount account, ICrmService crm, string friendWxid, string friendNick)
         {
              if (string.IsNullOrEmpty(account.clientUuid)) return false;
-             return await crm.AcceptFriendRequestAsync(account.clientUuid, friendWxid, friendNick);
+             var result = await crm.AcceptFriendRequestAsync(account.clientUuid, friendWxid, friendNick);
+             return result.success;
         }
     }
 }

@@ -1,0 +1,22 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 群邀请成员
+message InvitedMemMessage {
+  string UserName = 1;
+  string NickName = 2;
+  string Avatar = 3;
+}
+
+// 群邀请推送
+message ChatRoomInvitePushNoticeMessage {
+  string WeChatId = 1;
+  string ChatRoomId = 2;
+  string Inviter = 3;
+  string InviteName = 4;
+  string Reason = 5;
+  repeated InvitedMemMessage Invited = 6;
+  int64 MsgId = 7;
+  int64 UpdateTime = 8;
+}

@@ -205,6 +205,9 @@
             <RadzenTabsItem Text="微信权限控制 (Permissions)">
                 <RadzenCard>
                     <RadzenStack Gap="1.5rem">
+                        <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0;">
+                            本页保存后会作为全局默认配置推送到所有在线客户端；如只想调整单台设备，请使用“设备配置”页面。
+                        </RadzenAlert>
                          <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
                                 <RadzenLabel Text="越权提示 (wx_show_toast)" Component="wx_show_toast" />
@@ -225,6 +228,7 @@
                         <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
                                 <RadzenLabel Text="允许删除好友 (wx_can_delete)" Component="wx_can_delete" />
+                                <RadzenText TextStyle="TextStyle.Caption">关闭后用于阻止微信侧删除好友入口</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
                                 <RadzenSwitch @bind-Value=@configModel.wx_can_delete Name="wx_can_delete" />
@@ -233,9 +237,19 @@
                         <RadzenRow AlignItems="AlignItems.Center">
                             <RadzenColumn Size="12" SizeMD="4">
                                 <RadzenLabel Text="允许拉黑 (wx_can_block)" Component="wx_can_block" />
+                                <RadzenText TextStyle="TextStyle.Caption">关闭后用于阻止微信侧拉黑联系人入口</RadzenText>
                             </RadzenColumn>
                             <RadzenColumn Size="12" SizeMD="8">
                                 <RadzenSwitch @bind-Value=@configModel.wx_can_block Name="wx_can_block" />
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenRow AlignItems="AlignItems.Center">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="允许删除会话 (wx_del_conv)" Component="wx_del_conv" />
+                                <RadzenText TextStyle="TextStyle.Caption">关闭后用于阻止删除聊天会话；62203/SmRun 侧会检查 rconversation 删除</RadzenText>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenSwitch @bind-Value=@configModel.wx_del_conv Name="wx_del_conv" />
                             </RadzenColumn>
                         </RadzenRow>
                         <RadzenRow AlignItems="AlignItems.Center">

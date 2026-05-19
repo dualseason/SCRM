@@ -2,29 +2,7 @@ syntax = "proto3";
 
 package Jubo.JuLiao.IM.Wx.Proto;
 
-// 布尔配置消息
-message BoolConfigMessage {
-  string Key = 1;    // 键
-  bool Value = 2;    // 值
-  string Name = 3;   // 名称
-  string Desc = 4;   // 描述
-}
-
-// 整数配置消息
-message IntConfigMessage {
-  string Key = 1;    // 键
-  int32 Value = 2;   // 值
-  string Name = 3;   // 名称
-  string Desc = 4;   // 描述
-}
-
-// 字符串配置消息
-message StrConfigMessage {
-  string Key = 1;    // 键
-  string Value = 2;  // 值
-  string Name = 3;   // 名称
-  string Desc = 4;   // 描述
-}
+import "ConfigPushNotice.proto";
 
 message SetConfigTaskMessage {
   string IMEI = 1;

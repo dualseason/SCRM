@@ -17,6 +17,7 @@ message StrangerMessage {
   string City = 9;          // 城市
   string Memo = 10;         // 备注
   string Signature = 11;    // 签名
+  int32 VerifyFlag = 12;    // 验证标志
 }
 
 // 聊天室成员通知消息

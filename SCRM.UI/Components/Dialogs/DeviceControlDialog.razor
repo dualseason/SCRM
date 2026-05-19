@@ -1,6 +1,8 @@
 @using SCRM.UI.Services
 @using SCRM.API.Models.Entities
 @using SCRM.SHARED.Models
+@using SCRM.SHARED.Models.Dtos
+@using System.Text.Json
 @using Radzen
 @using Radzen.Blazor
 @inject CrmStore Store
@@ -38,8 +40,93 @@
         <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap">
             <RadzenButton Text="Capture Screen" Icon="screenshot_monitor" ButtonStyle="ButtonStyle.Primary" Click="OnCaptureScreen" IsBusy="@_isCapturing" />
             <RadzenButton Text="Sync Contacts" Icon="sync" ButtonStyle="ButtonStyle.Secondary" Click="OnSyncContacts" />
-            <RadzenButton Text="Reboot (Mock)" Icon="restart_alt" ButtonStyle="ButtonStyle.Danger" Disabled="true" />
+            <RadzenButton Text="刷新微信状态" Icon="manage_accounts" ButtonStyle="ButtonStyle.Light" Click="OnRefreshWeChatAccounts" />
+            <RadzenButton Text="上传日志" Icon="upload_file" ButtonStyle="ButtonStyle.Light" Disabled="@_isPhoneActionBusy" Click="OnUploadLog" />
+            <RadzenButton Text="清 App 缓存" Icon="cleaning_services" ButtonStyle="ButtonStyle.Light" Disabled="@_isPhoneActionBusy" Click="OnCleanAppCache" />
+            <RadzenButton Text="清微信缓存" Icon="delete_outline" ButtonStyle="ButtonStyle.Warning" Disabled="@_isPhoneActionBusy" Click="OnCleanWxCache" />
+            <RadzenButton Text="清文件 URL 缓存" Icon="link_off" ButtonStyle="ButtonStyle.Light" Disabled="@_isPhoneActionBusy" Click="OnCleanFileUrlCache" />
+            <RadzenButton Text="重启微信" Icon="restart_alt" ButtonStyle="ButtonStyle.Warning" Disabled="@_isPhoneActionBusy" Click="OnRestartWx" />
+            <RadzenButton Text="重启客户端" Icon="power_settings_new" ButtonStyle="ButtonStyle.Warning" Disabled="@_isPhoneActionBusy" Click="OnRestartSelf" />
+            <RadzenButton Text="重启设备" Icon="settings_power" ButtonStyle="ButtonStyle.Danger" Disabled="@_isPhoneActionBusy" Click="OnRebootDevice" />
         </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap" AlignItems="AlignItems.Center" class="rz-mt-3">
+            <RadzenTextBox @bind-Value="_phoneCallNumber" Placeholder="电话号码" Style="width: 180px;" />
+            <RadzenButton Text="拨打电话" Icon="call" ButtonStyle="ButtonStyle.Secondary" Disabled="@_isPhoneActionBusy" Click="OnPhoneCall" />
+            <RadzenTextBox @bind-Value="_uploadFilePath" Placeholder="上传文件路径/URL" Style="width: 260px;" />
+            <RadzenButton Text="上传文件" Icon="drive_folder_upload" ButtonStyle="ButtonStyle.Secondary" Disabled="@_isPhoneActionBusy" Click="OnUploadFile" />
+        </RadzenStack>
+
+        <RadzenText TextStyle="TextStyle.Caption" class="rz-mt-2">
+            设备操作已对齐 PhoneActionTask(1223)。部分动作依赖系统权限或 root 环境，“已下发”不等于系统动作一定完成。
+        </RadzenText>
+    </RadzenCard>
+
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.Subtitle1" TagName="TagName.H3">微信扩展任务</RadzenText>
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" Wrap="FlexWrap.Wrap">
+            <RadzenButton Text="个人二维码" Icon="qr_code_2" ButtonStyle="ButtonStyle.Secondary" Disabled="@_isExtendedActionBusy" Click="OnPullWeChatQrCode" />
+            <RadzenButton Text="手机状态" Icon="battery_full" ButtonStyle="ButtonStyle.Secondary" Disabled="@_isExtendedActionBusy" Click="OnGetPhoneState" />
+            <RadzenButton Text="钱包余额" Icon="account_balance_wallet" ButtonStyle="ButtonStyle.Secondary" Disabled="@_isExtendedActionBusy" Click="OnGetWalletBalance" />
+            <RadzenButton Text="微信定位" Icon="location_on" ButtonStyle="ButtonStyle.Secondary" Disabled="@_isExtendedActionBusy" Click="OnGetWeChatLocation" />
+            <RadzenButton Text="同步企微用户" Icon="groups" ButtonStyle="ButtonStyle.Secondary" Disabled="@_isExtendedActionBusy" Click="OnSyncQwUsers" />
+            <RadzenButton Text="消息ID快照" Icon="manage_search" ButtonStyle="ButtonStyle.Secondary" Disabled="@_isExtendedActionBusy" Click="OnSyncChatMsgIds" />
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap" AlignItems="AlignItems.Center" class="rz-mt-3">
+            <RadzenTextBox @bind-Value="_findContactText" Placeholder="wxid / 微信号 / 手机号" Style="width: 220px;" />
+            <RadzenButton Text="搜索联系人" Icon="person_search" ButtonStyle="ButtonStyle.Light" Disabled="@_isExtendedActionBusy" Click="OnFindContact" />
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap" AlignItems="AlignItems.Center" class="rz-mt-2">
+            <RadzenTextBox @bind-Value="_emojiMd5" Placeholder="表情 MD5" Style="width: 220px;" />
+            <RadzenButton Text="拉取表情信息" Icon="sentiment_satisfied_alt" ButtonStyle="ButtonStyle.Light" Disabled="@_isExtendedActionBusy" Click="OnPullEmojiInfo" />
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap" AlignItems="AlignItems.Center" class="rz-mt-2">
+            <RadzenNumeric @bind-Value="_poiLat" TValue="double" Placeholder="纬度" Style="width: 120px;" />
+            <RadzenNumeric @bind-Value="_poiLng" TValue="double" Placeholder="经度" Style="width: 120px;" />
+            <RadzenTextBox @bind-Value="_poiKeyword" Placeholder="POI 关键词" Style="width: 160px;" />
+            <RadzenButton Text="拉取 POI" Icon="place" ButtonStyle="ButtonStyle.Light" Disabled="@_isExtendedActionBusy" Click="OnGetPoiList" />
+        </RadzenStack>
+
+        @if (_lastPoiItems.Count > 0)
+        {
+            <RadzenCard class="rz-mt-2" Style="max-height: 260px; overflow: auto;">
+                <RadzenStack Gap="0.35rem">
+                    <RadzenText TextStyle="TextStyle.Subtitle2">最近一次 POI 结果（@_lastPoiItems.Count 条）</RadzenText>
+                    @if (!string.IsNullOrWhiteSpace(_lastPoiKeyword))
+                    {
+                        <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">关键词：@_lastPoiKeyword</RadzenText>
+                    }
+                    <ol style="margin: 0; padding-left: 1.25rem;">
+                        @foreach (var poi in _lastPoiItems.Take(20))
+                        {
+                            <li title="@poi" style="margin-bottom: 4px; word-break: break-all;">@FormatShortText(poi, 120)</li>
+                        }
+                    </ol>
+                    @if (_lastPoiItems.Count > 20)
+                    {
+                        <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">仅显示前 20 条，完整数量见任务回执。</RadzenText>
+                    }
+                </RadzenStack>
+            </RadzenCard>
+        }
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap" AlignItems="AlignItems.Center" class="rz-mt-2">
+            <RadzenTextBox @bind-Value="_hbUrl" Placeholder="红包 nativeUrl / hbUrl" Style="width: 320px;" />
+            <RadzenButton Text="查红包详情" Icon="redeem" ButtonStyle="ButtonStyle.Light" Disabled="@_isExtendedActionBusy" Click="OnQueryHbDetail" />
+            <RadzenButton Text="查红包状态" Icon="fact_check" ButtonStyle="ButtonStyle.Light" Disabled="@_isExtendedActionBusy" Click="OnQueryHbStatus" />
+        </RadzenStack>
+
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap" AlignItems="AlignItems.Center" class="rz-mt-2">
+            <RadzenButton Text="微信登出" Icon="logout" ButtonStyle="ButtonStyle.Warning" Disabled="@_isExtendedActionBusy" Click="OnWechatLogout" />
+            <RadzenButton Text="清空微信端聊天记录" Icon="delete_sweep" ButtonStyle="ButtonStyle.Danger" Disabled="@_isExtendedActionBusy" Click="OnClearAllChatMsg" />
+        </RadzenStack>
+
+        <RadzenText TextStyle="TextStyle.Caption" class="rz-mt-2">
+            这些任务大多通过异步回执返回；下发成功后请查看右上角通知或服务端任务结果日志。
+        </RadzenText>
     </RadzenCard>
 
     @* Screenshot Display *@
@@ -48,9 +135,38 @@
         <RadzenCard>
             <RadzenText TextStyle="TextStyle.Subtitle2">Latest Screenshot</RadzenText>
             <div style="width: 100%; overflow: auto; max-height: 400px; text-align: center; background: var(--rz-base-200); padding: 10px;">
-                 <RadzenImage Path="@Store.LastScreenShotUrl" Style="max-width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+                @if (!string.IsNullOrWhiteSpace(Store.LastScreenShotAccessUrl))
+                {
+                    <a href="@Store.LastScreenShotAccessUrl" target="_blank" rel="noopener" title="打开短期截图链接">
+                        <RadzenImage Path="@Store.LastScreenShotAccessUrl" Style="max-width: 100%; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
+                    </a>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">@FormatScreenShotTokenExpires()</RadzenText>
+                }
+                else
+                {
+                    <div style="font-size: 12px; color: var(--rz-text-secondary-color);">截图已通过短期链接保护</div>
+                }
+                <RadzenButton Text="@GetScreenShotAccessButtonText()"
+                              Icon="visibility"
+                              ButtonStyle="ButtonStyle.Light"
+                              Variant="Variant.Outlined"
+                              Size="ButtonSize.ExtraSmall"
+                              Class="rz-mt-2"
+                              Click="@PrepareScreenShotPreview"
+                              Disabled="@Store.IsPreparingScreenShotAccess" />
             </div>
         </RadzenCard>
+    }
+
+    @if (IsCurrentDeviceScreenShotState())
+    {
+        <RadzenAlert AlertStyle="@(Store.LastScreenShotSuccess == false ? AlertStyle.Warning : AlertStyle.Success)" Variant="Variant.Flat">
+            <div>@(Store.LastScreenShotStatusMessage ?? "截图状态未知")</div>
+            @if (Store.LastScreenShotUpdatedAt.HasValue)
+            {
+                <div style="font-size: 12px; opacity: 0.85;">更新时间：@Store.LastScreenShotUpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</div>
+            }
+        </RadzenAlert>
     }
     
     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="1rem" Style="margin-top: 1rem;">
@@ -63,6 +179,18 @@
     [Parameter] public SrClient Device { get; set; }
 
     private bool _isCapturing = false;
+    private bool _isExtendedActionBusy = false;
+    private bool _isPhoneActionBusy = false;
+    private string _findContactText = string.Empty;
+    private string _emojiMd5 = string.Empty;
+    private string _poiKeyword = string.Empty;
+    private string _hbUrl = string.Empty;
+    private string _phoneCallNumber = string.Empty;
+    private string _uploadFilePath = string.Empty;
+    private double _poiLat;
+    private double _poiLng;
+    private List<string> _lastPoiItems = new();
+    private string _lastPoiKeyword = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -84,21 +212,19 @@
         _isCapturing = true;
         try 
         {
-            var success = await Store.RequestScreenShotAsync(Device.uuid);
-            if (success)
+            var result = await Store.RequestScreenShotAsync(Device.uuid);
+            if (result.success)
             {
-                NoticeService.Notify(NotificationSeverity.Info, "Summary", "Screenshot requested. Updating...");
-                // Optimistic wait, though real update comes via SignalR -> Store
-                await Task.Delay(2000); 
+                NoticeService.Notify(NotificationSeverity.Success, "截图完成", result.message ?? "截图任务已完成");
             }
             else
             {
-                NoticeService.Notify(NotificationSeverity.Error, "Error", "Failed to send request (Device offline or not found).");
+                NoticeService.Notify(NotificationSeverity.Error, "截图失败", result.message ?? "截图任务执行失败");
             }
         }
         catch (Exception ex)
         {
-            NoticeService.Notify(NotificationSeverity.Error, "Error", $"Request failed: {ex.Message}");
+            NoticeService.Notify(NotificationSeverity.Error, "截图异常", $"截图请求失败：{ex.Message}");
         }
         finally
         {
@@ -108,7 +234,372 @@
 
     private async Task OnSyncContacts()
     {
-        await Store.SyncContactsAsync(); // Store typically syncs selected device, need to ensure logic holds or pass ID
-        NoticeService.Notify(NotificationSeverity.Info, "Summary", "Sync contacts requested.");
+        await EnsureDialogDeviceSelectedAsync();
+        await Store.SyncContactsAsync();
+        NoticeService.Notify(NotificationSeverity.Info, "联系人同步", "已请求手机端按 3056 回传好友列表。");
+    }
+
+    private async Task OnRefreshWeChatAccounts()
+    {
+        await EnsureDialogDeviceSelectedAsync();
+        var result = await Store.RefreshSelectedWeChatAccountsAsync();
+        NoticeService.Notify(
+            result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+            "刷新微信状态",
+            result.message ?? (result.success ? "微信账号状态查询已下发" : "微信账号状态查询失败"));
+    }
+
+    /// <summary>
+    /// 设备弹窗可能从设备列表直接打开；执行依赖当前选中设备的操作前，先把 Store 选中态校准到弹窗设备。
+    /// </summary>
+    private async Task EnsureDialogDeviceSelectedAsync()
+    {
+        if (Device == null || string.IsNullOrWhiteSpace(Device.uuid))
+        {
+            return;
+        }
+
+        if (!string.Equals(Store.SelectedDevice?.uuid, Device.uuid, StringComparison.OrdinalIgnoreCase))
+        {
+            await Store.SelectDeviceAsync(Device);
+        }
+    }
+
+    private async Task RunExtendedActionAsync(Func<Task<TaskResult>> action, string title)
+    {
+        if (Device == null || string.IsNullOrWhiteSpace(Device.uuid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, title, "设备信息为空");
+            return;
+        }
+
+        _isExtendedActionBusy = true;
+        try
+        {
+            var result = await action();
+            if (string.Equals(title, "POI 列表", StringComparison.OrdinalIgnoreCase))
+            {
+                UpdatePoiResult(result);
+            }
+
+            NoticeService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                title,
+                BuildResultMessage(title, result));
+        }
+        catch (Exception ex)
+        {
+            NoticeService.Notify(NotificationSeverity.Error, title, ex.Message);
+        }
+        finally
+        {
+            _isExtendedActionBusy = false;
+        }
+    }
+
+    /// <summary>
+    /// 构建任务提示文案。POI 回包包含列表时，把数量补进通知，避免只看到“任务已下发”。
+    /// </summary>
+    private string BuildResultMessage(string title, TaskResult result)
+    {
+        var message = result.message ?? (result.success ? "任务已下发" : "任务下发失败");
+        if (string.Equals(title, "POI 列表", StringComparison.OrdinalIgnoreCase) && _lastPoiItems.Count > 0)
+        {
+            return $"{message}；已展示 {_lastPoiItems.Count} 条 POI。";
+        }
+
+        return message;
+    }
+
+    /// <summary>
+    /// 从 TaskResult.data 中提取 POI 列表。SignalR 返回时 data 可能是 JsonElement，也可能是匿名对象。
+    /// </summary>
+    private void UpdatePoiResult(TaskResult result)
+    {
+        _lastPoiItems = ExtractPoiItems(result.data);
+        _lastPoiKeyword = ExtractPoiKeyword(result.data);
+    }
+
+    private static List<string> ExtractPoiItems(object? data)
+    {
+        if (data == null)
+        {
+            return new List<string>();
+        }
+
+        if (data is JsonElement json)
+        {
+            return ExtractPoiItems(json);
+        }
+
+        var property = data.GetType().GetProperty("poiList") ?? data.GetType().GetProperty("PoiList");
+        var value = property?.GetValue(data);
+        if (value is IEnumerable<string> strings)
+        {
+            return strings.Where(item => !string.IsNullOrWhiteSpace(item)).Select(item => item.Trim()).ToList();
+        }
+
+        if (value is System.Collections.IEnumerable enumerable && value is not string)
+        {
+            var items = new List<string>();
+            foreach (var item in enumerable)
+            {
+                var text = item?.ToString();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    items.Add(text.Trim());
+                }
+            }
+
+            return items;
+        }
+
+        return new List<string>();
+    }
+
+    private static List<string> ExtractPoiItems(JsonElement json)
+    {
+        if (json.ValueKind != JsonValueKind.Object || !json.TryGetProperty("poiList", out var poiList) || poiList.ValueKind != JsonValueKind.Array)
+        {
+            return new List<string>();
+        }
+
+        var items = new List<string>();
+        foreach (var item in poiList.EnumerateArray())
+        {
+            var text = item.ValueKind == JsonValueKind.String ? item.GetString() : item.ToString();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                items.Add(text.Trim());
+            }
+        }
+
+        return items;
+    }
+
+    private static string ExtractPoiKeyword(object? data)
+    {
+        if (data == null)
+        {
+            return string.Empty;
+        }
+
+        if (data is JsonElement json)
+        {
+            return json.ValueKind == JsonValueKind.Object && json.TryGetProperty("Keyword", out var upperKeyword)
+                ? upperKeyword.GetString() ?? string.Empty
+                : json.ValueKind == JsonValueKind.Object && json.TryGetProperty("keyword", out var lowerKeyword)
+                    ? lowerKeyword.GetString() ?? string.Empty
+                    : string.Empty;
+        }
+
+        var property = data.GetType().GetProperty("Keyword") ?? data.GetType().GetProperty("keyword");
+        return property?.GetValue(data)?.ToString() ?? string.Empty;
+    }
+
+    private static string FormatShortText(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "-";
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength] + "...";
+    }
+
+    private Task OnPullWeChatQrCode()
+        => RunExtendedActionAsync(() => Store.PullWeChatQrCodeAsync(Device.uuid), "个人二维码");
+
+    private Task OnGetPhoneState()
+        => RunExtendedActionAsync(() => Store.GetPhoneStateAsync(deviceUuid: Device.uuid), "手机状态");
+
+    private Task OnGetWalletBalance()
+        => RunExtendedActionAsync(() => Store.GetWalletBalanceAsync(deviceUuid: Device.uuid), "钱包余额");
+
+    private Task OnGetWeChatLocation()
+        => RunExtendedActionAsync(() => Store.GetWeChatLocationAsync(noCache: true, deviceUuid: Device.uuid), "微信定位");
+
+    private Task OnSyncQwUsers()
+        => RunExtendedActionAsync(() => Store.SyncQwUsersAsync(Device.uuid), "同步企微用户");
+
+    private Task OnSyncChatMsgIds()
+    {
+        var endTime = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+        var startTime = endTime - (long)TimeSpan.FromMinutes(10).TotalMilliseconds;
+        return RunExtendedActionAsync(
+            () => Store.SyncChatMsgIdsAsync(startTime, endTime, Device.uuid),
+            "消息ID快照");
+    }
+
+    private Task OnFindContact()
+        => RunExtendedActionAsync(() => Store.FindContactAsync(_findContactText, Device.uuid), "搜索联系人");
+
+    private Task OnPullEmojiInfo()
+        => RunExtendedActionAsync(() => Store.PullEmojiInfoAsync(_emojiMd5, Device.uuid), "表情信息");
+
+    private Task OnGetPoiList()
+        => RunExtendedActionAsync(() => Store.GetPoiListAsync(_poiLat, _poiLng, _poiKeyword, Device.uuid), "POI 列表");
+
+    private async Task OnPhoneAction(int action, string title, string strParam = "", int intParam = 0)
+    {
+        if (Device == null || string.IsNullOrWhiteSpace(Device.uuid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, title, "设备信息为空");
+            return;
+        }
+
+        _isPhoneActionBusy = true;
+        try
+        {
+            var result = await Store.ExecutePhoneActionAsync(action, strParam, intParam, Device.uuid);
+            NoticeService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                title,
+                result.message ?? (result.success ? "操作已下发" : "操作下发失败"));
+        }
+        catch (Exception ex)
+        {
+            NoticeService.Notify(NotificationSeverity.Error, title, ex.Message);
+        }
+        finally
+        {
+            _isPhoneActionBusy = false;
+        }
+    }
+
+    private async Task OnConfirmedPhoneAction(int action, string title, string message, string strParam = "", int intParam = 0)
+    {
+        var confirm = await DialogService.Confirm(
+            message,
+            title,
+            new ConfirmOptions { OkButtonText = "确定执行", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
+        await OnPhoneAction(action, title, strParam, intParam);
+    }
+
+    private Task OnUploadLog()
+        => OnPhoneAction(2, "上传日志");
+
+    private Task OnCleanAppCache()
+        => OnConfirmedPhoneAction(4, "清 App 缓存", "确定要让客户端清理 App 缓存吗？");
+
+    private Task OnCleanWxCache()
+        => OnConfirmedPhoneAction(5, "清微信缓存", "确定要清理微信缓存吗？该操作可能影响微信本地临时文件。");
+
+    private Task OnCleanFileUrlCache()
+        => OnConfirmedPhoneAction(6, "清文件 URL 缓存", "确定要清理客户端文件 URL 缓存吗？");
+
+    private Task OnRestartWx()
+        => OnConfirmedPhoneAction(9, "重启微信", "确定要重启微信进程吗？");
+
+    private Task OnRestartSelf()
+        => OnConfirmedPhoneAction(10, "重启客户端", "确定要重启 SCRM 客户端吗？");
+
+    private Task OnRebootDevice()
+        => OnConfirmedPhoneAction(1, "重启设备", "确定要重启整台手机吗？请确认设备可自动恢复在线。");
+
+    private async Task OnPhoneCall()
+    {
+        if (string.IsNullOrWhiteSpace(_phoneCallNumber))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "拨打电话", "请先输入电话号码");
+            return;
+        }
+
+        await OnConfirmedPhoneAction(
+            7,
+            "拨打电话",
+            $"确定要让设备拨打 {_phoneCallNumber.Trim()} 吗？",
+            _phoneCallNumber.Trim());
+    }
+
+    private async Task OnUploadFile()
+    {
+        if (string.IsNullOrWhiteSpace(_uploadFilePath))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "上传文件", "请先输入文件路径或 URL");
+            return;
+        }
+
+        await OnConfirmedPhoneAction(
+            3,
+            "上传文件",
+            $"确定要让设备上传文件：{_uploadFilePath.Trim()}？",
+            _uploadFilePath.Trim());
+    }
+
+    private Task OnQueryHbDetail()
+        => RunExtendedActionAsync(() => Store.QueryHbDetailAsync(_hbUrl, Device.uuid), "红包详情");
+
+    private Task OnQueryHbStatus()
+        => RunExtendedActionAsync(() => Store.QueryHbStatusAsync(_hbUrl, Device.uuid), "红包状态");
+
+    private async Task OnWechatLogout()
+    {
+        var confirm = await DialogService.Confirm(
+            "确定要让当前设备上的微信账号登出吗？服务端会等待客户端上报账号状态，不会立即强制改本地状态。",
+            "微信登出",
+            new ConfirmOptions { OkButtonText = "登出", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
+        await RunExtendedActionAsync(() => Store.WechatLogoutAsync(Device.uuid), "微信登出");
+    }
+
+    private async Task OnClearAllChatMsg()
+    {
+        var confirm = await DialogService.Confirm(
+            "确定要清空微信客户端本地聊天记录吗？该操作不会删除 SCRM 服务端已落库消息，但微信端数据可能不可恢复。",
+            "清空微信端聊天记录",
+            new ConfirmOptions { OkButtonText = "清空", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
+        await RunExtendedActionAsync(() => Store.ClearAllChatMsgAsync(deviceUuid: Device.uuid), "清空微信端聊天记录");
+    }
+
+    private bool IsCurrentDeviceScreenShotState()
+    {
+        return Device != null
+            && !string.IsNullOrWhiteSpace(Store.LastScreenShotDeviceUuid)
+            && string.Equals(Store.LastScreenShotDeviceUuid, Device.uuid, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private string GetScreenShotAccessButtonText()
+    {
+        if (Store.IsPreparingScreenShotAccess)
+        {
+            return "生成中...";
+        }
+
+        return string.IsNullOrWhiteSpace(Store.LastScreenShotAccessUrl)
+            ? "预览截图"
+            : "刷新截图链接";
+    }
+
+    private string FormatScreenShotTokenExpires()
+    {
+        return Store.LastScreenShotAccessExpiresAt.HasValue
+            ? $"截图链接有效期至：{Store.LastScreenShotAccessExpiresAt.Value.ToLocalTime():HH:mm:ss}"
+            : "截图链接将在短时间后失效";
+    }
+
+    private async Task PrepareScreenShotPreview()
+    {
+        var token = await Store.PrepareLastScreenShotAccessAsync(5);
+        NoticeService.Notify(
+            token.Success ? NotificationSeverity.Success : NotificationSeverity.Warning,
+            token.Success ? "截图短期链接已生成" : "截图预览失败",
+            token.Success ? "已切换为后端短期 token 链接。" : token.Message,
+            duration: 2500);
     }
 }

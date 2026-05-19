@@ -1,0 +1,532 @@
+@page "/features/device-config"
+@using System
+@using System.Linq
+@using Microsoft.AspNetCore.Authorization
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject DialogService DialogService
+@inject NotificationService NoticeService
+@attribute [Authorize(Roles = "Admin,SuperAdmin")]
+@implements IDisposable
+
+<PageTitle>设备配置与违禁词</PageTitle>
+
+<RadzenStack Gap="1rem" Style="padding: 1rem;">
+    <OperationContextHint Title="设备配置当前对象"
+                          Description="本页配置直接下发到选中设备的 Android 客户端；微信账号可以换设备登录，因此请先确认执行设备和当前 wxid。"
+                          Class="rz-mb-0" />
+
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Wrap="FlexWrap.Wrap">
+        <RadzenStack Gap="0.25rem">
+            <RadzenText Text="设备配置与违禁词" TextStyle="TextStyle.H5" Style="margin: 0;" />
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                对齐 SmRun/62203 的 SetConfigTask(1382)、TriggerConfigPush(1380)、SetForbiddenWord(1383)。设备配置只下发本次选中项；违禁词会同步到服务端发送前阻断策略。
+            </RadzenText>
+        </RadzenStack>
+        <RadzenButton Text="刷新设备" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="ReloadDevicesAsync" Disabled="@_isBusy" />
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="8">
+                <RadzenStack Gap="0.35rem">
+                    <RadzenLabel Text="执行设备 / 当前操作微信" />
+                    <RadzenDropDown TValue="string"
+                                    Data="@DeviceOptions"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    @bind-Value="_deviceUuid"
+                                    Change="@OnExecutionDeviceChanged"
+                                    Placeholder="请选择在线设备"
+                                    Style="width: 100%;" />
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                        当前选中：@SelectedDeviceText
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="4">
+                <RadzenStack Gap="0.5rem">
+                    <RadzenLabel Text="配置快照" />
+                    <RadzenButton Text="请求客户端回传配置快照"
+                                  Icon="sync"
+                                  ButtonStyle="ButtonStyle.Info"
+                                  Click="PullConfigSnapshotAsync"
+                                  Disabled="@(_isBusy || string.IsNullOrWhiteSpace(_deviceUuid))" />
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                        当前服务端只记录结构化日志和 ACK；后续如需页面展示，应新增设备维度快照表并走 DbHelper。
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="设备配置">
+                <RadzenStack Gap="1rem" Style="padding-top: 1rem;">
+                    <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" ShowIcon="true">
+                        只会下发勾选“下发”的配置键。host、port、fileUpUrl 会影响客户端连接或文件上传，修改前请确认值正确。
+                    </RadzenAlert>
+
+                    <RadzenRow Gap="1rem">
+                        <RadzenColumn Size="12" SizeLG="7">
+                            <RadzenCard>
+                                <RadzenStack Gap="0.75rem">
+                                    <RadzenText Text="布尔配置" TextStyle="TextStyle.H6" Style="margin: 0;" />
+                                    @foreach (var row in _boolRows)
+                                    {
+                                        <RadzenRow AlignItems="AlignItems.Center" Gap="0.5rem">
+                                            <RadzenColumn Size="2" SizeMD="1">
+                                                <RadzenCheckBox TValue="bool" @bind-Value="row.Include" />
+                                            </RadzenColumn>
+                                            <RadzenColumn Size="5" SizeMD="3">
+                                                <RadzenText Text="@row.Key" TextStyle="TextStyle.Body2" Style="font-family: monospace;" />
+                                            </RadzenColumn>
+                                            <RadzenColumn Size="5" SizeMD="2">
+                                                <RadzenSwitch @bind-Value="row.Value" Disabled="@(!row.Include)" />
+                                            </RadzenColumn>
+                                            <RadzenColumn Size="12" SizeMD="6">
+                                                <RadzenText Text="@row.Description" TextStyle="TextStyle.Caption" Class="rz-color-secondary" />
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    }
+                                </RadzenStack>
+                            </RadzenCard>
+                        </RadzenColumn>
+
+                        <RadzenColumn Size="12" SizeLG="5">
+                            <RadzenCard>
+                                <RadzenStack Gap="0.75rem">
+                                    <RadzenText Text="整数配置" TextStyle="TextStyle.H6" Style="margin: 0;" />
+                                    @foreach (var row in _intRows)
+                                    {
+                                        <RadzenRow AlignItems="AlignItems.Center" Gap="0.5rem">
+                                            <RadzenColumn Size="2">
+                                                <RadzenCheckBox TValue="bool" @bind-Value="row.Include" />
+                                            </RadzenColumn>
+                                            <RadzenColumn Size="4">
+                                                <RadzenText Text="@row.Key" TextStyle="TextStyle.Body2" Style="font-family: monospace;" />
+                                            </RadzenColumn>
+                                            <RadzenColumn Size="6">
+                                                <RadzenNumeric TValue="int" @bind-Value="row.Value" Min="@row.Min" Max="@row.Max" Disabled="@(!row.Include)" Style="width: 100%;" />
+                                            </RadzenColumn>
+                                            <RadzenColumn Size="12">
+                                                <RadzenText Text="@row.Description" TextStyle="TextStyle.Caption" Class="rz-color-secondary" />
+                                            </RadzenColumn>
+                                        </RadzenRow>
+                                    }
+
+                                    <RadzenText Text="字符串配置" TextStyle="TextStyle.H6" Style="margin: 0.5rem 0 0 0;" />
+                                    @foreach (var row in _strRows)
+                                    {
+                                        <RadzenStack Gap="0.25rem">
+                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                                                <RadzenCheckBox TValue="bool" @bind-Value="row.Include" />
+                                                <RadzenText Text="@row.Key" TextStyle="TextStyle.Body2" Style="font-family: monospace; min-width: 90px;" />
+                                            </RadzenStack>
+                                            <RadzenTextBox @bind-Value="row.Value" Disabled="@(!row.Include)" Style="width: 100%;" />
+                                            <RadzenText Text="@row.Description" TextStyle="TextStyle.Caption" Class="rz-color-secondary" />
+                                        </RadzenStack>
+                                    }
+                                </RadzenStack>
+                            </RadzenCard>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                        <RadzenButton Text="下发所选设备配置"
+                                      Icon="send"
+                                      ButtonStyle="ButtonStyle.Primary"
+                                      Click="ApplyDeviceConfigAsync"
+                                      Disabled="@(_isBusy || string.IsNullOrWhiteSpace(_deviceUuid))" />
+                        <RadzenButton Text="清空选择"
+                                      Icon="clear_all"
+                                      ButtonStyle="ButtonStyle.Light"
+                                      Click="ClearSelectedConfig" />
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                            已选择 @SelectedConfigCount 项配置。
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="违禁词">
+                <RadzenStack Gap="1rem" Style="padding-top: 1rem;">
+                    <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true">
+                        每行一个词。下发后同时写入该设备/当前微信账号的服务端阻断词库；空列表会清空客户端本地违禁词和对应服务端阻断词库。
+                    </RadzenAlert>
+                    <RadzenTextArea @bind-Value="_forbiddenWordsText"
+                                    Rows="12"
+                                    Style="width: 100%;"
+                                    Placeholder="每行一个违禁词，例如：&#10;敏感词1&#10;敏感词2" />
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                        <RadzenButton Text="下发违禁词"
+                                      Icon="gpp_bad"
+                                      ButtonStyle="ButtonStyle.Primary"
+                                      Click="ApplyForbiddenWordsAsync"
+                                      Disabled="@(_isBusy || string.IsNullOrWhiteSpace(_deviceUuid))" />
+                        <RadzenButton Text="清空违禁词"
+                                      Icon="delete_sweep"
+                                      ButtonStyle="ButtonStyle.Warning"
+                                      Click="ClearForbiddenWordsAsync"
+                                      Disabled="@(_isBusy || string.IsNullOrWhiteSpace(_deviceUuid))" />
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                            当前文本框解析后共 @ForbiddenWordCount 条。
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private string _deviceUuid = string.Empty;
+    private string _forbiddenWordsText = string.Empty;
+    private bool _isBusy;
+
+    private readonly List<BoolConfigRow> _boolRows = new()
+    {
+        new("fastSend", "快速发送/减少发送等待"),
+        new("silentFunc", "静默功能开关"),
+        new("silentAccept", "静默通过/接受相关流程"),
+        new("autoPic", "自动图片相关处理"),
+        new("autoLogin", "自动登录相关处理"),
+        new("addInWw", "添加到企业微信/微信互通相关开关"),
+        new("lightscn", "亮屏/屏幕相关辅助"),
+        new("forceRun", "强制运行/保活相关开关"),
+        new("disturb", "免打扰相关开关"),
+        new("moreLog", "更多日志；Android 端会影响日志保留天数"),
+        new("wx_show_alias", "微信界面显示别名"),
+        new("wx_can_delete", "允许删除联系人"),
+        new("wx_can_block", "允许拉黑联系人"),
+        new("wx_can_exitGroup", "允许退出群聊"),
+        new("wx_del_conv", "允许删除会话"),
+        new("wx_can_logout", "允许微信登出"),
+        new("wx_can_changeAcnt", "允许切换账号"),
+        new("wx_can_acntInfo", "允许查看账号信息"),
+        new("wx_show_toast", "显示微信侧 Toast 提示"),
+        new("wx_can_sendcard", "允许发送名片")
+    };
+
+    private readonly List<IntConfigRow> _intRows = new()
+    {
+        new("keepWake", "保持唤醒时长/等级，按 Android 端当前实现解释", 0, 1440),
+        new("port", "客户端连接服务端 Netty 端口，修改后可能触发重连", 1, 65535)
+    };
+
+    private readonly List<StrConfigRow> _strRows = new()
+    {
+        new("host", "客户端连接服务端 Netty 的 IP/域名，修改后可能触发重连"),
+        new("fileUpUrl", "客户端上传文件、截图、媒体时使用的服务端地址")
+    };
+
+    private IEnumerable<DeviceOption> DeviceOptions => Store.Devices
+        .OrderByDescending(IsDeviceUsableForWechatTask)
+        .ThenByDescending(device => device.isOnline)
+        .ThenBy(device => BuildDeviceText(device))
+        .Select(device => new DeviceOption
+        {
+            Value = device.uuid,
+            Text = BuildDeviceText(device)
+        });
+
+    private string SelectedDeviceText => string.IsNullOrWhiteSpace(_deviceUuid)
+        ? "未选择设备"
+        : BuildDeviceText(Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid));
+
+    private int SelectedConfigCount =>
+        _boolRows.Count(row => row.Include) +
+        _intRows.Count(row => row.Include) +
+        _strRows.Count(row => row.Include);
+
+    private int ForbiddenWordCount => ParseForbiddenWords().Length;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += HandleChange;
+        await Store.InitializeAsync();
+        _deviceUuid = ResolvePreferredDeviceUuid();
+        await EnsureSelectedDeviceAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleChange;
+    }
+
+    private void HandleChange()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ReloadDevicesAsync()
+    {
+        await Store.LoadDevicesAsync();
+        _deviceUuid = ResolvePreferredDeviceUuid();
+        await EnsureSelectedDeviceAsync();
+    }
+
+    private async Task OnExecutionDeviceChanged(object value)
+    {
+        var deviceUuid = value?.ToString();
+        if (string.IsNullOrWhiteSpace(deviceUuid))
+        {
+            return;
+        }
+
+        _deviceUuid = deviceUuid;
+        await EnsureSelectedDeviceAsync();
+    }
+
+    private async Task PullConfigSnapshotAsync()
+    {
+        await EnsureSelectedDeviceAsync();
+        _isBusy = true;
+        try
+        {
+            Notify(await Store.TriggerConfigPushAsync(_deviceUuid));
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task ApplyDeviceConfigAsync()
+    {
+        await EnsureSelectedDeviceAsync();
+        var config = BuildDeviceConfig();
+        if (config.IsEmpty)
+        {
+            Notify(TaskResult.Fail("请先勾选至少一个配置项"));
+            return;
+        }
+
+        if (config.IntConfs.ContainsKey("port") || config.StrConfs.ContainsKey("host") || config.StrConfs.ContainsKey("fileUpUrl"))
+        {
+            var confirm = await DialogService.Confirm(
+                "本次包含 host/port/fileUpUrl 等连接或上传地址配置，错误配置可能导致客户端重连失败。确认下发？",
+                "确认下发设备配置",
+                new ConfirmOptions { OkButtonText = "确认下发", CancelButtonText = "取消" });
+            if (confirm != true)
+            {
+                return;
+            }
+        }
+
+        _isBusy = true;
+        try
+        {
+            Notify(await Store.SetDeviceConfigAsync(config, _deviceUuid));
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task ApplyForbiddenWordsAsync()
+    {
+        await EnsureSelectedDeviceAsync();
+        var words = ParseForbiddenWords();
+        _isBusy = true;
+        try
+        {
+            Notify(await Store.SetForbiddenWordAsync(words, _deviceUuid));
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task ClearForbiddenWordsAsync()
+    {
+        var confirm = await DialogService.Confirm(
+            "确认向客户端下发空违禁词列表？这会清空该设备当前微信侧的本地违禁词，并同步清空对应服务端发送前阻断词库。",
+            "清空违禁词",
+            new ConfirmOptions { OkButtonText = "确认清空", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
+        _forbiddenWordsText = string.Empty;
+        await EnsureSelectedDeviceAsync();
+        _isBusy = true;
+        try
+        {
+            Notify(await Store.SetForbiddenWordAsync(Array.Empty<string>(), _deviceUuid));
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private void ClearSelectedConfig()
+    {
+        foreach (var row in _boolRows) row.Include = false;
+        foreach (var row in _intRows) row.Include = false;
+        foreach (var row in _strRows) row.Include = false;
+    }
+
+    private DeviceConfigDto BuildDeviceConfig()
+    {
+        var dto = new DeviceConfigDto();
+        foreach (var row in _boolRows.Where(item => item.Include))
+        {
+            dto.BoolConfs[row.Key] = row.Value;
+        }
+
+        foreach (var row in _intRows.Where(item => item.Include))
+        {
+            dto.IntConfs[row.Key] = row.Value;
+        }
+
+        foreach (var row in _strRows.Where(item => item.Include))
+        {
+            dto.StrConfs[row.Key] = row.Value?.Trim() ?? string.Empty;
+        }
+
+        return dto;
+    }
+
+    private string[] ParseForbiddenWords()
+    {
+        return (_forbiddenWordsText ?? string.Empty)
+            .Split(new[] { "\r\n", "\n", "\r", ",", "，", ";", "；" }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(item => item.Trim())
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToArray();
+    }
+
+    private string ResolvePreferredDeviceUuid()
+    {
+        if (IsDeviceUsableForWechatTask(Store.SelectedDevice))
+        {
+            return Store.SelectedDevice!.uuid;
+        }
+
+        return Store.Devices.FirstOrDefault(IsDeviceUsableForWechatTask)?.uuid
+            ?? Store.Devices.FirstOrDefault(device => device.isOnline)?.uuid
+            ?? Store.Devices.FirstOrDefault()?.uuid
+            ?? string.Empty;
+    }
+
+    private async Task EnsureSelectedDeviceAsync()
+    {
+        var device = Store.Devices.FirstOrDefault(item => string.Equals(item.uuid, _deviceUuid, StringComparison.OrdinalIgnoreCase));
+        if (device != null && !string.Equals(Store.SelectedDevice?.uuid, device.uuid, StringComparison.OrdinalIgnoreCase))
+        {
+            await Store.SelectDeviceAsync(device);
+        }
+    }
+
+    private void Notify(TaskResult result)
+    {
+        NoticeService.Notify(new NotificationMessage
+        {
+            Severity = result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+            Summary = result.success ? "任务已下发" : "任务失败",
+            Detail = result.message ?? (result.success ? "操作成功" : "操作失败"),
+            Duration = 3500
+        });
+    }
+
+    private static bool IsDeviceUsableForWechatTask(SrClient? device)
+    {
+        return device != null
+            && device.isOnline
+            && !string.IsNullOrWhiteSpace(device.weChatId)
+            && device.wx?.wechatAccount?.accountStatus == 1;
+    }
+
+    private static string BuildDeviceText(SrClient? device)
+    {
+        if (device == null)
+        {
+            return "未知设备";
+        }
+
+        var account = FirstNonEmpty(
+            device.wx?.wechatAccount?.nickname,
+            device.weChatId,
+            device.wx?.wechatAccount?.wxid,
+            "未登录微信");
+        var model = FirstNonEmpty(device.device?.PhoneModel, device.uuid, "未知设备");
+        var online = device.isOnline ? "在线" : "离线";
+        return $"{account} / {model} / {online}";
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private sealed class DeviceOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class BoolConfigRow
+    {
+        public BoolConfigRow(string key, string description)
+        {
+            Key = key;
+            Description = description;
+        }
+
+        public string Key { get; }
+        public string Description { get; }
+        public bool Include { get; set; }
+        public bool Value { get; set; }
+    }
+
+    private sealed class IntConfigRow
+    {
+        public IntConfigRow(string key, string description, int min, int max)
+        {
+            Key = key;
+            Description = description;
+            Min = min;
+            Max = max;
+        }
+
+        public string Key { get; }
+        public string Description { get; }
+        public int Min { get; }
+        public int Max { get; }
+        public bool Include { get; set; }
+        public int Value { get; set; }
+    }
+
+    private sealed class StrConfigRow
+    {
+        public StrConfigRow(string key, string description)
+        {
+            Key = key;
+            Description = description;
+        }
+
+        public string Key { get; }
+        public string Description { get; }
+        public bool Include { get; set; }
+        public string Value { get; set; } = string.Empty;
+    }
+}

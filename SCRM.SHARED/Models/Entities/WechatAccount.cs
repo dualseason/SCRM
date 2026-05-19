@@ -80,7 +80,7 @@ namespace SCRM.API.Models.Entities
         [StringLength(100)]
         public string? region { get; set; }
 
-        /// <summary>账号状态：1-正常在线 2-离线 3-冻结 4-注销 5-异常</summary>
+        /// <summary>账号状态：0-离线 1-正常在线。其他异常/冻结状态暂未在当前链路使用。</summary>
         [Column("account_status")]
         public short? accountStatus { get; set; }
 

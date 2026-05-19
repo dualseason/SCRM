@@ -10,6 +10,19 @@ namespace SCRM.API.Services
 {
     public class ServerSystemConfigService : ISystemConfigService
     {
+        /// <summary>
+        /// 系统配置模型读取别名。
+        /// 保存模型时会同步写入这些旧键；读取模型时也必须按同样顺序回退，
+        /// 避免旧库只有 tcpServerHost/fileUploadUrl 等键时，Settings 页面显示模型默认值并在保存时覆盖真实配置。
+        /// </summary>
+        private static readonly IReadOnlyDictionary<string, string[]> ModelReadAliases = new Dictionary<string, string[]>(StringComparer.Ordinal)
+        {
+            ["host"] = new[] { "tcpServerHost" },
+            ["port"] = new[] { "server_port", "tcpServerPort" },
+            ["httpApiBaseUrl"] = new[] { "apiBaseUrl" },
+            ["fileUpUrl"] = new[] { "fileUploadUrl" }
+        };
+
         private readonly ApplicationDbContext _db;
 
         public ServerSystemConfigService(ApplicationDbContext db)
@@ -51,14 +64,13 @@ namespace SCRM.API.Services
         }
         public async Task<SCRM.SHARED.Models.SystemConfigModel> GetConfigModelAsync()
         {
-            var rawConfigs = await GetConfigsAsync();
+            var rawConfigs = (await GetConfigsAsync()).ToList();
             var model = new SCRM.SHARED.Models.SystemConfigModel();
             
-            // "Zero-Overhead" Implementation: Use Property Name directly
-            // This is standard C# Reflection (Cached by Runtime), extremely fast compared to Attributes
+            // 属性名仍是主键；读取时额外支持历史别名回退，保持与 UpdateModelAsync 的别名同步机制对称。
             foreach (var prop in typeof(SCRM.SHARED.Models.SystemConfigModel).GetProperties())
             {
-                var config = rawConfigs.FirstOrDefault(c => c.key == prop.Name);
+                var config = FindModelConfig(rawConfigs, prop);
                 if (config != null)
                 {
                     if (prop.PropertyType == typeof(bool))
@@ -70,6 +82,64 @@ namespace SCRM.API.Services
                 }
             }
             return model;
+        }
+
+        /// <summary>
+        /// 按“主键 -> 历史别名”的顺序查找模型配置。
+        /// <para>
+        /// 若主键存在但值为空或格式不可用，会继续尝试别名；全部不可用时才返回第一个命中的配置，
+        /// 以保持旧逻辑对空值/非法值的兼容表现。
+        /// </para>
+        /// </summary>
+        private static SystemConfig? FindModelConfig(IReadOnlyCollection<SystemConfig> rawConfigs, PropertyInfo prop)
+        {
+            var candidateKeys = new List<string> { prop.Name };
+            if (ModelReadAliases.TryGetValue(prop.Name, out var aliases))
+            {
+                candidateKeys.AddRange(aliases);
+            }
+
+            SystemConfig? firstMatchedConfig = null;
+            foreach (var key in candidateKeys)
+            {
+                var config = rawConfigs.FirstOrDefault(c => c.key == key);
+                if (config == null)
+                {
+                    continue;
+                }
+
+                firstMatchedConfig ??= config;
+                if (IsUsableModelConfigValue(prop, config.value))
+                {
+                    return config;
+                }
+            }
+
+            return firstMatchedConfig;
+        }
+
+        /// <summary>
+        /// 判断配置值是否足以用于填充 Settings 模型。
+        /// </summary>
+        private static bool IsUsableModelConfigValue(PropertyInfo prop, string? value)
+        {
+            if (prop.PropertyType == typeof(bool))
+            {
+                return bool.TryParse(value, out _);
+            }
+
+            if (prop.PropertyType == typeof(int))
+            {
+                if (!int.TryParse(value, out var intValue))
+                {
+                    return false;
+                }
+
+                // TCP 端口不能使用 0 或负数；其它 int 配置保持原有宽松口径。
+                return prop.Name != "port" || intValue > 0;
+            }
+
+            return !string.IsNullOrWhiteSpace(value);
         }
 
         public async Task UpdateModelAsync(SCRM.SHARED.Models.SystemConfigModel model)

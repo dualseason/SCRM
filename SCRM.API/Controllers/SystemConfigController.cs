@@ -14,6 +14,45 @@ namespace SCRM.API.Controllers
     [Authorize] // 只有登录用户可以管理配置
     public class SystemConfigController : ControllerBase
     {
+        private static readonly HashSet<string> LegacyBroadcastBoolKeys = new(StringComparer.Ordinal)
+        {
+            "fastSend",
+            "silentFunc",
+            "silentAccept",
+            "autoPic",
+            "autoLogin",
+            "addInWw",
+            "lightscn",
+            "forceRun",
+            "disturb",
+            "moreLog",
+            "wx_show_alias",
+            "wx_can_delete",
+            "wx_can_block",
+            "wx_can_exitGroup",
+            "wx_del_conv",
+            "wx_can_logout",
+            "wx_can_changeAcnt",
+            "wx_can_acntInfo",
+            "wx_show_toast",
+            "wx_can_sendcard"
+        };
+
+        private static readonly HashSet<string> LegacyBroadcastIntKeys = new(StringComparer.Ordinal)
+        {
+            "keepWake"
+        };
+
+        private static readonly HashSet<string> LegacyBroadcastStrKeys = new(StringComparer.Ordinal);
+
+        private static readonly HashSet<string> LegacyDangerousRuntimeKeys = new(StringComparer.Ordinal)
+        {
+            "host",
+            "port",
+            "portstr",
+            "fileUpUrl"
+        };
+
         private readonly SCRM.UI.Services.ISystemConfigService _configService;
         private readonly INettyService _nettyService;
         private readonly ILogger<SystemConfigController> _logger;
@@ -69,54 +108,19 @@ namespace SCRM.API.Controllers
         {
             try
             {
-                //var msg = new ConfigPushNoticeMessage();
-                var msg= new SetConfigTaskMessage();
-                // 根据 Key 类型构建不同的配置消息
-                // 目前只处理 fileUpUrl 作为 String Config
-                if (key == "fileUpUrl" || key == "host" || key == "portstr" || key == "apiBaseUrl" || key == "clientConfigPath" || key == "logLevel" || key == "autoUpdateUrl")
-                {
-                    msg.StrConfs.Add(new StrConfigMessage
-                    {
-                        Key = key,
-                        Value = value,
-                        Name = key,
-                        Desc = "Updated via Web Console"
-                    });
-                }
-                else if (key == "autoLogin" || key == "autoPic" || key == "fastSend" || key == "silentFunc" || key == "forceRun")
-                {
-                     if (bool.TryParse(value, out bool boolVal))
-                     {
-                         msg.BoolConfs.Add(new BoolConfigMessage
-                         {
-                             Key = key,
-                             Value = boolVal,
-                             Name = key,
-                             Desc = "Updated via Web Console"
-                         });
-                     }
-                }
-                 else if (key == "keepWake" || key == "server_port")
-                {
-                     if (int.TryParse(value, out int intVal))
-                     {
-                         msg.IntConfs.Add(new IntConfigMessage
-                         {
-                             Key = key,
-                             Value = intVal,
-                             Name = key,
-                             Desc = "Updated via Web Console"
-                         });
-                     }
-                }
+                var msg = new SetConfigTaskMessage();
+                var count = AppendLegacyAllowedConfig(msg, key, value, "Updated via Web Console");
 
                 // 只有当实际上有配置在消息中时才发送
-                if (msg.StrConfs.Count > 0 || msg.BoolConfs.Count > 0 || msg.IntConfs.Count > 0)
+                if (count > 0)
                 {
                     _logger.LogInformation("[配置更新] 正在广播配置更新 {Key} 给所有客户端...", key);
-                    // 广播发送 "ConfigPushNotice"
                     await _nettyService.SendMessageToNettyAsync(msg, "SetConfigTask");
                     _logger.LogInformation("[配置更新] 配置广播成功 {Key}", key);
+                }
+                else
+                {
+                    LogLegacyConfigSkipped(key);
                 }
             }
             catch (Exception ex)
@@ -146,15 +150,9 @@ namespace SCRM.API.Controllers
                 var value = prop.GetValue(model)?.ToString() ?? "";
                 if (prop.PropertyType == typeof(bool)) value = value.ToLower();
 
-                string pushKey = prop.Name;
-                // 【修改：服务端批量推送统一键名映射】
-                // 过滤为客户端真实运行时所消费的键名
-                if (pushKey == "httpApiBaseUrl") pushKey = "apiBaseUrl";
-                else if (pushKey == "port") pushKey = "server_port";
-
                 updates.Add(new SystemConfig 
                 { 
-                    key = pushKey, 
+                    key = prop.Name,
                     value = value 
                 });
             }
@@ -177,51 +175,7 @@ namespace SCRM.API.Controllers
 
                 foreach (var cfg in configs)
                 {
-                    // Filter Logic similar to individual push but cleaner
-                    if (bool.TryParse(cfg.value, out bool boolVal))
-                    {
-                        // Check if key is meant to be boolean (Heuristic or Attribute based?)
-                        // To be safe, let's trust the value parsing for now as per previous logic
-                        // But wait, "8647" parses as int, "true" parses as bool.
-                        // We must match the expected type by Client.
-                        // Simple Heuristic:
-                        if (cfg.key == "server_port" || cfg.key == "port" || cfg.key == "keepWake" || cfg.key == "server_port" || cfg.key == "tcpServerPort" || cfg.key == "tokenExpiryMinutes")
-                        {
-                             // Integer
-                             if (int.TryParse(cfg.value, out int iVal))
-                             {
-                                 msg.IntConfs.Add(new IntConfigMessage { Key = cfg.key, Value = iVal, Name=cfg.key, Desc="Batch Update" });
-                                 count++;
-                             }
-                        }
-                        else if (cfg.value.ToLower() == "true" || cfg.value.ToLower() == "false")
-                        {
-                            // Boolean
-                            msg.BoolConfs.Add(new BoolConfigMessage { Key = cfg.key, Value = bool.Parse(cfg.value), Name = cfg.key, Desc = "Batch Update" });
-                            count++;
-                        }
-                        else
-                        {
-                            // String
-                             msg.StrConfs.Add(new StrConfigMessage { Key = cfg.key, Value = cfg.value, Name = cfg.key, Desc = "Batch Update" });
-                             count++;
-                        }
-                    }
-                    else if (int.TryParse(cfg.value, out int intVal))
-                    {
-                         // Integer
-                         // Identify if it SHOULD be integer. 
-                         // To avoid identifying "192.168..." as int (fails) or phone numbers.
-                         // For config, int usually means int.
-                         msg.IntConfs.Add(new IntConfigMessage { Key = cfg.key, Value = intVal, Name = cfg.key, Desc = "Batch Update" });
-                         count++;
-                    }
-                    else
-                    {
-                        // String
-                        msg.StrConfs.Add(new StrConfigMessage { Key = cfg.key, Value = cfg.value, Name = cfg.key, Desc = "Batch Update" });
-                        count++;
-                    }
+                    count += AppendLegacyAllowedConfig(msg, cfg.key, cfg.value, "Batch Update");
                 }
 
                 if (count > 0)
@@ -229,11 +183,89 @@ namespace SCRM.API.Controllers
                     _logger.LogInformation("[配置更新] 正在批量广播 {Count} 项配置...", count);
                     await _nettyService.SendMessageToNettyAsync(msg, "SetConfigTask");
                 }
+                else
+                {
+                    _logger.LogInformation("[配置更新] 本次全局配置保存未包含允许通过旧入口广播的 Android 配置键。");
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "[配置更新] 批量广播失败");
             }
+        }
+
+        /// <summary>
+        /// 旧全局配置入口的 Android 广播白名单。
+        /// <para>
+        /// 正式设备配置入口是 /features/device-config。这里仅保留低风险、明确被 62203/SmRun 消费的布尔键和 keepWake。
+        /// host/port/fileUpUrl 等会引发重连或上传地址切换的运行时键，必须通过设备配置页按选中设备下发，避免全设备断连。
+        /// </para>
+        /// </summary>
+        private static int AppendLegacyAllowedConfig(SetConfigTaskMessage msg, string key, string value, string desc)
+        {
+            key = key?.Trim() ?? string.Empty;
+            value ??= string.Empty;
+
+            if (LegacyBroadcastBoolKeys.Contains(key))
+            {
+                if (!bool.TryParse(value, out var boolValue))
+                {
+                    return 0;
+                }
+
+                msg.BoolConfs.Add(new BoolConfigMessage
+                {
+                    Key = key,
+                    Value = boolValue,
+                    Name = key,
+                    Desc = desc
+                });
+                return 1;
+            }
+
+            if (LegacyBroadcastIntKeys.Contains(key))
+            {
+                if (!int.TryParse(value, out var intValue))
+                {
+                    return 0;
+                }
+
+                msg.IntConfs.Add(new IntConfigMessage
+                {
+                    Key = key,
+                    Value = intValue,
+                    Name = key,
+                    Desc = desc
+                });
+                return 1;
+            }
+
+            if (LegacyBroadcastStrKeys.Contains(key))
+            {
+                msg.StrConfs.Add(new StrConfigMessage
+                {
+                    Key = key,
+                    Value = value,
+                    Name = key,
+                    Desc = desc
+                });
+                return 1;
+            }
+
+            return 0;
+        }
+
+        private void LogLegacyConfigSkipped(string key)
+        {
+            if (LegacyDangerousRuntimeKeys.Contains(key))
+            {
+                _logger.LogWarning(
+                    "[配置更新] 已保存全局配置 {Key}，但不会通过旧入口广播到所有 Android 客户端。请使用“设备配置/违禁词”页面按设备下发该运行时配置。",
+                    key);
+                return;
+            }
+
+            _logger.LogInformation("[配置更新] 已保存全局配置 {Key}，该键不是 62203 SetConfigTask 旧入口广播白名单，跳过 Android 广播。", key);
         }
     }
 }

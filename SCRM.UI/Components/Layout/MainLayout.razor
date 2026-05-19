@@ -6,9 +6,15 @@
 
 <RadzenLayout Style="height: 100vh; grid-template-areas: 'rz-header rz-header' 'rz-sidebar rz-body';">
     <RadzenHeader>
-        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0" Style="padding: 0 1rem; height: 100%;">
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem" Style="padding: 0 1rem; height: 100%;">
             <RadzenSidebarToggle Click="@(() => sidebarExpanded = !sidebarExpanded)" />
             <RadzenLabel Text="SCRM 控制中心" Style="font-size: 1.25rem; font-weight: bold; margin-left: 1rem;" />
+            <div style="flex: 1;"></div>
+            <AuthorizeView>
+                <Authorized>
+                    <CurrentOperationContextBar />
+                </Authorized>
+            </AuthorizeView>
         </RadzenStack>
     </RadzenHeader>
     <RadzenSidebar @bind-Expanded="@sidebarExpanded" Style="width: 250px; z-index: 2;">
@@ -44,5 +50,62 @@
     }
     .rz-body {
         padding: 0 !important;
+    }
+
+    .current-operation-context {
+        max-width: calc(100vw - 360px);
+        overflow: hidden;
+        white-space: nowrap;
+        position: relative;
+    }
+
+    .current-operation-context .rz-text {
+        line-height: 1.1;
+    }
+
+    .current-operation-context .context-strong {
+        max-width: 240px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .current-operation-context .context-switch-button {
+        padding: 0.25rem 0.5rem;
+        max-width: 420px;
+    }
+
+    .current-operation-context .context-main-text {
+        max-width: 300px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .context-selector-popover {
+        position: fixed;
+        top: 55px;
+        right: 1rem;
+        z-index: 1000;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+        border-radius: 8px;
+    }
+
+    .context-detail-panel {
+        background: var(--rz-base-100);
+        border: 1px solid var(--rz-border-color);
+        border-radius: 8px;
+        padding: 0.75rem;
+        white-space: normal;
+    }
+
+    @@media (max-width: 1200px) {
+        .current-operation-context .context-user {
+            display: none;
+        }
+    }
+
+    @@media (max-width: 900px) {
+        .current-operation-context {
+            display: none !important;
+        }
     }
 </style>

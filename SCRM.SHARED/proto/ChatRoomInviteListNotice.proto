@@ -1,0 +1,23 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "ChatRoomInvitePushNotice.proto";
+
+// 邀请信息
+message InviteMessage {
+  string ChatRoomId = 1;
+  string Inviter = 2;
+  string InviteName = 3;
+  string Reason = 4;
+  repeated InvitedMemMessage Invited = 5;
+  int64 MsgId = 6;
+  int64 UpdateTime = 7;
+}
+
+// 群邀请列表通知
+message ChatRoomInviteListNoticeMessage {
+  string WeChatId = 1;
+  repeated InviteMessage InviteMsg = 2;
+  int64 TaskId = 3;
+}

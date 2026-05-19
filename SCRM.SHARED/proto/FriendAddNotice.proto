@@ -23,6 +23,7 @@ message FriendMessage {
   int32 Source = 15;  // 来源
   string SourceExt = 16;  // 来源扩展
   int64 CreateTime = 17;  // 创建时间
+  int32 VerifyFlag = 18;  // 验证标志
 }
 
 // 好友添加通知消息

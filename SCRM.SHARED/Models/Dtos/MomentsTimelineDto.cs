@@ -8,6 +8,11 @@ namespace SCRM.SHARED.Models.Dtos
     public class MomentsTimelineDto
     {
         /// <summary>
+        /// 设备 UUID，用于前端按设备过滤实时回推。
+        /// </summary>
+        public string deviceUuid { get; set; } = string.Empty;
+
+        /// <summary>
         /// 朋友圈 ID
         /// </summary>
         public long snsId { get; set; }
@@ -26,6 +31,12 @@ namespace SCRM.SHARED.Models.Dtos
         /// 朋友圈内容
         /// </summary>
         public string content { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 朋友圈原始扩展 XML。
+        /// <para>部分微信版本会把正文或卡片摘要放在 Ext XML 中，前端可用它做展示兜底。</para>
+        /// </summary>
+        public string xmlContent { get; set; } = string.Empty;
 
         /// <summary>
         /// 创建时间戳

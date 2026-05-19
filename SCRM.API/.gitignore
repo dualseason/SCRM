@@ -266,3 +266,8 @@ secrets.json
 *.VC.db
 *.md
 /tmp*
+.codex_tmp/
+.agent/
+doc/
+docs/
+*.py

@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using SCRM.API.Models.Entities;
 using SCRM.SHARED.Models;
-using SCRM.SHARED.Models;
 
 
 namespace SCRM.Services.Data
@@ -61,6 +60,7 @@ namespace SCRM.Services.Data
         public DbSet<MomentsTimeline> MomentsTimelines { get; set; }
         public DbSet<MomentsLike> MomentsLikes { get; set; }
         public DbSet<MomentsComment> MomentsComments { get; set; }
+        public DbSet<FinderResultHistory> FinderResultHistories { get; set; }
 
         // ==================== 六、钱包与红包 ====================
         public DbSet<WalletTransaction> WalletTransactions { get; set; }
@@ -84,6 +84,8 @@ namespace SCRM.Services.Data
 
         // ==================== 九、设备与手机操作 ====================
         public DbSet<ServerRedirect> ServerRedirects { get; set; }
+        public DbSet<SmsRecord> SmsRecords { get; set; }
+        public DbSet<CallLogRecord> CallLogRecords { get; set; }
 
         // ==================== 十、其他功能 ====================
         // ==================== 十、其他功能 ====================
@@ -230,6 +232,53 @@ namespace SCRM.Services.Data
                 // Configure relationship with WechatAccount
                 // Removed legacy 'accounts' relationship configuration as the property has been removed from SrClient.
                 // The relationship is now managed primarily through WechatAccount.clientUuid foreign key.
+            });
+
+            // 配置视频号结果历史
+            modelBuilder.Entity<FinderResultHistory>(entity =>
+            {
+                entity.ToTable("FinderResultHistory");
+                entity.HasKey(e => e.id);
+                entity.HasIndex(e => new { e.ownerKey, e.resultType, e.receivedAt });
+                entity.HasIndex(e => new { e.ownerKey, e.resultType, e.taskId });
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.receivedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            // 配置手机短信记录。
+            // 短信来自手机系统库，SmsId 只在同一设备内稳定，因此查询和幂等索引必须同时包含 ownerWxid 与 IMEI。
+            modelBuilder.Entity<SmsRecord>(entity =>
+            {
+                entity.ToTable("SmsRecords");
+                entity.HasKey(e => e.id);
+                entity.HasIndex(e => new { e.ownerWxid, e.imei, e.smsId });
+                entity.HasIndex(e => new { e.ownerWxid, e.imei, e.threadId, e.rawDate });
+                entity.HasIndex(e => e.smsTime);
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            // 配置手机通话记录。
+            // CallLogId 只在同一设备内稳定；录音 URL 由 Android 上传后写入 RecordUrl。
+            modelBuilder.Entity<CallLogRecord>(entity =>
+            {
+                entity.ToTable("CallLogRecords");
+                entity.HasKey(e => e.id);
+                entity.HasIndex(e => new { e.ownerWxid, e.imei, e.callLogId });
+                entity.HasIndex(e => new { e.ownerWxid, e.imei, e.rawDate, e.number, e.type });
+                entity.HasIndex(e => e.callTime);
+                entity.Property(e => e.createdAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+                entity.Property(e => e.updatedAt).HasDefaultValueSql("CURRENT_TIMESTAMP");
+            });
+
+            // 配置 62203 群邀请审批索引。
+            // MsgId 是审批主链使用的幂等键；ChatRoomId/UpdateTime 用于列表补偿兜底匹配；InvitationStatus 用于待审批筛选。
+            modelBuilder.Entity<GroupInvitation>(entity =>
+            {
+                entity.HasIndex(e => new { e.weChatId, e.msgId });
+                entity.HasIndex(e => new { e.weChatId, e.chatRoomId, e.updateTime });
+                entity.HasIndex(e => new { e.weChatId, e.invitationStatus });
+                entity.Property(e => e.invitedJson).HasColumnType("jsonb").HasDefaultValue("[]");
             });
         }
     }

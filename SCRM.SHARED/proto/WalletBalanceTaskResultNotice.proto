@@ -7,6 +7,7 @@ message WalletBankCardMessage {
   string BankName = 2;
   string CardTail = 3;
   string Desc = 4;
+  string Mobile = 5;
 }
 
 message WalletBalanceTaskResultNoticeMessage {
@@ -14,4 +15,5 @@ message WalletBalanceTaskResultNoticeMessage {
   int32 Balance = 2;
   string TrueName = 3;
   repeated WalletBankCardMessage BankCard = 4;
+  string RealNameInfo = 5; // 62203新增：实名信息描述
 }

@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// SetFriendPermissionTask Message
+// 62203 对位：Tsk170 / 好友权限设置任务。
+message SetFriendPermissionTaskMessage {
+  string WeChatId = 1;
+  string FriendId = 2;
+  int32 Permission = 3;
+  int64 TaskId = 5;
+}

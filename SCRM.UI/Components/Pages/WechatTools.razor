@@ -1,0 +1,335 @@
+@page "/features/group-tools"
+@page "/features/wechat-tools"
+@using Microsoft.AspNetCore.Authorization
+@using Radzen
+@using Radzen.Blazor
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.UI.Services
+@attribute [Authorize]
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@inject DialogService DialogService
+
+<PageTitle>微信工具</PageTitle>
+
+<RadzenStack Gap="1rem" Style="padding: 1rem;">
+    <OperationContextHint Title="微信工具当前执行对象"
+                          Description="二维码入群和 A8Key 都通过当前在线微信执行；页面下拉选择会同步顶部当前操作设备/微信。"
+                          Class="rz-mb-0" />
+
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenStack Gap="0.25rem">
+            <RadzenText Text="微信工具" TextStyle="TextStyle.H5" Style="margin: 0;" />
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                当前补齐 62203 已有后端链路但缺产品入口的二维码入群 JoinGroupByQrTask(1267) 与 GetA8KeyTask(1284)。本页不新增数据库持久化。
+            </RadzenText>
+        </RadzenStack>
+        <RadzenButton Text="刷新设备" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="ReloadDevicesAsync" Disabled="@_isBusy" />
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.35rem">
+            <RadzenLabel Text="执行设备 / 当前操作微信" />
+            <RadzenDropDown TValue="string"
+                            Data="@DeviceOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="_deviceUuid"
+                            Change="@OnExecutionDeviceChanged"
+                            Placeholder="请选择在线微信设备"
+                            Style="width: 100%;" />
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                当前选中：@SelectedDeviceText。微信账号数据归属于 wxid，设备只是当前执行载体。
+            </RadzenText>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="二维码入群">
+                <RadzenCard>
+                    <RadzenStack Gap="1rem">
+                        <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0;">
+                            至少填写“二维码图片 URL”或“二维码原始内容”其中之一。安卓端会按 62203 链路解码/入群，网页只负责下发任务。
+                        </RadzenAlert>
+
+                        <RadzenStack Gap="0.35rem">
+                            <RadzenLabel Text="二维码图片 URL" />
+                            <RadzenTextBox @bind-Value="_joinQrUrl" Placeholder="例如：https://.../group_qr.png" Style="width: 100%;" />
+                        </RadzenStack>
+
+                        <RadzenStack Gap="0.35rem">
+                            <RadzenLabel Text="二维码原始内容" />
+                            <RadzenTextArea @bind-Value="_joinQrContent" Rows="5" Placeholder="可选：已解析出的二维码文本内容" Style="width: 100%;" />
+                        </RadzenStack>
+
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
+                            <RadzenButton Text="下发二维码入群" Icon="qr_code_scanner" ButtonStyle="ButtonStyle.Primary" Click="SubmitJoinGroupByQrAsync" IsBusy="@_isBusy" />
+                            <RadzenButton Text="清空" Icon="clear" ButtonStyle="ButtonStyle.Light" Click="@(() => { _joinQrUrl = string.Empty; _joinQrContent = string.Empty; })" Disabled="@_isBusy" />
+                        </RadzenStack>
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenTabsItem>
+
+            <RadzenTabsItem Text="A8Key">
+                <RadzenCard>
+                    <RadzenStack Gap="1rem">
+                        <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0;">
+                            A8Key 是运维/调试型能力。成功结果通常由客户端通过 TaskResultNotice.ErrMsg 返回，页面只短暂展示，不落库。
+                        </RadzenAlert>
+
+                        <RadzenRow Gap="1rem">
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenStack Gap="0.35rem">
+                                    <RadzenLabel Text="类型 Type" />
+                                    <RadzenNumeric TValue="int" @bind-Value="_a8Type" Min="0" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenStack Gap="0.35rem">
+                                    <RadzenLabel Text="Reason" />
+                                    <RadzenNumeric TValue="int" @bind-Value="_a8Reason" Min="0" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenStack Gap="0.35rem">
+                                    <RadzenLabel Text="MsgSvrId" />
+                                    <RadzenTextBox @bind-Value="_a8MsgSvrId" Placeholder="可选" Style="width: 100%;" />
+                                </RadzenStack>
+                            </RadzenColumn>
+                        </RadzenRow>
+
+                        <RadzenStack Gap="0.35rem">
+                            <RadzenLabel Text="原始 URL" />
+                            <RadzenTextBox @bind-Value="_a8Url" Placeholder="需要微信转换 A8Key 的 URL" Style="width: 100%;" />
+                        </RadzenStack>
+
+                        <RadzenStack Gap="0.35rem">
+                            <RadzenLabel Text="UserName" />
+                            <RadzenTextBox @bind-Value="_a8UserName" Placeholder="可选：公众号/联系人 userName" Style="width: 100%;" />
+                        </RadzenStack>
+
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
+                            <RadzenButton Text="获取 A8Key" Icon="key" ButtonStyle="ButtonStyle.Primary" Click="SubmitA8KeyAsync" IsBusy="@_isBusy" />
+                            <RadzenButton Text="清空" Icon="clear" ButtonStyle="ButtonStyle.Light" Click="ClearA8KeyForm" Disabled="@_isBusy" />
+                        </RadzenStack>
+
+                        @if (_lastA8Result != null)
+                        {
+                            <RadzenAlert AlertStyle="@(_lastA8Result.success ? AlertStyle.Success : AlertStyle.Danger)" Variant="Variant.Flat" ShowIcon="true">
+                                @_lastA8Result.message
+                                @if (_lastA8Result.success && !string.IsNullOrWhiteSpace(_lastA8Result.message) && _lastA8Result.message.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                                {
+                                    <div>
+                                        <RadzenLink Path="@_lastA8Result.message" Text="打开返回 URL" Target="_blank" />
+                                    </div>
+                                }
+                            </RadzenAlert>
+                        }
+                    </RadzenStack>
+                </RadzenCard>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private string _deviceUuid = string.Empty;
+    private string _joinQrUrl = string.Empty;
+    private string _joinQrContent = string.Empty;
+    private int _a8Type;
+    private int _a8Reason;
+    private string _a8Url = string.Empty;
+    private string _a8UserName = string.Empty;
+    private string _a8MsgSvrId = string.Empty;
+    private bool _isBusy;
+    private TaskResult? _lastA8Result;
+
+    private IEnumerable<DeviceOption> DeviceOptions => Store.Devices
+        .OrderByDescending(IsDeviceUsableForWechatTask)
+        .ThenByDescending(device => device.isOnline)
+        .ThenBy(device => BuildDeviceText(device))
+        .Select(device => new DeviceOption
+        {
+            Value = device.uuid,
+            Text = BuildDeviceText(device)
+        });
+
+    private string SelectedDeviceText => string.IsNullOrWhiteSpace(_deviceUuid)
+        ? "未选择设备"
+        : BuildDeviceText(Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid));
+
+    protected override async Task OnInitializedAsync()
+    {
+        await Store.InitializeAsync();
+        ResolveExecutionDevice(notifyWhenSwitched: false);
+    }
+
+    private async Task ReloadDevicesAsync()
+    {
+        await Store.LoadDevicesAsync();
+        ResolveExecutionDevice(notifyWhenSwitched: true);
+    }
+
+    private async Task OnExecutionDeviceChanged(object value)
+    {
+        var deviceUuid = value?.ToString();
+        if (string.IsNullOrWhiteSpace(deviceUuid))
+        {
+            return;
+        }
+
+        var device = Store.Devices.FirstOrDefault(item => item.uuid == deviceUuid);
+        if (device != null)
+        {
+            await Store.SelectDeviceAsync(device);
+        }
+    }
+
+    private async Task SubmitJoinGroupByQrAsync()
+    {
+        var device = ResolveExecutionDevice(notifyWhenSwitched: true);
+        if (device == null)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "无可用设备", "请先让安卓端和微信都保持在线。");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_joinQrUrl) && string.IsNullOrWhiteSpace(_joinQrContent))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "请至少填写二维码图片 URL 或二维码原始内容。");
+            return;
+        }
+
+        var confirm = await DialogService.Confirm(
+            $"确认通过【{BuildDeviceText(device)}】执行二维码入群？",
+            "二维码入群",
+            new ConfirmOptions { OkButtonText = "确认下发", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        try
+        {
+            var result = await Store.JoinGroupByQrAsync(_joinQrUrl.Trim(), _joinQrContent.Trim(), device.uuid);
+            NoticeService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "任务已下发" : "下发失败",
+                result.message ?? (result.success ? "二维码入群任务已下发，等待安卓端回执。" : "请查看服务端和安卓端日志。"));
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task SubmitA8KeyAsync()
+    {
+        var device = ResolveExecutionDevice(notifyWhenSwitched: true);
+        if (device == null)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "无可用设备", "请先让安卓端和微信都保持在线。");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_a8Url))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "URL 为空", "请输入需要转换的原始 URL。");
+            return;
+        }
+
+        _isBusy = true;
+        try
+        {
+            _lastA8Result = await Store.GetA8KeyAsync(_a8Type, _a8Url.Trim(), _a8UserName.Trim(), _a8MsgSvrId.Trim(), _a8Reason, device.uuid);
+            NoticeService.Notify(
+                _lastA8Result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                _lastA8Result.success ? "任务已下发/完成" : "A8Key 失败",
+                _lastA8Result.message ?? (_lastA8Result.success ? "等待客户端返回 A8Key 结果。" : "请查看服务端和安卓端日志。"));
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private void ClearA8KeyForm()
+    {
+        _a8Type = 0;
+        _a8Reason = 0;
+        _a8Url = string.Empty;
+        _a8UserName = string.Empty;
+        _a8MsgSvrId = string.Empty;
+        _lastA8Result = null;
+    }
+
+    private SrClient? ResolveExecutionDevice(bool notifyWhenSwitched)
+    {
+        var current = Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid);
+        if (IsDeviceUsableForWechatTask(current))
+        {
+            return current;
+        }
+
+        var selected = IsDeviceUsableForWechatTask(Store.SelectedDevice)
+            ? Store.SelectedDevice
+            : null;
+        var fallback = selected ?? Store.Devices.FirstOrDefault(IsDeviceUsableForWechatTask);
+        if (fallback == null)
+        {
+            _deviceUuid = string.Empty;
+            return null;
+        }
+
+        var changed = !string.Equals(_deviceUuid, fallback.uuid, StringComparison.OrdinalIgnoreCase);
+        _deviceUuid = fallback.uuid;
+        if (changed && notifyWhenSwitched)
+        {
+            NoticeService.Notify(NotificationSeverity.Info, "已切换设备", $"已自动选择在线微信设备：{BuildDeviceText(fallback)}");
+        }
+
+        return fallback;
+    }
+
+    private static bool IsDeviceUsableForWechatTask(SrClient? device)
+    {
+        return device != null
+            && device.isOnline
+            && !string.IsNullOrWhiteSpace(device.weChatId)
+            && device.wx?.wechatAccount?.accountStatus == 1;
+    }
+
+    private static string BuildDeviceText(SrClient? device)
+    {
+        if (device == null)
+        {
+            return "未知设备";
+        }
+
+        var name = device.wx?.wechatAccount?.nickname;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.weChatId;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.device?.PhoneModel;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.uuid;
+        }
+
+        var shortUuid = device.uuid.Length > 8 ? $"{device.uuid[..8]}..." : device.uuid;
+        return $"{name} / {shortUuid} / {(device.isOnline ? "在线" : "离线")}";
+    }
+
+    private sealed class DeviceOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

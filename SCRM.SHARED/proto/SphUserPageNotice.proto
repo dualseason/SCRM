@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "TransportMessage.proto";
+
+// 用户页条目
+message SphItemSimpleMessage {
+  int64 FeedId = 1;
+  string UserName = 2;
+  string Desc = 5;
+  string Thumb = 6;
+  string NonceId = 7;
+  int64 Type = 8;
+  int64 Timestamp = 9;
+  int32 ReadCnt = 11;
+  int32 LikeCnt = 12;
+  int32 CommentCnt = 13;
+  int32 FavCnt = 14;
+  int32 ForwardCnt = 15;
+}
+
+// 用户页通知
+message SphUserPageNoticeMessage {
+  string WeChatId = 1;
+  string UserName = 2;
+  string NickName = 3;
+  string Avatar = 4;
+  string Signature = 5;
+  EnumGender Gender = 6;
+  string Province = 7;
+  string City = 8;
+  repeated SphItemSimpleMessage SphList = 10;
+  bool Success = 12;
+  string ErrMsg = 13;
+  int64 TaskId = 15;
+}

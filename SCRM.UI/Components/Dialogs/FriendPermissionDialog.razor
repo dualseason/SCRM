@@ -1,0 +1,186 @@
+@using SCRM.UI.Services
+@inject CrmStore Store
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenStack Gap="0.85rem" Style="min-width: 460px; max-width: calc(100vw - 3rem);">
+    <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0;">
+        该操作会通过当前执行设备设置单个好友的微信隐私权限。页面只下发 SetFriendPermissionTask(1295)，最终结果以安卓端任务回执为准。
+    </RadzenAlert>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">执行对象</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@Store.CurrentExecutionLabel</RadzenText>
+    </RadzenStack>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">目标好友</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@TargetDisplayName (@FriendId)</RadzenText>
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.75rem">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                <RadzenCheckBox @bind-Value="OnlyChat" TValue="bool" Name="OnlyChat" Disabled="@HasFriendCirclePermission" />
+                <RadzenLabel Text="仅聊天" Component="OnlyChat" />
+                <RadzenBadge Text="8" BadgeStyle="BadgeStyle.Secondary" />
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                <RadzenCheckBox @bind-Value="NotLetFriendSeeMe" TValue="bool" Name="NotLetFriendSeeMe" Disabled="@OnlyChat" />
+                <RadzenLabel Text="不让他看我朋友圈" Component="NotLetFriendSeeMe" />
+                <RadzenBadge Text="2" BadgeStyle="BadgeStyle.Secondary" />
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                <RadzenCheckBox @bind-Value="NotSeeFriend" TValue="bool" Name="NotSeeFriend" Disabled="@OnlyChat" />
+                <RadzenLabel Text="不看他朋友圈" Component="NotSeeFriend" />
+                <RadzenBadge Text="1" BadgeStyle="BadgeStyle.Secondary" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+        当前权限位：@PermissionMask。仅聊天与两个朋友圈权限互斥；清空三个选项并提交表示恢复默认好友权限。
+    </RadzenText>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="取消" ButtonStyle="ButtonStyle.Light" Click="@(() => DialogService.Close(false))" Disabled="@_isBusy" />
+        <RadzenButton Text="下发权限设置" Icon="lock_person" ButtonStyle="ButtonStyle.Primary" Click="SubmitAsync" IsBusy="@_isBusy" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    /// <summary>
+    /// 执行设备 UUID。
+    /// </summary>
+    [Parameter]
+    public string DeviceUuid { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 好友 wxid。
+    /// </summary>
+    [Parameter]
+    public string FriendId { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 好友展示名。
+    /// </summary>
+    [Parameter]
+    public string TargetDisplayName { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 打开弹窗时的权限位，用于回填复选框。
+    /// </summary>
+    [Parameter]
+    public int InitialPermissionMask { get; set; }
+
+    private bool _onlyChat;
+    private bool _notLetFriendSeeMe;
+    private bool _notSeeFriend;
+    private bool _isBusy;
+
+    private int PermissionMask
+        => _onlyChat ? 8 : (_notLetFriendSeeMe ? 2 : 0) | (_notSeeFriend ? 1 : 0);
+
+    private bool HasFriendCirclePermission => _notLetFriendSeeMe || _notSeeFriend;
+
+    private bool OnlyChat
+    {
+        get => _onlyChat;
+        set
+        {
+            _onlyChat = value;
+            if (value)
+            {
+                _notLetFriendSeeMe = false;
+                _notSeeFriend = false;
+            }
+        }
+    }
+
+    private bool NotLetFriendSeeMe
+    {
+        get => _notLetFriendSeeMe;
+        set
+        {
+            _notLetFriendSeeMe = value;
+            if (value)
+            {
+                _onlyChat = false;
+            }
+        }
+    }
+
+    private bool NotSeeFriend
+    {
+        get => _notSeeFriend;
+        set
+        {
+            _notSeeFriend = value;
+            if (value)
+            {
+                _onlyChat = false;
+            }
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        TargetDisplayName = FirstNonEmpty(TargetDisplayName, FriendId, "目标好友");
+        // Android 端 SetFriendPermissionTask(1295) 对 permissionMask==8 走“仅聊天”分支，
+        // 其它值只处理 1/2 两个朋友圈权限，因此初始化时也要规整旧的 9/10/11 组合。
+        _onlyChat = (InitialPermissionMask & 8) == 8;
+        _notLetFriendSeeMe = !_onlyChat && (InitialPermissionMask & 2) == 2;
+        _notSeeFriend = !_onlyChat && (InitialPermissionMask & 1) == 1;
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(DeviceUuid))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "无法执行", "请先选择在线设备。");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(FriendId))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "目标为空", "好友 wxid 为空，无法设置权限。");
+            return;
+        }
+
+        var confirm = await DialogService.Confirm(
+            $"确认通过【{Store.CurrentExecutionLabel}】设置好友权限？\n\n好友：{TargetDisplayName} ({FriendId})\n权限位：{PermissionMask}",
+            "设置好友权限",
+            new ConfirmOptions { OkButtonText = "确认下发", CancelButtonText = "取消" });
+
+        if (confirm != true)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        try
+        {
+            await Store.SetFriendPermissionAsync(DeviceUuid, FriendId, PermissionMask);
+            DialogService.Close(true);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+}

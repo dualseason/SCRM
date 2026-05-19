@@ -1,0 +1,161 @@
+<div style="min-width: 220px; max-width: 320px;">
+    <div style="font-size: 12px; color: var(--rz-text-secondary-color); margin-bottom: 4px;">@KindLabel</div>
+    @if (!string.IsNullOrWhiteSpace(CoverUrl))
+    {
+        <a href="@CoverUrl" target="_blank" title="打开封面">
+            <RadzenImage Path="@CoverUrl" Style="width: 100%; max-height: 160px; object-fit: cover; border-radius: 4px; margin-bottom: 6px;" />
+        </a>
+    }
+    <div style="font-weight: 600; word-break: break-word; white-space: pre-wrap;">@DisplayTitle</div>
+    @if (!string.IsNullOrWhiteSpace(Description))
+    {
+        <div style="margin-top: 4px; font-size: 12px; color: var(--rz-text-secondary-color); word-break: break-word; white-space: pre-wrap;">@Description</div>
+    }
+    @if (ShowLocation)
+    {
+        <div style="margin-top: 6px; font-size: 12px; color: var(--rz-text-secondary-color);">
+            @if (!string.IsNullOrWhiteSpace(LocationLabel))
+            {
+                <div>@LocationLabel</div>
+            }
+            @if (ShowLocationCoordinates)
+            {
+                <div>经纬度：@LocationLongitude，@LocationLatitude</div>
+            }
+        </div>
+    }
+    @if (ShowQuote)
+    {
+        <div style="margin-top: 6px; padding: 6px 8px; border-left: 3px solid var(--rz-border-color); background: rgba(0,0,0,0.04); border-radius: 4px; font-size: 12px;">
+            <div style="font-weight: 600;">引用：@DisplayQuoteSource</div>
+            <div style="word-break: break-word; white-space: pre-wrap;">@DisplayQuoteBody</div>
+        </div>
+    }
+    @if (!string.IsNullOrWhiteSpace(Meta))
+    {
+        <div style="margin-top: 6px; font-size: 11px; color: var(--rz-text-secondary-color); word-break: break-all;">@Meta</div>
+    }
+    @if (!string.IsNullOrWhiteSpace(PrimaryUrl))
+    {
+        <div style="margin-top: 6px; word-break: break-all;">
+            <a href="@PrimaryUrl" target="_blank">@TruncateMiddle(PrimaryUrl, 88)</a>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>
+    /// 高级消息语义标签。
+    /// </summary>
+    [Parameter]
+    public string KindLabel { get; set; } = "高级消息";
+
+    /// <summary>
+    /// 卡片主标题。
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 卡片描述文本。
+    /// </summary>
+    [Parameter]
+    public string Description { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 封面、头像或缩略图 URL。
+    /// </summary>
+    [Parameter]
+    public string CoverUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 主要跳转链接。
+    /// </summary>
+    [Parameter]
+    public string PrimaryUrl { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 元信息摘要。
+    /// </summary>
+    [Parameter]
+    public string Meta { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否展示位置详情块。
+    /// </summary>
+    [Parameter]
+    public bool ShowLocation { get; set; }
+
+    /// <summary>
+    /// 位置名称或地址。
+    /// </summary>
+    [Parameter]
+    public string LocationLabel { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 是否展示经纬度。
+    /// </summary>
+    [Parameter]
+    public bool ShowLocationCoordinates { get; set; }
+
+    /// <summary>
+    /// 经度展示文本。
+    /// </summary>
+    [Parameter]
+    public string LocationLongitude { get; set; } = "-";
+
+    /// <summary>
+    /// 纬度展示文本。
+    /// </summary>
+    [Parameter]
+    public string LocationLatitude { get; set; } = "-";
+
+    /// <summary>
+    /// 是否展示引用消息块。
+    /// </summary>
+    [Parameter]
+    public bool ShowQuote { get; set; }
+
+    /// <summary>
+    /// 被引用消息的来源展示名。
+    /// </summary>
+    [Parameter]
+    public string QuoteSource { get; set; } = "原消息";
+
+    /// <summary>
+    /// 被引用消息摘要。
+    /// </summary>
+    [Parameter]
+    public string QuoteBody { get; set; } = string.Empty;
+
+    private string DisplayTitle => FirstNonEmpty(Title, KindLabel, "高级消息");
+
+    private string DisplayQuoteSource => FirstNonEmpty(QuoteSource, "原消息");
+
+    private string DisplayQuoteBody => FirstNonEmpty(QuoteBody, "（引用内容为空）");
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static string TruncateMiddle(string value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLength || maxLength <= 8)
+        {
+            return value;
+        }
+
+        var side = (maxLength - 3) / 2;
+        var tail = maxLength - 3 - side;
+        return $"{value[..side]}...{value[^tail..]}";
+    }
+}

@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 视频号条目信息
+message SphBriefMessage {
+  int64 FeedId = 1;
+  string UserName = 2;
+  string Desc = 3;
+  string Thumb = 4;
+  string NonceId = 5;
+  int64 Type = 6;
+}
+
+// 提及消息
+message MentionMessage {
+  SphBriefMessage SphItem = 1;
+  int64 Id = 2;
+  int32 Type = 3;
+  int64 MentionId = 4;
+  int64 CommentId = 5;
+  string UserName = 6;
+  string NickName = 7;
+  string Avatar = 8;
+  string Content = 9;
+  int32 ContentType = 10;
+  int32 CreateTime = 11;
+  string ReplayUsername = 12;
+  string ReplayNickname = 13;
+  int64 RootCommentId = 14;
+  string RefContent = 15;
+  int64 FansId = 16;
+  int64 FollowId = 17;
+  int32 RelationType = 18;
+}
+
+// 提及列表通知
+message SphMentionListNoticeMessage {
+  string WeChatId = 1;
+  string SphUserName = 2;
+  bool Success = 3;
+  string ErrMsg = 4;
+  repeated MentionMessage LikeList = 5;
+  repeated MentionMessage CommentList = 6;
+  repeated MentionMessage FollowList = 7;
+  int64 TaskId = 8;
+}

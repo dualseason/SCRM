@@ -1,11 +1,15 @@
 @page "/moments"
+@using System.Text.Json
 @using SCRM.UI.Services
 @using SCRM.API.Models.Entities
 @using SCRM.SHARED.Models
+@using SCRM.SHARED.Models.Dtos
 @using Radzen
 @using Radzen.Blazor
 @inject CrmStore Store
 @inject NavigationManager NavManager
+@inject NotificationService NoticeService
+@inject DialogService DialogService
 @implements IDisposable
 
 <PageTitle>朋友圈</PageTitle>
@@ -61,10 +65,378 @@
             }
             else
             {
-                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4">
+                <OperationContextHint Title="朋友圈当前查看"
+                                      Description="朋友圈数据按当前微信号展示；点赞、评论、同步会通过当前执行设备下发。"
+                                      Class="rz-mb-3" />
+
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Class="rz-mb-4" Gap="1rem" Wrap="FlexWrap.Wrap">
                     <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0" Style="color: var(--rz-text-title-color);">@Store.SelectedDevice.wx?.wechatAccount?.nickname 的朋友圈</RadzenText>
-                     <RadzenButton Text="同步朋友圈" Icon="sync" Click="SyncMoments" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                        <RadzenButton Text="视频号中心" Icon="smart_display" Click="@(()=>NavManager.NavigateTo("/finder"))" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" />
+                        <RadzenButton Text="同步朋友圈" Icon="sync" Click="SyncMoments" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
+                    </RadzenStack>
                 </RadzenStack>
+
+                <RadzenCard Class="rz-mb-3" Style="background: var(--rz-base-0);">
+                    <RadzenStack Gap="0.75rem">
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="1rem" Wrap="FlexWrap.Wrap">
+                            <div>
+                                <RadzenText TextStyle="TextStyle.Subtitle1" Class="rz-mb-0">发布朋友圈（62203 高级协议）</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">
+                                    支持图片、链接、视频、视频号/直播卡片、可见范围、POI、提醒谁看、首评/追加评论和慢速发布实验开关。
+                                </RadzenText>
+                            </div>
+                            <RadzenButton Text="下发发布任务"
+                                          Icon="send"
+                                          ButtonStyle="ButtonStyle.Primary"
+                                          Size="ButtonSize.Small"
+                                          IsBusy="@_postingMoment"
+                                          Click="PostMomentAdvanced" />
+                        </RadzenStack>
+
+                        <RadzenRow Gap="0.75rem">
+                            <RadzenColumn Size="12">
+                                <RadzenLabel Text="正文 Content" />
+                                <RadzenTextArea @bind-Value="_postModel.content" Rows="3" Style="width: 100%;" Placeholder="朋友圈正文，可为空但至少需要正文、附件或评论之一" />
+                                @if (HasMomentPostFieldError("content"))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-danger);">@MomentPostFieldError("content")</RadzenText>
+                                }
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="附件类型" />
+                                <RadzenDropDown Data="@_attachmentTypes" @bind-Value="_postModel.attachment.type" TValue="MomentPostAttachmentType" Style="width: 100%;" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="8">
+                                <RadzenLabel Text="附件内容（每行一个 URL/路径/结构化内容）" />
+                                <RadzenTextArea @bind-Value="_attachmentContentText" Rows="3" Style="width: 100%;" Placeholder="图片 URL 每行一个；Link 可填 URL/标题；ExtLink/视频号/直播可填完整 JSON" />
+                                @if (HasMomentPostFieldError("attachment"))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-danger);">@MomentPostFieldError("attachment")</RadzenText>
+                                }
+                            </RadzenColumn>
+                            <RadzenColumn Size="12">
+                                <div style="border: 1px dashed var(--rz-border-color); border-radius: 8px; padding: 0.75rem; background: var(--rz-base-50);">
+                                    <RadzenStack Gap="0.5rem">
+                                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                                            <div>
+                                                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-mb-0">附件模板助手</RadzenText>
+                                                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">按 62203 附件类型生成 Attachment.Content，避免 JSON 被逗号拆分或普通 Link 缩略图错位。</RadzenText>
+                                            </div>
+                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.35rem" Wrap="FlexWrap.Wrap">
+                                                <RadzenButton Text="用模板生成附件内容" Icon="auto_fix_high" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="ApplyMomentAttachmentTemplate" />
+                                                <RadzenButton Text="清空附件模板" Icon="backspace" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="ClearMomentAttachmentTemplate" />
+                                            </RadzenStack>
+                                        </RadzenStack>
+
+                                        @if (_postModel.attachment.type == MomentPostAttachmentType.Picture)
+                                        {
+                                            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">图片类型继续使用上方附件内容，每行一个图片 URL/路径，最多 9 张。</RadzenText>
+                                        }
+                                        else if (_postModel.attachment.type == MomentPostAttachmentType.Link)
+                                        {
+                                            <RadzenRow Gap="0.5rem">
+                                                <RadzenColumn Size="12" SizeMD="7">
+                                                    <RadzenLabel Text="普通 Link URL" />
+                                                    <RadzenTextBox @bind-Value="_linkUrl" Style="width: 100%;" Placeholder="https://..." />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="5">
+                                                    <RadzenLabel Text="普通 Link 标题（可选）" />
+                                                    <RadzenTextBox @bind-Value="_linkTitle" Style="width: 100%;" Placeholder="链接标题" />
+                                                </RadzenColumn>
+                                            </RadzenRow>
+                                            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">普通 Link 为避免 Android index 2 下载错位，模板仅生成 URL/标题；带缩略图请使用 ExtLink。</RadzenText>
+                                        }
+                                        else if (_postModel.attachment.type == MomentPostAttachmentType.ExtLink)
+                                        {
+                                            <RadzenRow Gap="0.5rem">
+                                                <RadzenColumn Size="12" SizeMD="4">
+                                                    <RadzenLabel Text="ExtLink 标题 Title" />
+                                                    <RadzenTextBox @bind-Value="_extLinkTitle" Style="width: 100%;" />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="4">
+                                                    <RadzenLabel Text="ExtLink URL" />
+                                                    <RadzenTextBox @bind-Value="_extLinkUrl" Style="width: 100%;" Placeholder="网页/小程序 URL" />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="4">
+                                                    <RadzenLabel Text="ExtLink Type" />
+                                                    <RadzenTextBox @bind-Value="_extLinkType" Style="width: 100%;" Placeholder="默认 5" />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="6">
+                                                    <RadzenLabel Text="描述 Des（可选）" />
+                                                    <RadzenTextBox @bind-Value="_extLinkDescription" Style="width: 100%;" />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="6">
+                                                    <RadzenLabel Text="缩略图 Thumb（可选）" />
+                                                    <RadzenTextBox @bind-Value="_extLinkThumb" Style="width: 100%;" Placeholder="缩略图 URL，Android 会追加为 Content[1]" />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="4">
+                                                    <RadzenLabel Text="AppId（可选）" />
+                                                    <RadzenTextBox @bind-Value="_extLinkAppId" Style="width: 100%;" />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="4">
+                                                    <RadzenLabel Text="SourceName（可选）" />
+                                                    <RadzenTextBox @bind-Value="_extLinkSourceName" Style="width: 100%;" />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="4">
+                                                    <RadzenLabel Text="PagePath（可选）" />
+                                                    <RadzenTextBox @bind-Value="_extLinkPagePath" Style="width: 100%;" />
+                                                </RadzenColumn>
+                                            </RadzenRow>
+                                            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">ExtLink 会把 AppMsgJsonData JSON 作为 Content[0]；带 Thumb 时 Android 可补成 Content[1] 并下载替换。</RadzenText>
+                                        }
+                                        else if (_postModel.attachment.type == MomentPostAttachmentType.ShortVideo || _postModel.attachment.type == MomentPostAttachmentType.LongVideo)
+                                        {
+                                            <RadzenRow Gap="0.5rem">
+                                                <RadzenColumn Size="12" SizeMD="7">
+                                                    <RadzenLabel Text="视频 URL/路径" />
+                                                    <RadzenTextBox @bind-Value="_videoUrl" Style="width: 100%;" Placeholder="视频 URL 或本地路径" />
+                                                </RadzenColumn>
+                                                <RadzenColumn Size="12" SizeMD="5">
+                                                    <RadzenLabel Text="视频封面/缩略图（可选）" />
+                                                    <RadzenTextBox @bind-Value="_videoThumb" Style="width: 100%;" Placeholder="封面 URL，能力待实机验证" />
+                                                </RadzenColumn>
+                                            </RadzenRow>
+                                            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">视频 Content[0] 为视频 URL/路径，Content[1] 可尝试封面；当前封面能力待实机验证。</RadzenText>
+                                        }
+                                        else if (_postModel.attachment.type == MomentPostAttachmentType.ShiPinHao)
+                                        {
+                                            <RadzenLabel Text="视频号动态 JSON" />
+                                            <RadzenTextArea @bind-Value="_finderFeedJson" Rows="4" Style="width: 100%;" Placeholder="请输入 VideoChannelFeedInfo 或 VideoChannelVideoInfo JSON；会作为单条 Content[0] 下发" />
+                                            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">视频号动态 JSON 必须整体作为一条内容，不能按逗号拆分。</RadzenText>
+                                        }
+                                        else if (_postModel.attachment.type == MomentPostAttachmentType.FinderLive)
+                                        {
+                                            <RadzenLabel Text="视频号直播 JSON" />
+                                            <RadzenTextArea @bind-Value="_finderLiveJson" Rows="4" Style="width: 100%;" Placeholder="请输入 FinderFeedRecord JSON；会作为单条 Content[0] 下发" />
+                                            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">视频号直播 JSON 必须整体作为一条内容，不能按逗号拆分。</RadzenText>
+                                        }
+                                    </RadzenStack>
+                                </div>
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenLabel Text="首条自动评论 Comment" />
+                                <RadzenTextBox @bind-Value="_postModel.comment" Style="width: 100%;" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="6">
+                                <RadzenLabel Text="追加评论 ExtComment（每行一个）" />
+                                <RadzenTextArea @bind-Value="_extCommentText" Rows="2" Style="width: 100%;" />
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="可见范围" />
+                                <RadzenDropDown Data="@_visibleTypes" @bind-Value="_postModel.visible.type" TValue="MomentPostVisibleType" Style="width: 100%;" />
+                                @if (HasMomentPostFieldError("visible"))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-danger);">@MomentPostFieldError("visible")</RadzenText>
+                                }
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="0.5rem">
+                                    <RadzenLabel Text="可见标签 Labels" />
+                                    <RadzenButton Text="同步标签" Icon="cloud_sync" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="SyncMomentPostLabelsAsync" Disabled="@_loadingMomentPostSelectors" />
+                                </RadzenStack>
+                                <RadzenDropDown TValue="IEnumerable<int>"
+                                                Data="@MomentPostLabelOptions"
+                                                TextProperty="Text"
+                                                ValueProperty="Value"
+                                                Multiple="true"
+                                                Chips="true"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                @bind-Value="_selectedVisibleLabelIds"
+                                                Placeholder="@(_loadingMomentPostSelectors ? "正在加载标签..." : "请选择标签；下发时自动提交标签名")"
+                                                Style="width: 100%;" />
+                                <RadzenTextArea @bind-Value="_visibleLabelsText" Rows="1" Style="width: 100%; margin-top: 0.35rem;" Placeholder="高级手动补充标签名；不要填写 LabelId" />
+                                @if (HasMomentPostFieldError("labels"))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-danger);">@MomentPostFieldError("labels")</RadzenText>
+                                }
+                                else
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">选择器可显示 LabelId，但实际下发 tagName，避免 Android 侧标签解析失败。</RadzenText>
+                                }
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="可见好友 Friends" />
+                                <RadzenDropDown TValue="IEnumerable<string>"
+                                                Data="@MomentPostContactOptions"
+                                                TextProperty="Text"
+                                                ValueProperty="Value"
+                                                Multiple="true"
+                                                Chips="true"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                @bind-Value="_selectedVisibleFriendWxids"
+                                                Placeholder="请选择好友；下发 wxid/username"
+                                                Style="width: 100%;" />
+                                <RadzenTextArea @bind-Value="_visibleFriendsText" Rows="1" Style="width: 100%; margin-top: 0.35rem;" Placeholder="高级手动补充 wxid/username；不要填写昵称/备注" />
+                                @if (HasMomentPostFieldError("friends"))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-danger);">@MomentPostFieldError("friends")</RadzenText>
+                                }
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="提醒谁看 NotiUsers" />
+                                <RadzenDropDown TValue="IEnumerable<string>"
+                                                Data="@MomentPostContactOptions"
+                                                TextProperty="Text"
+                                                ValueProperty="Value"
+                                                Multiple="true"
+                                                Chips="true"
+                                                AllowFiltering="true"
+                                                FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                @bind-Value="_selectedNotiUserWxids"
+                                                Placeholder="请选择提醒对象；下发 wxid/username"
+                                                Style="width: 100%;" />
+                                <RadzenTextArea @bind-Value="_notiUsersText" Rows="1" Style="width: 100%; margin-top: 0.35rem;" Placeholder="高级手动补充 wxid/username；不要填写昵称/备注" />
+                                @if (HasMomentPostFieldError("notiUsers"))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-danger);">@MomentPostFieldError("notiUsers")</RadzenText>
+                                }
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="POI 城市/名称" />
+                                <RadzenTextBox @bind-Value="_postModel.poi.city" Style="width: 49%; margin-right: 2%;" Placeholder="城市" />
+                                <RadzenTextBox @bind-Value="_postModel.poi.name" Style="width: 49%;" Placeholder="地点名" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="POI 地址/PoiId" />
+                                <RadzenTextBox @bind-Value="_postModel.poi.address" Style="width: 49%; margin-right: 2%;" Placeholder="地址" />
+                                <RadzenTextBox @bind-Value="_postModel.poi.poiId" Style="width: 49%;" Placeholder="PoiId" />
+                                @if (HasMomentPostFieldError("poi"))
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-danger);">@MomentPostFieldError("poi")</RadzenText>
+                                }
+                                else
+                                {
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">只填经纬度/PoiId 当前不会生效，至少填写城市或地点名。</RadzenText>
+                                }
+                            </RadzenColumn>
+
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="POI 纬度 Lat" />
+                                <RadzenNumeric @bind-Value="_postModel.poi.lat" TValue="float" Style="width: 100%;" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenLabel Text="POI 经度 Lng" />
+                                <RadzenNumeric @bind-Value="_postModel.poi.lng" TValue="float" Style="width: 100%;" />
+                            </RadzenColumn>
+                            <RadzenColumn Size="12">
+                                <div style="border: 1px dashed var(--rz-border-color); border-radius: 8px; padding: 0.75rem; background: var(--rz-base-50);">
+                                    <RadzenStack Gap="0.5rem">
+                                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="0.5rem" Wrap="FlexWrap.Wrap">
+                                            <div>
+                                                <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-mb-0">POI 选择器</RadzenText>
+                                                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">复用 GetPoiListTask 查询附近地点，一键填充 City/Name/Address/PoiId/Lat/Lng。</RadzenText>
+                                            </div>
+                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.35rem" Wrap="FlexWrap.Wrap">
+                                                <RadzenButton Text="查询附近 POI" Icon="place" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" IsBusy="@_loadingMomentPoi" Click="QueryMomentPoiListAsync" />
+                                                <RadzenButton Text="使用选中 POI" Icon="add_location_alt" ButtonStyle="ButtonStyle.Secondary" Size="ButtonSize.ExtraSmall" Disabled="@(!_momentPoiOptions.Any() || string.IsNullOrWhiteSpace(_selectedMomentPoiRaw))" Click="ApplySelectedMomentPoi" />
+                                                <RadzenButton Text="清空 POI" Icon="location_off" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.ExtraSmall" Click="ClearMomentPoiFields" />
+                                            </RadzenStack>
+                                        </RadzenStack>
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                                            <RadzenTextBox @bind-Value="_momentPoiKeyword" Placeholder="POI 关键词，可空" Style="width: 220px;" />
+                                            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">经纬度为空时手机端会尝试当前定位；选中结果后仍可手动微调。</RadzenText>
+                                        </RadzenStack>
+                                        @if (_momentPoiOptions.Count > 0)
+                                        {
+                                            <RadzenDropDown TValue="string"
+                                                            Data="@_momentPoiOptions"
+                                                            TextProperty="Text"
+                                                            ValueProperty="Raw"
+                                                            AllowFiltering="true"
+                                                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                                            @bind-Value="_selectedMomentPoiRaw"
+                                                            Placeholder="选择一个 POI 并点击“使用选中 POI”"
+                                                            Style="width: 100%;" />
+                                        }
+                                        @if (!string.IsNullOrWhiteSpace(_momentPoiStatus))
+                                        {
+                                            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">@_momentPoiStatus</RadzenText>
+                                        }
+                                    </RadzenStack>
+                                </div>
+                            </RadzenColumn>
+                            <RadzenColumn Size="12" SizeMD="4">
+                                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem" Style="height: 100%; padding-top: 1.5rem;">
+                                    <RadzenCheckBox @bind-Value="_postModel.sendSlow" TValue="bool" Name="MomentSendSlow" />
+                                    <RadzenLabel Text="慢速发布（实验字段）" Component="MomentSendSlow" />
+                                </RadzenStack>
+                                <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">当前 Android tK42 尚未确认消费，仅作为实验字段。</RadzenText>
+                            </RadzenColumn>
+                        </RadzenRow>
+                        <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat">
+                            <div>发布前脱敏预览：@BuildMomentPostSafePreview()</div>
+                            <div style="font-size: 12px; opacity: 0.85;">只展示类型、数量和布尔状态；不展示正文、附件 URL/JSON、wxid、标签名或 POI 原文。</div>
+                        </RadzenAlert>
+                    </RadzenStack>
+                </RadzenCard>
+
+                @if (HasSelectedDeviceMomentsSyncState())
+                {
+                    <RadzenAlert AlertStyle="@(Store.LastMomentsSyncSuccess == false ? AlertStyle.Warning : AlertStyle.Info)" Variant="Variant.Flat" class="rz-mb-3">
+                        <div>@(Store.LastMomentsSyncMessage ?? "朋友圈同步状态未知")</div>
+                        @if (Store.LastMomentsSyncUpdatedAt.HasValue)
+                        {
+                            <div style="font-size: 12px; opacity: 0.85;">
+                                更新时间：@Store.LastMomentsSyncUpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")
+                                @if (Store.LastMomentsSyncTaskId > 0)
+                                {
+                                    <span>｜TaskId=@Store.LastMomentsSyncTaskId</span>
+                                }
+                            </div>
+                        }
+                    </RadzenAlert>
+                }
+
+                @if (HasSelectedDeviceMomentPostState())
+                {
+                    <RadzenAlert AlertStyle="@GetMomentPostAlertStyle()" Variant="Variant.Flat" class="rz-mb-3">
+                        <div>@(Store.LastMomentPostMessage ?? "朋友圈发布状态未知")</div>
+                        <div style="font-size: 12px; opacity: 0.85;">
+                            @if (Store.LastMomentPostUpdatedAt.HasValue)
+                            {
+                                <span>更新时间：@Store.LastMomentPostUpdatedAt.Value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss")</span>
+                            }
+                            @if (Store.LastMomentPostTaskId > 0)
+                            {
+                                <span>｜TaskId=@Store.LastMomentPostTaskId</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Store.LastMomentPostStatus))
+                            {
+                                <span>｜状态=@Store.LastMomentPostStatus</span>
+                            }
+                            @if (!string.IsNullOrWhiteSpace(Store.LastMomentPostClientRequestId))
+                            {
+                                <span>｜ClientRequestId=@Store.LastMomentPostClientRequestId</span>
+                            }
+                            @if (Store.LastMomentPostCircleId != 0)
+                            {
+                                <span>｜CircleId=@Store.LastMomentPostCircleId</span>
+                            }
+                        </div>
+                        <div style="font-size: 12px; opacity: 0.85;">
+                            @if (!string.IsNullOrWhiteSpace(Store.LastMomentPostAttachmentType))
+                            {
+                                <span>附件=@Store.LastMomentPostAttachmentType</span>
+                                <span>｜数量=@Store.LastMomentPostAttachmentCount</span>
+                            }
+                            @if (Store.LastMomentPostIsLate)
+                            {
+                                <span>｜迟到回包</span>
+                            }
+                            @if (Store.LastMomentPostNeedSync)
+                            {
+                                <span>｜正在同步校准</span>
+                            }
+                        </div>
+                    </RadzenAlert>
+                }
 
                 @if (Store.CurrentMoments.Count == 0)
                 {
@@ -87,14 +459,85 @@
 </RadzenRow>
 
 @code {
-    protected override void OnInitialized()
+    private static readonly JsonSerializerOptions MomentPostAttachmentJsonOptions = new()
+    {
+        WriteIndented = false
+    };
+
+    private readonly MomentPostAttachmentType[] _attachmentTypes = Enum.GetValues<MomentPostAttachmentType>();
+    private readonly MomentPostVisibleType[] _visibleTypes = Enum.GetValues<MomentPostVisibleType>();
+    private MomentPostRequestDto _postModel = new();
+    private string _attachmentContentText = string.Empty;
+    private string _linkUrl = string.Empty;
+    private string _linkTitle = string.Empty;
+    private string _extLinkTitle = string.Empty;
+    private string _extLinkUrl = string.Empty;
+    private string _extLinkDescription = string.Empty;
+    private string _extLinkThumb = string.Empty;
+    private string _extLinkAppId = string.Empty;
+    private string _extLinkSourceName = string.Empty;
+    private string _extLinkPagePath = string.Empty;
+    private string _extLinkType = "5";
+    private string _videoUrl = string.Empty;
+    private string _videoThumb = string.Empty;
+    private string _finderFeedJson = string.Empty;
+    private string _finderLiveJson = string.Empty;
+    private string _extCommentText = string.Empty;
+    private string _visibleLabelsText = string.Empty;
+    private string _visibleFriendsText = string.Empty;
+    private string _notiUsersText = string.Empty;
+    private string _momentPoiKeyword = string.Empty;
+    private string _selectedMomentPoiRaw = string.Empty;
+    private string _momentPoiStatus = string.Empty;
+    private bool _postingMoment;
+    private bool _loadingMomentPostSelectors;
+    private bool _loadingMomentPoi;
+    private long _pendingMomentPoiTaskId;
+    private readonly List<ContactLabelDto> _momentPostLabels = new();
+    private readonly List<MomentPoiOption> _momentPoiOptions = new();
+    private IEnumerable<int> _selectedVisibleLabelIds = Array.Empty<int>();
+    private IEnumerable<string> _selectedVisibleFriendWxids = Array.Empty<string>();
+    private IEnumerable<string> _selectedNotiUserWxids = Array.Empty<string>();
+    private readonly Dictionary<string, string> _momentPostFieldErrors = new(StringComparer.OrdinalIgnoreCase);
+
+    private IEnumerable<LabelOption> MomentPostLabelOptions => _momentPostLabels
+        .Where(label => !label.isDeleted && !string.IsNullOrWhiteSpace(label.tagName))
+        .OrderBy(label => label.labelId)
+        .Select(label => new LabelOption
+        {
+            Value = label.labelId,
+            Text = $"{label.tagName} ({label.labelId})"
+        });
+
+    private IEnumerable<ContactOption> MomentPostContactOptions => VisibleMomentPostContacts
+        .OrderBy(BuildContactDisplayName)
+        .Select(contact => new ContactOption
+        {
+            Value = contact.wxid,
+            Text = $"{BuildContactDisplayName(contact)} / {contact.wxid}"
+        });
+
+    private IEnumerable<Contact> VisibleMomentPostContacts => Store.Contacts
+        .Where(contact => contact != null
+            && !contact.isDeleted
+            && contact.isFriend != 0
+            && !string.IsNullOrWhiteSpace(contact.wxid));
+
+    protected override async Task OnInitializedAsync()
     {
         Store.OnChange += HandleStoreChange;
+        Store.OnNotification += HandleNotification;
+        Store.OnContactLabelsUpdated += HandleContactLabelsUpdated;
+        Store.OnAsyncTaskResultReceived += HandleMomentPoiTaskResult;
+        await LoadMomentPostSelectorsAsync();
     }
     
     public void Dispose()
     {
         Store.OnChange -= HandleStoreChange;
+        Store.OnNotification -= HandleNotification;
+        Store.OnContactLabelsUpdated -= HandleContactLabelsUpdated;
+        Store.OnAsyncTaskResultReceived -= HandleMomentPoiTaskResult;
     }
 
     private void HandleStoreChange()
@@ -108,11 +551,1048 @@
         {
             await Store.SelectDeviceAsync(device);
             await Store.LoadMomentsAsync();
+            ResetMomentPostForm();
+            await LoadMomentPostSelectorsAsync();
         }
     }
 
     private async Task SyncMoments()
     {
+        var confirm = await DialogService.Confirm(
+            $"将通过当前执行设备同步【{CurrentExecutionLabel}】的朋友圈。\n\n如果微信已换设备登录，请先在顶部或左侧切换。",
+            "同步朋友圈",
+            new ConfirmOptions { OkButtonText = "开始同步", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
         await Store.RequestMomentsSyncAsync();
+    }
+
+    private async Task PostMomentAdvanced()
+    {
+        ApplyMomentPostTextFields();
+        if (!ValidateMomentPostForm())
+        {
+            HandleNotification("朋友圈发布参数需要修正，请查看表单红色提示。", false);
+            return;
+        }
+
+        _postingMoment = true;
+        try
+        {
+            var result = await Store.PostMomentAdvancedAsync(_postModel);
+            if (result.success)
+            {
+                ResetMomentPostForm();
+            }
+        }
+        finally
+        {
+            _postingMoment = false;
+        }
+    }
+
+    private void ApplyMomentPostTextFields()
+    {
+        _postModel.attachment ??= new MomentPostAttachmentDto();
+        _postModel.visible ??= new MomentPostVisibleDto();
+        _postModel.poi ??= new MomentPostPoiDto();
+        _postModel.attachment.content = BuildMomentAttachmentContents();
+        _postModel.extComment = SplitMultiValueText(_extCommentText);
+        _postModel.visible.labels = BuildSelectedMomentPostLabelNames()
+            .Concat(SplitMultiValueText(_visibleLabelsText))
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        _postModel.visible.friends = (_selectedVisibleFriendWxids ?? Array.Empty<string>())
+            .Concat(SplitMultiValueText(_visibleFriendsText))
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Select(item => item.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+        _postModel.notiUsers = (_selectedNotiUserWxids ?? Array.Empty<string>())
+            .Concat(SplitMultiValueText(_notiUsersText))
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Select(item => item.Trim())
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private void ApplyMomentAttachmentTemplate()
+    {
+        _postModel.attachment ??= new MomentPostAttachmentDto();
+        var contents = BuildMomentAttachmentContents();
+        if (contents.Count == 0)
+        {
+            AddMomentPostFieldError("attachment", "当前附件模板没有可生成内容，请补充必填字段。");
+            HandleNotification("当前附件模板没有可生成内容，请补充必填字段。", false);
+            return;
+        }
+
+        _postModel.attachment.content = contents;
+        _attachmentContentText = string.Join(Environment.NewLine, contents);
+        _momentPostFieldErrors.Remove("attachment");
+    }
+
+    private void ClearMomentAttachmentTemplate()
+    {
+        ClearMomentAttachmentTemplateFields();
+        _attachmentContentText = string.Empty;
+        _postModel.attachment ??= new MomentPostAttachmentDto();
+        _postModel.attachment.content.Clear();
+        _momentPostFieldErrors.Remove("attachment");
+    }
+
+    private void ClearMomentAttachmentTemplateFields()
+    {
+        _linkUrl = string.Empty;
+        _linkTitle = string.Empty;
+        _extLinkTitle = string.Empty;
+        _extLinkUrl = string.Empty;
+        _extLinkDescription = string.Empty;
+        _extLinkThumb = string.Empty;
+        _extLinkAppId = string.Empty;
+        _extLinkSourceName = string.Empty;
+        _extLinkPagePath = string.Empty;
+        _extLinkType = "5";
+        _videoUrl = string.Empty;
+        _videoThumb = string.Empty;
+        _finderFeedJson = string.Empty;
+        _finderLiveJson = string.Empty;
+    }
+
+    private List<string> BuildMomentAttachmentContents()
+    {
+        _postModel.attachment ??= new MomentPostAttachmentDto();
+        return _postModel.attachment.type switch
+        {
+            MomentPostAttachmentType.Link => BuildLinkAttachmentContents(),
+            MomentPostAttachmentType.ExtLink => BuildExtLinkAttachmentContents(),
+            MomentPostAttachmentType.ShortVideo or MomentPostAttachmentType.LongVideo => BuildVideoAttachmentContents(),
+            MomentPostAttachmentType.ShiPinHao => BuildSingleJsonAttachmentContent(_finderFeedJson, _attachmentContentText),
+            MomentPostAttachmentType.FinderLive => BuildSingleJsonAttachmentContent(_finderLiveJson, _attachmentContentText),
+            _ => SplitMultiValueText(_attachmentContentText)
+        };
+    }
+
+    private List<string> BuildLinkAttachmentContents()
+    {
+        if (HasLinkTemplateInput())
+        {
+            var contents = new List<string>();
+            AddTrimmed(contents, _linkUrl);
+            AddTrimmed(contents, _linkTitle);
+            return contents;
+        }
+
+        // 普通 Link 只生成 Content[0]=url、Content[1]=title，避免 Content[2] 被 Android 下载逻辑当作缩略图 URL。
+        return SplitMultiValueText(_attachmentContentText).Take(2).ToList();
+    }
+
+    private List<string> BuildExtLinkAttachmentContents()
+    {
+        if (!HasExtLinkTemplateInput())
+        {
+            return BuildSingleJsonAttachmentContent(_attachmentContentText);
+        }
+
+        var payload = new Dictionary<string, object>();
+        AddJsonString(payload, "Title", _extLinkTitle);
+        AddJsonString(payload, "Url", _extLinkUrl);
+        AddJsonString(payload, "Des", _extLinkDescription);
+        AddJsonString(payload, "Thumb", _extLinkThumb);
+        AddJsonString(payload, "AppId", _extLinkAppId);
+        AddJsonString(payload, "SourceName", _extLinkSourceName);
+        AddJsonString(payload, "PagePath", _extLinkPagePath);
+        if (TryParseExtLinkType(out var type))
+        {
+            payload["Type"] = type;
+        }
+
+        if (payload.Count == 0)
+        {
+            return new List<string>();
+        }
+
+        return new List<string>
+        {
+            JsonSerializer.Serialize(payload, MomentPostAttachmentJsonOptions)
+        };
+    }
+
+    private List<string> BuildVideoAttachmentContents()
+    {
+        if (HasVideoTemplateInput())
+        {
+            var contents = new List<string>();
+            AddTrimmed(contents, _videoUrl);
+            if (!string.IsNullOrWhiteSpace(_videoUrl))
+            {
+                AddTrimmed(contents, _videoThumb);
+            }
+
+            return contents;
+        }
+
+        return SplitMultiValueText(_attachmentContentText).Take(2).ToList();
+    }
+
+    private static List<string> BuildSingleJsonAttachmentContent(params string?[] candidates)
+    {
+        foreach (var candidate in candidates)
+        {
+            var normalized = candidate?.Trim() ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(normalized))
+            {
+                return new List<string> { normalized };
+            }
+        }
+
+        return new List<string>();
+    }
+
+    private bool HasLinkTemplateInput()
+    {
+        return !string.IsNullOrWhiteSpace(_linkUrl)
+            || !string.IsNullOrWhiteSpace(_linkTitle);
+    }
+
+    private bool HasExtLinkTemplateInput()
+    {
+        return !string.IsNullOrWhiteSpace(_extLinkTitle)
+            || !string.IsNullOrWhiteSpace(_extLinkUrl)
+            || !string.IsNullOrWhiteSpace(_extLinkDescription)
+            || !string.IsNullOrWhiteSpace(_extLinkThumb)
+            || !string.IsNullOrWhiteSpace(_extLinkAppId)
+            || !string.IsNullOrWhiteSpace(_extLinkSourceName)
+            || !string.IsNullOrWhiteSpace(_extLinkPagePath);
+    }
+
+    private bool HasVideoTemplateInput()
+    {
+        return !string.IsNullOrWhiteSpace(_videoUrl)
+            || !string.IsNullOrWhiteSpace(_videoThumb);
+    }
+
+    private bool TryParseExtLinkType(out int type)
+    {
+        return int.TryParse((_extLinkType ?? string.Empty).Trim(), out type);
+    }
+
+    private static void AddTrimmed(ICollection<string> values, string? value)
+    {
+        var normalized = value?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(normalized) && !values.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+        {
+            values.Add(normalized);
+        }
+    }
+
+    private static void AddJsonString(IDictionary<string, object> payload, string key, string? value)
+    {
+        var normalized = value?.Trim() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(normalized))
+        {
+            payload[key] = normalized;
+        }
+    }
+
+    private void ResetMomentPostForm()
+    {
+        _postModel = new MomentPostRequestDto();
+        _attachmentContentText = string.Empty;
+        ClearMomentAttachmentTemplateFields();
+        _extCommentText = string.Empty;
+        _visibleLabelsText = string.Empty;
+        _visibleFriendsText = string.Empty;
+        _notiUsersText = string.Empty;
+        ClearMomentPoiSelectorState(clearPoiFields: false);
+        _selectedVisibleLabelIds = Array.Empty<int>();
+        _selectedVisibleFriendWxids = Array.Empty<string>();
+        _selectedNotiUserWxids = Array.Empty<string>();
+        _momentPostFieldErrors.Clear();
+    }
+
+    private async Task LoadMomentPostSelectorsAsync()
+    {
+        _loadingMomentPostSelectors = true;
+        try
+        {
+            if (Store.SelectedDevice != null && !Store.Contacts.Any())
+            {
+                await Store.SyncContactsAsync(requestPhoneRefresh: false);
+            }
+
+            await LoadMomentPostLabelsAsync();
+        }
+        finally
+        {
+            _loadingMomentPostSelectors = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task LoadMomentPostLabelsAsync()
+    {
+        var accountId = ResolveSelectedAccountId();
+        _momentPostLabels.Clear();
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            return;
+        }
+
+        var labels = await Store.GetContactLabelsAsync(accountId, includeDeleted: false);
+        _momentPostLabels.AddRange(labels);
+        TrimSelectedLabelIdsToCurrentOptions();
+    }
+
+    private async Task SyncMomentPostLabelsAsync()
+    {
+        if (Store.SelectedDevice == null || string.IsNullOrWhiteSpace(Store.SelectedDevice.uuid))
+        {
+            HandleNotification("请先选择在线设备", false);
+            return;
+        }
+
+        _loadingMomentPostSelectors = true;
+        try
+        {
+            var result = await Store.SyncContactLabelsAsync(Store.SelectedDevice.uuid);
+            if (result.success)
+            {
+                _ = ReloadMomentPostLabelsAfterDelayAsync(TimeSpan.FromSeconds(2));
+                _ = ReloadMomentPostLabelsAfterDelayAsync(TimeSpan.FromSeconds(8));
+            }
+        }
+        finally
+        {
+            _loadingMomentPostSelectors = false;
+        }
+    }
+
+    private async Task ReloadMomentPostLabelsAfterDelayAsync(TimeSpan delay)
+    {
+        await Task.Delay(delay);
+        await InvokeAsync(LoadMomentPostLabelsAsync);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleContactLabelsUpdated(string accountId)
+    {
+        var selectedAccountId = ResolveSelectedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId)
+            || string.IsNullOrWhiteSpace(selectedAccountId)
+            || string.Equals(accountId, selectedAccountId, StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(LoadMomentPostLabelsAsync);
+        }
+    }
+
+    private async Task QueryMomentPoiListAsync()
+    {
+        if (Store.SelectedDevice == null || string.IsNullOrWhiteSpace(Store.SelectedDevice.uuid))
+        {
+            HandleNotification("请先选择在线设备", false);
+            return;
+        }
+
+        _postModel.poi ??= new MomentPostPoiDto();
+        _loadingMomentPoi = true;
+        _momentPoiStatus = "正在下发 POI 查询任务，等待手机端回包...";
+        try
+        {
+            var result = await Store.GetPoiListAsync(_postModel.poi.lat, _postModel.poi.lng, _momentPoiKeyword);
+            _pendingMomentPoiTaskId = result.taskId;
+            UpdateMomentPoiCandidates(result.data, result.message, result.taskId);
+            if (result.success && _momentPoiOptions.Count == 0)
+            {
+                _momentPoiStatus = result.taskId > 0
+                    ? $"POI 查询任务已下发，TaskId={result.taskId}，等待异步回包。"
+                    : "POI 查询任务已下发，等待异步回包。";
+            }
+            else if (!result.success)
+            {
+                _momentPoiStatus = result.message ?? "POI 查询失败。";
+            }
+        }
+        finally
+        {
+            _loadingMomentPoi = false;
+        }
+    }
+
+    private void HandleMomentPoiTaskResult(TaskResultDto dto)
+    {
+        if (dto == null || Store.SelectedDevice == null)
+        {
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.deviceUuid)
+            && !string.Equals(dto.deviceUuid, Store.SelectedDevice.uuid, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (!IsPoiTaskResult(dto))
+        {
+            return;
+        }
+
+        UpdateMomentPoiCandidates(dto.data, dto.message, dto.taskId);
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private bool IsPoiTaskResult(TaskResultDto dto)
+    {
+        if (_pendingMomentPoiTaskId > 0 && dto.taskId == _pendingMomentPoiTaskId)
+        {
+            return true;
+        }
+
+        if (HasPoiListData(dto.data))
+        {
+            return true;
+        }
+
+        return !string.IsNullOrWhiteSpace(dto.message)
+            && dto.message.Contains("POI", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void UpdateMomentPoiCandidates(object? data, string? message, long taskId)
+    {
+        var rawItems = ExtractMomentPoiRawItems(data);
+        if (rawItems.Count == 0)
+        {
+            return;
+        }
+
+        _momentPoiOptions.Clear();
+        var index = 1;
+        foreach (var raw in rawItems)
+        {
+            if (TryBuildMomentPoiOption(raw, index, out var option))
+            {
+                _momentPoiOptions.Add(option);
+                index++;
+            }
+        }
+
+        _selectedMomentPoiRaw = _momentPoiOptions.FirstOrDefault()?.Raw ?? string.Empty;
+        var keyword = FirstNonEmpty(ExtractMomentPoiKeyword(data), _momentPoiKeyword);
+        _momentPoiStatus = $"POI 查询完成：本次返回 {_momentPoiOptions.Count} 条"
+            + (string.IsNullOrWhiteSpace(keyword) ? string.Empty : $"，关键词={keyword}")
+            + (taskId > 0 ? $"，TaskId={taskId}" : string.Empty)
+            + "。";
+    }
+
+    private void ApplySelectedMomentPoi()
+    {
+        var option = _momentPoiOptions.FirstOrDefault(item => string.Equals(item.Raw, _selectedMomentPoiRaw, StringComparison.Ordinal));
+        if (option == null)
+        {
+            AddMomentPostFieldError("poi", "请先从 POI 选择器中选择一条结果。");
+            return;
+        }
+
+        _postModel.poi ??= new MomentPostPoiDto();
+        _postModel.poi.city = FirstNonEmpty(option.City, option.Province, option.District, _postModel.poi.city);
+        _postModel.poi.name = FirstNonEmpty(option.Name, _postModel.poi.name);
+        _postModel.poi.address = FirstNonEmpty(option.Address, _postModel.poi.address);
+        _postModel.poi.poiId = FirstNonEmpty(option.PoiId, _postModel.poi.poiId);
+        if (Math.Abs(option.Lat) > 0.000001d)
+        {
+            _postModel.poi.lat = (float)option.Lat;
+        }
+
+        if (Math.Abs(option.Lng) > 0.000001d)
+        {
+            _postModel.poi.lng = (float)option.Lng;
+        }
+
+        _momentPostFieldErrors.Remove("poi");
+        _momentPoiStatus = "已将选中 POI 填入发布表单；发布前仍可手动微调。";
+    }
+
+    private void ClearMomentPoiFields()
+    {
+        _postModel.poi = new MomentPostPoiDto();
+        ClearMomentPoiSelectorState(clearPoiFields: true);
+        _momentPostFieldErrors.Remove("poi");
+    }
+
+    private void ClearMomentPoiSelectorState(bool clearPoiFields)
+    {
+        _momentPoiKeyword = string.Empty;
+        _selectedMomentPoiRaw = string.Empty;
+        _momentPoiStatus = string.Empty;
+        _loadingMomentPoi = false;
+        _pendingMomentPoiTaskId = 0;
+        _momentPoiOptions.Clear();
+        if (clearPoiFields)
+        {
+            _postModel.poi = new MomentPostPoiDto();
+        }
+    }
+
+    private bool ValidateMomentPostForm()
+    {
+        _momentPostFieldErrors.Clear();
+
+        if (string.IsNullOrWhiteSpace(_postModel.content)
+            && string.IsNullOrWhiteSpace(_postModel.comment)
+            && _postModel.attachment.content.Count == 0
+            && _postModel.extComment.Count == 0)
+        {
+            AddMomentPostFieldError("content", "请至少填写正文、附件、首评或追加评论之一。");
+        }
+
+        if (_postModel.attachment.type == MomentPostAttachmentType.Picture && _postModel.attachment.content.Count > 9)
+        {
+            AddMomentPostFieldError("attachment", "朋友圈图片最多 9 张。");
+        }
+
+        if (_postModel.attachment.type != MomentPostAttachmentType.Picture && _postModel.attachment.content.Count == 0)
+        {
+            AddMomentPostFieldError("attachment", "当前附件类型必须至少填写一条附件内容。");
+        }
+
+        ValidateMomentPostAttachmentTemplate();
+
+        var visibleTargetCount = _postModel.visible.labels.Count + _postModel.visible.friends.Count;
+        if ((_postModel.visible.type == MomentPostVisibleType.WhoVisible || _postModel.visible.type == MomentPostVisibleType.WhoInvisible)
+            && visibleTargetCount == 0)
+        {
+            AddMomentPostFieldError(
+                "visible",
+                _postModel.visible.type == MomentPostVisibleType.WhoInvisible
+                    ? "不给谁看必须选择至少一个标签或好友；否则手机端可能按公开发布，已阻止下发。"
+                    : "部分可见必须选择至少一个标签或好友。");
+        }
+
+        if ((_postModel.visible.type == MomentPostVisibleType.Public || _postModel.visible.type == MomentPostVisibleType.Private)
+            && visibleTargetCount > 0)
+        {
+            AddMomentPostFieldError("visible", "公开/私密朋友圈不能同时携带标签或好友范围。");
+        }
+
+        if (_postModel.visible.labels.Any(label => label.All(char.IsDigit)))
+        {
+            AddMomentPostFieldError("labels", "朋友圈可见范围的 Labels 需要标签名，不是 LabelId。请从标签选择器选择。");
+        }
+
+        var friendNameConflicts = FindManualContactNameConflicts(SplitMultiValueText(_visibleFriendsText));
+        if (friendNameConflicts.Count > 0)
+        {
+            AddMomentPostFieldError("friends", $"朋友圈可见好友必须提交 wxid/username，不能使用昵称或备注：{string.Join("、", friendNameConflicts)}。");
+        }
+
+        var notiNameConflicts = FindManualContactNameConflicts(SplitMultiValueText(_notiUsersText));
+        if (notiNameConflicts.Count > 0)
+        {
+            AddMomentPostFieldError("notiUsers", $"提醒谁看必须提交 wxid/username，不能使用昵称或备注：{string.Join("、", notiNameConflicts)}。");
+        }
+
+        if (HasPoi(_postModel.poi))
+        {
+            if (string.IsNullOrWhiteSpace(_postModel.poi.city) && string.IsNullOrWhiteSpace(_postModel.poi.name))
+            {
+                AddMomentPostFieldError("poi", "当前 Android 只有 POI 城市或地点名非空时才会带位置；请填写城市或地点名。");
+            }
+
+            var hasLat = Math.Abs(_postModel.poi.lat) > 0.000001f;
+            var hasLng = Math.Abs(_postModel.poi.lng) > 0.000001f;
+            if (hasLat != hasLng)
+            {
+                AddMomentPostFieldError("poi", "POI 经纬度需要同时填写。");
+            }
+        }
+
+        return _momentPostFieldErrors.Count == 0;
+    }
+
+    private void ValidateMomentPostAttachmentTemplate()
+    {
+        var contents = _postModel.attachment.content ?? new List<string>();
+        switch (_postModel.attachment.type)
+        {
+            case MomentPostAttachmentType.Link:
+                if (HasLinkTemplateInput() && string.IsNullOrWhiteSpace(_linkUrl))
+                {
+                    AddMomentPostFieldError("attachment", "普通 Link 至少填写 URL；标题不能单独作为 Content[0]。");
+                }
+
+                if (!HasLinkTemplateInput() && SplitMultiValueText(_attachmentContentText).Count > 2)
+                {
+                    AddMomentPostFieldError("attachment", "普通 Link 模板仅支持 URL/标题两段；带描述或缩略图请使用 ExtLink。");
+                }
+
+                if (contents.Count == 0)
+                {
+                    AddMomentPostFieldError("attachment", "Link 至少填写 URL；普通 Link 模板仅生成 URL/标题，带缩略图请使用 ExtLink。");
+                }
+                break;
+
+            case MomentPostAttachmentType.ExtLink:
+                if (HasExtLinkTemplateInput())
+                {
+                    if (string.IsNullOrWhiteSpace(_extLinkTitle) && string.IsNullOrWhiteSpace(_extLinkUrl))
+                    {
+                        AddMomentPostFieldError("attachment", "ExtLink 模板至少填写 Title 或 Url，生成 AppMsgJsonData JSON 后下发。");
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(_extLinkType) && !TryParseExtLinkType(out _))
+                    {
+                        AddMomentPostFieldError("attachment", "ExtLink Type 必须是数字。");
+                    }
+                }
+
+                if (contents.Count == 0)
+                {
+                    AddMomentPostFieldError("attachment", "ExtLink 至少填写结构化字段，或在附件内容中粘贴 AppMsgJsonData JSON。");
+                }
+                else if (!LooksLikeJsonObject(contents[0]))
+                {
+                    AddMomentPostFieldError("attachment", "ExtLink 的 Content[0] 必须是 AppMsgJsonData JSON 对象。");
+                }
+                break;
+
+            case MomentPostAttachmentType.ShortVideo:
+            case MomentPostAttachmentType.LongVideo:
+                if (HasVideoTemplateInput() && string.IsNullOrWhiteSpace(_videoUrl))
+                {
+                    AddMomentPostFieldError("attachment", "视频附件必须先填写视频 URL/路径；封面不能单独下发。");
+                }
+
+                if (contents.Count == 0)
+                {
+                    AddMomentPostFieldError("attachment", "视频附件必须填写视频 URL/路径；封面能力待实机验证。");
+                }
+                break;
+
+            case MomentPostAttachmentType.ShiPinHao:
+                if (contents.Count == 0 || !LooksLikeJsonObject(contents[0]))
+                {
+                    AddMomentPostFieldError("attachment", "视频号动态必须提供 VideoChannelFeedInfo 或 VideoChannelVideoInfo JSON 对象，且以左花括号开头。");
+                }
+                break;
+
+            case MomentPostAttachmentType.FinderLive:
+                if (contents.Count == 0 || !LooksLikeJsonObject(contents[0]))
+                {
+                    AddMomentPostFieldError("attachment", "视频号直播必须提供 FinderFeedRecord JSON 对象，且以左花括号开头。");
+                }
+                break;
+        }
+    }
+
+    private static bool LooksLikeJsonObject(string? value)
+    {
+        var normalized = value?.Trim() ?? string.Empty;
+        if (!normalized.StartsWith("{", StringComparison.Ordinal) || !normalized.EndsWith("}", StringComparison.Ordinal))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(normalized);
+            return document.RootElement.ValueKind == JsonValueKind.Object;
+        }
+        catch (JsonException)
+        {
+            return false;
+        }
+    }
+
+    private List<string> BuildSelectedMomentPostLabelNames()
+    {
+        return (_selectedVisibleLabelIds ?? Array.Empty<int>())
+            .Select(id => _momentPostLabels.FirstOrDefault(label => label.labelId == id && !label.isDeleted)?.tagName ?? string.Empty)
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private List<string> FindManualContactNameConflicts(IEnumerable<string> manualValues)
+    {
+        var contacts = VisibleMomentPostContacts.ToList();
+        var conflicts = new List<string>();
+        foreach (var value in manualValues)
+        {
+            var normalized = value.Trim();
+            if (contacts.Any(contact => string.Equals(contact.wxid, normalized, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(contact.friendNo, normalized, StringComparison.OrdinalIgnoreCase)))
+            {
+                continue;
+            }
+
+            if (contacts.Any(contact => string.Equals(contact.nickname, normalized, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(contact.remarks, normalized, StringComparison.OrdinalIgnoreCase)))
+            {
+                conflicts.Add(normalized);
+            }
+        }
+
+        return conflicts.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+    }
+
+    private void TrimSelectedLabelIdsToCurrentOptions()
+    {
+        var available = _momentPostLabels
+            .Where(label => !label.isDeleted)
+            .Select(label => label.labelId)
+            .ToHashSet();
+        _selectedVisibleLabelIds = (_selectedVisibleLabelIds ?? Array.Empty<int>())
+            .Where(available.Contains)
+            .Distinct()
+            .ToArray();
+    }
+
+    private void AddMomentPostFieldError(string key, string message)
+    {
+        if (_momentPostFieldErrors.TryGetValue(key, out var existing) && !string.IsNullOrWhiteSpace(existing))
+        {
+            _momentPostFieldErrors[key] = $"{existing} {message}";
+        }
+        else
+        {
+            _momentPostFieldErrors[key] = message;
+        }
+    }
+
+    private bool HasMomentPostFieldError(string key)
+    {
+        return _momentPostFieldErrors.ContainsKey(key);
+    }
+
+    private string MomentPostFieldError(string key)
+    {
+        return _momentPostFieldErrors.TryGetValue(key, out var message) ? message : string.Empty;
+    }
+
+    private string ResolveSelectedAccountId()
+    {
+        return FirstNonEmpty(
+            Store.SelectedDevice?.weChatId,
+            Store.SelectedDevice?.wx?.wechatAccount?.wxid);
+    }
+
+    private static bool HasPoi(MomentPostPoiDto poi)
+    {
+        return !string.IsNullOrWhiteSpace(poi.city)
+            || !string.IsNullOrWhiteSpace(poi.name)
+            || !string.IsNullOrWhiteSpace(poi.address)
+            || !string.IsNullOrWhiteSpace(poi.poiId)
+            || Math.Abs(poi.lat) > 0.000001f
+            || Math.Abs(poi.lng) > 0.000001f;
+    }
+
+    private string BuildMomentPostSafePreview()
+    {
+        var attachmentCount = BuildMomentAttachmentContents().Count;
+        var labelsCount = BuildSelectedMomentPostLabelNames()
+            .Concat(SplitMultiValueText(_visibleLabelsText))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+        var friendsCount = (_selectedVisibleFriendWxids ?? Array.Empty<string>())
+            .Concat(SplitMultiValueText(_visibleFriendsText))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+        var notiCount = (_selectedNotiUserWxids ?? Array.Empty<string>())
+            .Concat(SplitMultiValueText(_notiUsersText))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Count();
+        var extCommentCount = SplitMultiValueText(_extCommentText).Count;
+        return string.Join("｜", new[]
+        {
+            $"正文={FormatHasText(_postModel.content)}",
+            $"附件={_postModel.attachment.type}/{attachmentCount}条",
+            $"可见={_postModel.visible.type}",
+            $"标签={labelsCount}",
+            $"好友={friendsCount}",
+            $"提醒={notiCount}",
+            $"首评={FormatHasText(_postModel.comment)}",
+            $"追加评论={extCommentCount}",
+            $"POI={(HasPoi(_postModel.poi) ? "已填" : "未填")}",
+            $"慢发={(_postModel.sendSlow ? "开" : "关")}"
+        });
+    }
+
+    private static string FormatHasText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "无" : "有";
+    }
+
+    private static bool HasPoiListData(object? data)
+    {
+        return ExtractMomentPoiRawItems(data).Count > 0;
+    }
+
+    private static List<string> ExtractMomentPoiRawItems(object? data)
+    {
+        if (data == null)
+        {
+            return new List<string>();
+        }
+
+        if (data is JsonElement json)
+        {
+            return ExtractMomentPoiRawItems(json);
+        }
+
+        var property = data.GetType().GetProperty("poiList")
+            ?? data.GetType().GetProperty("PoiList");
+        var value = property?.GetValue(data);
+        if (value is IEnumerable<string> strings)
+        {
+            return strings.Where(item => !string.IsNullOrWhiteSpace(item)).Select(item => item.Trim()).ToList();
+        }
+
+        if (value is System.Collections.IEnumerable enumerable && value is not string)
+        {
+            var items = new List<string>();
+            foreach (var item in enumerable)
+            {
+                var text = item?.ToString();
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    items.Add(text.Trim());
+                }
+            }
+
+            return items;
+        }
+
+        return new List<string>();
+    }
+
+    private static List<string> ExtractMomentPoiRawItems(JsonElement json)
+    {
+        if (json.ValueKind != JsonValueKind.Object)
+        {
+            return new List<string>();
+        }
+
+        if (!TryGetJsonProperty(json, out var poiList, "poiList", "PoiList") || poiList.ValueKind != JsonValueKind.Array)
+        {
+            return new List<string>();
+        }
+
+        var items = new List<string>();
+        foreach (var item in poiList.EnumerateArray())
+        {
+            var text = item.ValueKind == JsonValueKind.String ? item.GetString() : item.ToString();
+            if (!string.IsNullOrWhiteSpace(text))
+            {
+                items.Add(text.Trim());
+            }
+        }
+
+        return items;
+    }
+
+    private static string ExtractMomentPoiKeyword(object? data)
+    {
+        if (data == null)
+        {
+            return string.Empty;
+        }
+
+        if (data is JsonElement json)
+        {
+            return json.ValueKind == JsonValueKind.Object && TryGetJsonProperty(json, out var keyword, "Keyword", "keyword")
+                ? keyword.GetString() ?? string.Empty
+                : string.Empty;
+        }
+
+        var property = data.GetType().GetProperty("Keyword") ?? data.GetType().GetProperty("keyword");
+        return property?.GetValue(data)?.ToString() ?? string.Empty;
+    }
+
+    private static bool TryBuildMomentPoiOption(string raw, int index, out MomentPoiOption option)
+    {
+        option = new MomentPoiOption
+        {
+            Raw = raw,
+            Name = raw,
+            Text = $"{index}. {FormatShortText(raw, 90)}"
+        };
+
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return false;
+        }
+
+        try
+        {
+            using var document = JsonDocument.Parse(raw);
+            if (document.RootElement.ValueKind != JsonValueKind.Object)
+            {
+                return true;
+            }
+
+            var root = document.RootElement;
+            option.Name = GetJsonString(root, "Name", "name");
+            option.City = GetJsonString(root, "City", "city");
+            option.Address = GetJsonString(root, "Address", "address");
+            option.PoiId = GetJsonString(root, "PoiId", "poiId", "POIId", "poiid");
+            option.Province = GetJsonString(root, "Province", "province");
+            option.District = GetJsonString(root, "District", "district");
+            option.Lat = GetJsonDouble(root, "Lat", "lat", "Latitude", "latitude");
+            option.Lng = GetJsonDouble(root, "Lng", "lng", "Longitude", "longitude");
+            option.Text = $"{index}. {FirstNonEmpty(option.Name, option.Address, option.PoiId, "未命名 POI")}"
+                + (string.IsNullOrWhiteSpace(option.City) ? string.Empty : $"｜{option.City}")
+                + (Math.Abs(option.Lat) > 0.000001d || Math.Abs(option.Lng) > 0.000001d ? $"｜{option.Lat:F6},{option.Lng:F6}" : string.Empty);
+            return true;
+        }
+        catch (JsonException)
+        {
+            return true;
+        }
+    }
+
+    private static string GetJsonString(JsonElement root, params string[] names)
+    {
+        return TryGetJsonProperty(root, out var value, names)
+            ? value.ValueKind == JsonValueKind.String ? value.GetString() ?? string.Empty : value.ToString()
+            : string.Empty;
+    }
+
+    private static double GetJsonDouble(JsonElement root, params string[] names)
+    {
+        if (!TryGetJsonProperty(root, out var value, names))
+        {
+            return 0d;
+        }
+
+        return value.ValueKind switch
+        {
+            JsonValueKind.Number when value.TryGetDouble(out var number) => number,
+            JsonValueKind.String when double.TryParse(value.GetString(), out var number) => number,
+            _ => 0d
+        };
+    }
+
+    private static bool TryGetJsonProperty(JsonElement root, out JsonElement value, params string[] names)
+    {
+        foreach (var name in names)
+        {
+            if (root.TryGetProperty(name, out value))
+            {
+                return true;
+            }
+        }
+
+        value = default;
+        return false;
+    }
+
+    private static string FormatShortText(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "-";
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength] + "...";
+    }
+
+    private static List<string> SplitMultiValueText(string? value)
+    {
+        return (value ?? string.Empty)
+            .Split(new[] { "\r\n", "\n", "\r", ",", "，", ";", "；" }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private string CurrentExecutionLabel
+    {
+        get => Store.CurrentExecutionLabel;
+    }
+
+    private void HandleNotification(string msg, bool success)
+    {
+        _ = InvokeAsync(() =>
+        {
+            NoticeService.Notify(new NotificationMessage
+            {
+                Severity = success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                Summary = success ? "成功" : "错误",
+                Detail = msg,
+                Duration = 4000
+            });
+        });
+    }
+
+    private bool HasSelectedDeviceMomentsSyncState()
+    {
+        return Store.SelectedDevice != null
+            && !string.IsNullOrWhiteSpace(Store.LastMomentsSyncDeviceUuid)
+            && string.Equals(Store.LastMomentsSyncDeviceUuid, Store.SelectedDevice.uuid, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private bool HasSelectedDeviceMomentPostState()
+    {
+        return Store.SelectedDevice != null
+            && !string.IsNullOrWhiteSpace(Store.LastMomentPostDeviceUuid)
+            && string.Equals(Store.LastMomentPostDeviceUuid, Store.SelectedDevice.uuid, StringComparison.OrdinalIgnoreCase);
+    }
+
+    private AlertStyle GetMomentPostAlertStyle()
+    {
+        return Store.LastMomentPostSuccess == false
+            ? AlertStyle.Warning
+            : Store.LastMomentPostSuccess == true
+                ? AlertStyle.Success
+                : AlertStyle.Info;
+    }
+
+    private static string BuildContactDisplayName(Contact contact)
+    {
+        return FirstNonEmpty(contact.remarks, contact.nickname, contact.friendNo, contact.wxid, "未知好友");
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private sealed class LabelOption
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class ContactOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class MomentPoiOption
+    {
+        public string Raw { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string City { get; set; } = string.Empty;
+        public string Address { get; set; } = string.Empty;
+        public string PoiId { get; set; } = string.Empty;
+        public string Province { get; set; } = string.Empty;
+        public string District { get; set; } = string.Empty;
+        public double Lat { get; set; }
+        public double Lng { get; set; }
     }
 }

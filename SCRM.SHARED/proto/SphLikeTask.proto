@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 视频号点赞任务
+message SphLikeTaskMessage {
+  string WeChatId = 1;
+  int64 FeedId = 2;
+  int32 Type = 3;
+  bool IsCancel = 4;
+  int64 TaskId = 5;
+}

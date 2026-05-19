@@ -10,7 +10,6 @@ using SCRM.Services;
 using SCRM.Models.Configurations;
 using SCRM.API.Services.Core;
 using SCRM.Services.Netty;
-using SCRM.API.Services.Core;
 using SCRM.API.Services.Events;
 
 using System.Text;
@@ -25,6 +24,7 @@ using SCRM.API.Services;
 using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components.Authorization;
 using SCRM.UI.Services;
+using Microsoft.AspNetCore.StaticFiles;
 
 public partial class Program
 {
@@ -89,7 +89,14 @@ public partial class Program
         var dataSourceBuilder = new Npgsql.NpgsqlDataSourceBuilder(builder.Configuration.GetConnectionString("DefaultConnection"));
         dataSourceBuilder.EnableDynamicJson();
         var dataSource = dataSourceBuilder.Build();
-        builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        builder.Services.AddDbContext<ApplicationDbContext>(
+            options => options.UseNpgsql(dataSource),
+            contextLifetime: ServiceLifetime.Scoped,
+            // 同一个 ApplicationDbContext 同时提供普通 scoped 注入和 IDbContextFactory。
+            // IDbContextFactory 默认是 Singleton，不能依赖 scoped DbContextOptions；
+            // DbContextOptions 本身是不可变配置对象，提升为 Singleton 可以消除启动期 DI 生命周期冲突。
+            optionsLifetime: ServiceLifetime.Singleton);
+        builder.Services.AddDbContextFactory<ApplicationDbContext>(options =>
             options.UseNpgsql(dataSource));
         // Configure JWT settings
         builder.Services.Configure<JwtSettings>(
@@ -106,6 +113,15 @@ public partial class Program
         // builder.Services.AddScoped<JwtService>(); -- Removed
         // builder.Services.AddScoped<PermissionService>(); -- Removed
         builder.Services.AddScoped<AuthService>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.AccountAccessGuard>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.SensitiveMaskingService>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.MediaAccessTokenService>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.SensitiveMediaAccessAuditService>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.SensitiveMediaAccessAuditQueryService>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.SensitiveDataAccessAuditService>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.SensitiveWordPolicyService>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.SensitiveContentGuard>();
+        builder.Services.AddScoped<SCRM.API.Services.Security.DeviceOperationGuard>();
 
         // Configure Identity
         builder.Services.AddIdentityCore<ApplicationUser>(options =>
@@ -157,7 +173,10 @@ public partial class Program
                     
                     // Console.WriteLine($"[Auth] Processing Request: {path}, TokenQuery: {accessToken}");
 
-                    if (!string.IsNullOrEmpty(accessToken) && (path.StartsWithSegments("/hubs") || path.StartsWithSegments("/fileUpload")))
+                    if (!string.IsNullOrEmpty(accessToken) &&
+                        (path.StartsWithSegments("/hubs")
+                         || path.StartsWithSegments("/fileUpload")
+                         || path.StartsWithSegments("/fileUpUrl")))
                     {
                         context.Token = accessToken;
                         // Console.WriteLine("[Auth] Token extracted from QueryString for SignalR.");
@@ -242,6 +261,7 @@ public partial class Program
         builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.ContactMessageHandler>();
         builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.GroupMessageHandler>();
         builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.MomentsMessageHandler>();
+        builder.Services.AddScoped<SCRM.API.Services.Netty.Handlers.PhoneMessageHandler>();
         
         builder.Services.AddHostedService<SCRM.Services.Automation.AutomationService>(); // C&C Automation (Auto-Reply, etc.)
         builder.Services.AddHostedService<SCRM.API.Services.Maintenance.IndexCleanupService>(); // Auto-fix zombie indexes
@@ -351,21 +371,48 @@ public partial class Program
         var storePath = uploadSettings["StorePath"];
         var requestPrefix = uploadSettings["RequestUrlPrefix"] ?? "uploads";
 
-        // Fix: ALWAYS serve standard static files (wwwroot) like site.css, bootstrap.css, blazor.server.js
-        // If we don't do this, enabling file uploads effectively disables the entire website's styling and scripts.
-        app.UseStaticFiles();
+        var uploadStaticFileContentTypes = new FileExtensionContentTypeProvider();
+        uploadStaticFileContentTypes.Mappings[".mkv"] = "video/x-matroska";
+        uploadStaticFileContentTypes.Mappings[".webm"] = "video/webm";
+        uploadStaticFileContentTypes.Mappings[".mov"] = "video/quicktime";
+        uploadStaticFileContentTypes.Mappings[".m4v"] = "video/x-m4v";
+        uploadStaticFileContentTypes.Mappings[".3gp"] = "video/3gpp";
+        uploadStaticFileContentTypes.Mappings[".avi"] = "video/x-msvideo";
 
-        if (!string.IsNullOrEmpty(storePath) && Path.IsPathRooted(storePath))
+        // 必须始终服务 wwwroot 下的标准静态文件，例如 site.css、bootstrap.css、blazor.server.js。
+        // 同时补齐常见视频扩展名，否则 ASP.NET Core 默认静态文件中间件会把未知类型当作 404。
+        app.UseStaticFiles(new StaticFileOptions
         {
-            // Absolute Path (e.g. C:/Uploads)
-            if (!Directory.Exists(storePath)) Directory.CreateDirectory(storePath);
+            ContentTypeProvider = uploadStaticFileContentTypes
+        });
+
+        var uploadRequestPath = "/" + requestPrefix.Trim('/');
+        var uploadStorePath = string.IsNullOrWhiteSpace(storePath)
+            ? Path.Combine("wwwroot", requestPrefix.Trim('/'))
+            : storePath;
+        var uploadPhysicalRoot = Path.IsPathRooted(uploadStorePath)
+            ? uploadStorePath
+            : Path.Combine(app.Environment.ContentRootPath, uploadStorePath);
+
+        if (!Directory.Exists(uploadPhysicalRoot))
+        {
+            Directory.CreateDirectory(uploadPhysicalRoot);
+        }
+
+        // 上传目录单独映射一次：既兼容绝对 StorePath，也兼容默认 wwwroot/uploads。
+        // 对上传目录启用未知类型兜底，避免未来视频扩展名未注册时被静态文件中间件当作 404。
+        if (!string.IsNullOrWhiteSpace(uploadRequestPath) && uploadRequestPath != "/")
+        {
             app.UseStaticFiles(new StaticFileOptions
             {
-                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(storePath),
-                RequestPath = "/" + requestPrefix.Trim('/')
+                FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(uploadPhysicalRoot),
+                RequestPath = uploadRequestPath,
+                ContentTypeProvider = uploadStaticFileContentTypes,
+                ServeUnknownFileTypes = true,
+                DefaultContentType = "application/octet-stream"
             });
         }
-        // Removed 'else' block because wwwroot must allow be served regardless of upload config
+        // wwwroot 静态文件始终由上面的默认 UseStaticFiles 服务，上传目录则由 uploadRequestPath 专用映射兜底。
 
         app.UseRouting();
 
@@ -409,6 +456,10 @@ public partial class Program
             {
                 var logger = services.GetRequiredService<ILogger<Program>>();
                 logger.LogError(ex, "An error occurred seeding the DB or during migration.");
+                // 数据库是 SCRM 的核心依赖。这里不能吞掉异常后继续启动 Netty、消息清理、
+                // 设备鉴权等后台链路，否则 PostgreSQL 未启动时会产生大量重复错误，
+                // 也会让安卓端误以为服务端已可用。直接中断启动，保留最早、最明确的根因。
+                throw;
             }
         }
 

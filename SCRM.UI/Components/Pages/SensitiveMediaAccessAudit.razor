@@ -1,0 +1,458 @@
+@page "/security/sensitive-media-audit"
+@using Microsoft.AspNetCore.Authorization
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.Shared.Interfaces
+@using Radzen
+@using Radzen.Blazor
+@inject ICrmService CrmService
+@inject NotificationService NoticeService
+@attribute [Authorize]
+
+<PageTitle>敏感操作审计</PageTitle>
+
+<RadzenStack Gap="1rem" Style="padding: 1rem;">
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Wrap="FlexWrap.Wrap">
+        <RadzenStack Gap="0.25rem">
+            <RadzenText Text="敏感操作审计" TextStyle="TextStyle.H5" Style="margin: 0;" />
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                查询 system_logs 中 SensitiveMediaAccess / SensitiveDataAccess / SensitiveContentRisk 模块的短期 token、敏感字段返回与发送前风控记录；页面只显示 token 哈希、字段名、命中词和数量，不显示 token、手机号、短信正文、录音 URL 或发送原文。
+            </RadzenText>
+        </RadzenStack>
+        <RadzenButton Text="刷新" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="LoadAsync" Disabled="@_isLoading" />
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.75rem">
+            <RadzenRow Gap="0.75rem">
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="开始时间" />
+                        <RadzenDatePicker TValue="DateTime?" @bind-Value="_query.createdFrom" ShowTime="true" DateFormat="yyyy-MM-dd HH:mm" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="结束时间" />
+                        <RadzenDatePicker TValue="DateTime?" @bind-Value="_query.createdTo" ShowTime="true" DateFormat="yyyy-MM-dd HH:mm" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="模块" />
+                        <RadzenDropDown TValue="string"
+                                        Data="@ModuleOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_query.module"
+                                        Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="动作" />
+                        <RadzenDropDown TValue="string"
+                                        Data="@ActionOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_query.action"
+                                        Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="范围" />
+                        <RadzenDropDown TValue="string"
+                                        Data="@ScopeOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_query.scope"
+                                        Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="级别" />
+                        <RadzenDropDown TValue="string"
+                                        Data="@LevelOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_query.level"
+                                        Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="0.75rem">
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="微信账号 wxid" />
+                        <RadzenTextBox @bind-Value="_query.accountId" Placeholder="wxid_xxx" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="设备 UUID" />
+                        <RadzenTextBox @bind-Value="_query.deviceUuid" Placeholder="设备 UUID" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="操作人" />
+                        <RadzenTextBox @bind-Value="_query.operatorId" Placeholder="用户 ID / 用户名" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="目标 ID" />
+                        <RadzenTextBox @bind-Value="_query.targetId" Placeholder="wx:xxx / device:xxx" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="0.75rem">
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="数据类型" />
+                        <RadzenTextBox @bind-Value="_query.dataKind" Placeholder="SmsRecords / CallLogRecords" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="来源" />
+                        <RadzenTextBox @bind-Value="_query.source" Placeholder="CreateMediaAccessTokenAsync / Open" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="相对路径" />
+                        <RadzenTextBox @bind-Value="_query.relativePath" Placeholder="wx/... / devices/..." Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="详情" />
+                        <RadzenTextBox @bind-Value="_query.detail" Placeholder="拒绝原因 / CallLogId / contentType" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="综合关键字" />
+                        <RadzenTextBox @bind-Value="_query.keyword" Placeholder="动作、路径、操作人、目标" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                <RadzenButton Text="查询" Icon="search" ButtonStyle="ButtonStyle.Primary" Click="SearchAsync" Disabled="@_isLoading" />
+                <RadzenButton Text="重置" Icon="restart_alt" ButtonStyle="ButtonStyle.Light" Click="ResetAsync" Disabled="@_isLoading" />
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                    普通用户必须具备 risk.audit.view 或 system.logs 权限，并且只能看到自己或可访问账号/设备相关记录。
+                </RadzenText>
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    @if (!_result.hasAccess)
+    {
+        <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" ShowIcon="true">
+            @_result.message
+        </RadzenAlert>
+    }
+    else
+    {
+        <RadzenCard>
+            <RadzenStack Gap="0.75rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Wrap="FlexWrap.Wrap">
+                    <RadzenText Text="@($"共 {_result.totalCount} 条，当前第 {_result.page}/{TotalPages} 页")" TextStyle="TextStyle.Body2" />
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                        <RadzenButton Text="上一页" Icon="chevron_left" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="PrevPageAsync" Disabled="@(_isLoading || _query.page <= 1)" />
+                        <RadzenNumeric TValue="int" @bind-Value="_query.page" Min="1" Max="@TotalPages" Style="width: 90px;" Change="@(_ => LoadAsync())" />
+                        <RadzenButton Text="下一页" Icon="chevron_right" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="NextPageAsync" Disabled="@(_isLoading || _query.page >= TotalPages)" />
+                    </RadzenStack>
+                </RadzenStack>
+
+                <RadzenDataGrid Data="@_result.items"
+                                TItem="SensitiveMediaAccessAuditItemDto"
+                                AllowPaging="false"
+                                AllowSorting="true"
+                                EmptyText="@(_isLoading ? "正在加载审计记录..." : "暂无敏感操作审计记录")">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Title="时间" Width="170px">
+                            <Template Context="item">@FormatDateTime(item.createdAt)</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Title="级别" Width="95px">
+                            <Template Context="item">
+                                <RadzenBadge BadgeStyle="@GetLevelBadge(item.level)" Text="@item.level" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Title="模块" Width="165px">
+                            <Template Context="item">@DisplayModule(item.module)</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Title="动作" Width="150px">
+                            <Template Context="item">
+                                <RadzenBadge BadgeStyle="@GetActionBadge(item.action)" Text="@item.action" />
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Property="scope" Title="范围" Width="125px" />
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Property="source" Title="来源" Width="210px" />
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Title="归属" Width="260px">
+                            <Template Context="item">
+                                <RadzenStack Gap="0">
+                                    <RadzenText TextStyle="TextStyle.Body2" Style="margin: 0;">@DisplayOwner(item)</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary" Style="margin: 0;">@item.targetId</RadzenText>
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Property="operatorId" Title="操作人" Width="160px" />
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Title="相对路径">
+                            <Template Context="item">
+                                <span title="@item.relativePath" style="font-family: monospace;">@Shorten(item.relativePath, 72)</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Title="详情" Width="260px">
+                            <Template Context="item">
+                                <span title="@DisplayDetail(item)">@Shorten(DisplayDetail(item), 42)</span>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SensitiveMediaAccessAuditItemDto" Title="过期/哈希" Width="220px">
+                            <Template Context="item">
+                                <RadzenStack Gap="0">
+                                    <RadzenText TextStyle="TextStyle.Caption" Style="margin: 0;">@FormatExpires(item.expiresAt)</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary" Style="margin: 0;">@DisplayTokenHash(item.tokenHash)</RadzenText>
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenStack>
+        </RadzenCard>
+    }
+</RadzenStack>
+
+@code {
+    private SensitiveMediaAccessAuditQueryDto _query = BuildDefaultQuery();
+    private SensitiveMediaAccessAuditQueryResultDto _result = new();
+    private bool _isLoading;
+
+    private int TotalPages => Math.Max(1, (int)Math.Ceiling(_result.totalCount / (double)Math.Max(_result.pageSize, 1)));
+
+    private IReadOnlyList<SelectOption> ActionOptions { get; } = new List<SelectOption>
+    {
+        new("", "全部"),
+        new("TokenIssued", "签发成功"),
+        new("TokenDenied", "签发拒绝"),
+        new("TokenOpened", "打开成功"),
+        new("TokenOpenDenied", "打开失败"),
+        new("SensitiveFieldsReturned", "敏感字段返回"),
+        new("ContentBlocked", "内容阻断"),
+        new("ContentWarned", "内容警告"),
+        new("ContentAuditOnly", "内容审计")
+    };
+
+    private IReadOnlyList<SelectOption> ModuleOptions { get; } = new List<SelectOption>
+    {
+        new("", "全部"),
+        new("SensitiveMediaAccess", "媒体访问"),
+        new("SensitiveDataAccess", "数据查看"),
+        new("SensitiveContentRisk", "发送风控")
+    };
+
+    private IReadOnlyList<SelectOption> ScopeOptions { get; } = new List<SelectOption>
+    {
+        new("", "全部"),
+        new("media", "聊天媒体"),
+        new("screenshot", "设备截图"),
+        new("call-recording", "通话录音")
+    };
+
+    private IReadOnlyList<SelectOption> LevelOptions { get; } = new List<SelectOption>
+    {
+        new("", "全部"),
+        new("Info", "Info"),
+        new("Warning", "Warning"),
+        new("Error", "Error")
+    };
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAsync();
+    }
+
+    private async Task SearchAsync()
+    {
+        _query.page = 1;
+        await LoadAsync();
+    }
+
+    private async Task ResetAsync()
+    {
+        _query = BuildDefaultQuery();
+        await LoadAsync();
+    }
+
+    private async Task PrevPageAsync()
+    {
+        if (_query.page <= 1)
+        {
+            return;
+        }
+
+        _query.page--;
+        await LoadAsync();
+    }
+
+    private async Task NextPageAsync()
+    {
+        if (_query.page >= TotalPages)
+        {
+            return;
+        }
+
+        _query.page++;
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        if (_isLoading)
+        {
+            return;
+        }
+
+        _isLoading = true;
+        try
+        {
+            _result = await CrmService.GetSensitiveMediaAccessAuditsAsync(_query);
+            if (!_result.hasAccess && !string.IsNullOrWhiteSpace(_result.message))
+            {
+                NoticeService.Notify(NotificationSeverity.Warning, "无权限", _result.message);
+            }
+        }
+        catch (Exception ex)
+        {
+            _result = new SensitiveMediaAccessAuditQueryResultDto
+            {
+                hasAccess = false,
+                message = $"读取审计记录失败：{ex.Message}"
+            };
+            NoticeService.Notify(NotificationSeverity.Error, "查询失败", ex.Message);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static SensitiveMediaAccessAuditQueryDto BuildDefaultQuery()
+    {
+        return new SensitiveMediaAccessAuditQueryDto
+        {
+            page = 1,
+            pageSize = 50,
+            createdFrom = DateTime.Now.AddDays(-1),
+            createdTo = DateTime.Now
+        };
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        return value == default ? "-" : value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private static string FormatExpires(DateTimeOffset? value)
+    {
+        return value.HasValue ? value.Value.ToLocalTime().ToString("MM-dd HH:mm:ss") : "未记录过期时间";
+    }
+
+    private static string DisplayTokenHash(string tokenHash)
+    {
+        return string.IsNullOrWhiteSpace(tokenHash) ? "tokenHash:-" : $"tokenHash:{tokenHash}";
+    }
+
+    private static string DisplayModule(string module)
+    {
+        return module switch
+        {
+            "SensitiveMediaAccess" => "媒体访问",
+            "SensitiveDataAccess" => "数据查看",
+            "SensitiveContentRisk" => "发送风控",
+            _ => string.IsNullOrWhiteSpace(module) ? "-" : module
+        };
+    }
+
+    private static string DisplayDetail(SensitiveMediaAccessAuditItemDto item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.riskLevel) || item.matchedWords.Count > 0 || !string.IsNullOrWhiteSpace(item.scene))
+        {
+            var words = item.matchedWords.Count == 0 ? "-" : string.Join(",", item.matchedWords);
+            var fields = item.fields.Count == 0 ? "-" : string.Join(",", item.fields);
+            return $"{item.scene} 等级:{item.riskLevel} 命中:{words} 字段:{fields} {item.detail}".Trim();
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.dataKind) || item.fields.Count > 0 || item.recordCount > 0)
+        {
+            var fields = item.fields.Count == 0 ? "-" : string.Join(",", item.fields);
+            return $"{item.dataKind} 字段:{fields} 数量:{item.recordCount} {item.detail}".Trim();
+        }
+
+        return item.detail;
+    }
+
+    private static string DisplayOwner(SensitiveMediaAccessAuditItemDto item)
+    {
+        if (!string.IsNullOrWhiteSpace(item.accountId))
+        {
+            return $"账号：{item.accountId}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.deviceUuid))
+        {
+            return $"设备：{item.deviceUuid}";
+        }
+
+        if (!string.IsNullOrWhiteSpace(item.targetValue))
+        {
+            return $"{item.targetKind}:{item.targetValue}";
+        }
+
+        return "未推断";
+    }
+
+    private static string Shorten(string value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "-";
+        }
+
+        return value.Length <= maxLength ? value : $"{value[..maxLength]}…";
+    }
+
+    private static BadgeStyle GetLevelBadge(string level)
+    {
+        return level switch
+        {
+            "Warning" => BadgeStyle.Warning,
+            "Error" => BadgeStyle.Danger,
+            _ => BadgeStyle.Info
+        };
+    }
+
+    private static BadgeStyle GetActionBadge(string action)
+    {
+        return action switch
+        {
+            "TokenIssued" => BadgeStyle.Success,
+            "TokenDenied" => BadgeStyle.Warning,
+            "TokenOpened" => BadgeStyle.Info,
+            "TokenOpenDenied" => BadgeStyle.Danger,
+            "SensitiveFieldsReturned" => BadgeStyle.Warning,
+            "ContentBlocked" => BadgeStyle.Danger,
+            "ContentWarned" => BadgeStyle.Warning,
+            "ContentAuditOnly" => BadgeStyle.Info,
+            _ => BadgeStyle.Light
+        };
+    }
+
+    private sealed record SelectOption(string Value, string Text);
+}

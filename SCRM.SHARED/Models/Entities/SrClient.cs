@@ -166,6 +166,9 @@ public class SrClient : ICacheable<SrClient>
         this.status = other.status;
         this.ownerId = other.ownerId;
         this.connectionId = other.connectionId;
+        this.customConfigs = other.customConfigs;
+        this.wx = other.wx ?? this.wx;
+        this.loggedInWeChatIds = other.loggedInWeChatIds ?? this.loggedInWeChatIds;
         this.updatedAt = DateTime.UtcNow;
         
         return this;

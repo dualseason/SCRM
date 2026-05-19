@@ -8,13 +8,24 @@
             <RadzenPanelMenuItem Text="首页" Path="" Icon="home" />
             <RadzenPanelMenuItem Text="IM 中心" Path="im" Icon="chat" />
             <RadzenPanelMenuItem Text="朋友圈" Path="moments" Icon="camera" />
-            <RadzenPanelMenuItem Text="联系人" Path="contacts/all" Icon="contacts" />
+            <RadzenPanelMenuItem Text="视频号中心" Path="finder" Icon="smart_display" />
+            <RadzenPanelMenuItem Text="微信群工具" Path="features/group-tools" Icon="groups" />
+            <RadzenPanelMenuItem Text="好友管理" Icon="group">
+                <RadzenPanelMenuItem Text="当前微信好友" Path="contacts" Icon="person_search" />
+                <RadzenPanelMenuItem Text="添加好友" Path="features/add-friend" Icon="person_add" />
+                <RadzenPanelMenuItem Text="好友请求" Path="features/friend-requests" Icon="notifications" />
+            </RadzenPanelMenuItem>
+            <RadzenPanelMenuItem Text="联系人" Icon="contacts">
+                <RadzenPanelMenuItem Text="联系人总览" Path="contacts/all" Icon="manage_search" />
+                <RadzenPanelMenuItem Text="当前微信联系人" Path="contacts" Icon="person_search" />
+            </RadzenPanelMenuItem>
             
             <RadzenPanelMenuItem Text="系统管理" Icon="admin_panel_settings">
                 <RadzenPanelMenuItem Text="设备列表" Path="admin/devices" Icon="smartphone" />
                 <RadzenPanelMenuItem Text="微信账号" Path="admin/wechat-accounts" Icon="people" />
-                <RadzenPanelMenuItem Text="设备列表" Path="admin/devices" Icon="smartphone" />
-                <RadzenPanelMenuItem Text="微信账号" Path="admin/wechat-accounts" Icon="people" />
+                <RadzenPanelMenuItem Text="手机短信/通话" Path="features/mobile-mgmt" Icon="phone_in_talk" />
+                <RadzenPanelMenuItem Text="敏感媒体审计" Path="security/sensitive-media-audit" Icon="manage_search" />
+                <RadzenPanelMenuItem Text="设备配置/违禁词" Path="features/device-config" Icon="tune" />
                 <RadzenPanelMenuItem Text="参数设置" Path="settings" Icon="settings" />
             </RadzenPanelMenuItem>
             

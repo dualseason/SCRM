@@ -12,4 +12,5 @@ message ForwardMessageByContentTaskMessage {
     string Content = 5;
     int64 TaskId = 6;
     string Thumb = 7;
+    string ExtMsg = 8;
 }

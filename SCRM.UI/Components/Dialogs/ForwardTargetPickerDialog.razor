@@ -1,0 +1,290 @@
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@inject CrmStore Store
+@inject DialogService DialogService
+
+<RadzenStack Gap="0.75rem" Style="min-width: 520px; max-width: calc(100vw - 3rem);">
+    <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">
+        选择消息转发目标。可以同时选择联系人、群聊和最近会话；确认后会回填到聊天工具栏的目标输入框。
+    </RadzenText>
+
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+        <RadzenTextBox @bind-Value="_keyword"
+                       Placeholder="搜索昵称、备注、wxid、群ID"
+                       Style="flex: 1;"
+                       Change="@(_ => StateHasChanged())" />
+        <RadzenButton Text="清空"
+                      Icon="clear"
+                      ButtonStyle="ButtonStyle.Light"
+                      Size="ButtonSize.Small"
+                      Click="@ClearSelection"
+                      Disabled="@(!_selectedTargetIds.Any())" />
+    </RadzenStack>
+
+    <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0;">
+        已选择 @_selectedTargetIds.Count 个目标：
+        @(string.IsNullOrWhiteSpace(SelectedPreview) ? "未选择" : SelectedPreview)
+    </RadzenAlert>
+
+    <div style="max-height: 430px; overflow-y: auto; border: 1px solid var(--rz-border-color); border-radius: 8px;">
+        @if (!VisibleOptions.Any())
+        {
+            <RadzenStack AlignItems="AlignItems.Center" JustifyContent="JustifyContent.Center" Style="height: 160px;">
+                <RadzenText Text="没有匹配的转发目标" TextStyle="TextStyle.Body2" Class="rz-color-secondary" />
+            </RadzenStack>
+        }
+        else
+        {
+            @foreach (var group in VisibleOptions.GroupBy(item => item.Category))
+            {
+                <div style="padding: 0.55rem 0.75rem; background: var(--rz-base-100); border-bottom: 1px solid var(--rz-border-color);">
+                    <RadzenText Text="@group.Key" TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0" />
+                </div>
+
+                @foreach (var item in group)
+                {
+                    var selected = _selectedTargetIds.Contains(item.Id);
+                    <RadzenStack Orientation="Orientation.Horizontal"
+                                 AlignItems="AlignItems.Center"
+                                 JustifyContent="JustifyContent.SpaceBetween"
+                                 Gap="0.75rem"
+                                 Style="padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--rz-border-color);">
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.6rem" AlignItems="AlignItems.Center" Style="min-width: 0;">
+                            <RadzenIcon Icon="@item.Icon" Style="font-size: 22px; color: var(--rz-primary);" />
+                            <RadzenStack Gap="0.15rem" Style="min-width: 0;">
+                                <RadzenText Text="@item.Name" TextStyle="TextStyle.Body2" Class="rz-mb-0" Style="font-weight: 600; overflow: hidden; text-overflow: ellipsis;" />
+                                <RadzenText Text="@item.Id" TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0" Style="word-break: break-all;" />
+                            </RadzenStack>
+                        </RadzenStack>
+                        <RadzenButton Text="@(selected ? "取消" : "选择")"
+                                      Icon="@(selected ? "check_circle" : "add_circle")"
+                                      ButtonStyle="@(selected ? ButtonStyle.Primary : ButtonStyle.Light)"
+                                      Size="ButtonSize.Small"
+                                      Click="@(() => ToggleTarget(item.Id))" />
+                    </RadzenStack>
+                }
+            }
+        }
+    </div>
+
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" JustifyContent="JustifyContent.End">
+        <RadzenButton Text="取消"
+                      ButtonStyle="ButtonStyle.Light"
+                      Click="@(() => DialogService.Close(null))" />
+        <RadzenButton Text="确认选择"
+                      Icon="done"
+                      ButtonStyle="ButtonStyle.Primary"
+                      Click="@ConfirmSelection"
+                      Disabled="@(!_selectedTargetIds.Any())" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    /// <summary>
+    /// 打开弹窗前已有的目标列表，逗号或空白分隔。
+    /// </summary>
+    [Parameter]
+    public string InitialTargets { get; set; } = string.Empty;
+
+    private string _keyword = string.Empty;
+    private readonly HashSet<string> _selectedTargetIds = new(StringComparer.OrdinalIgnoreCase);
+
+    private IEnumerable<ForwardTargetOption> VisibleOptions
+    {
+        get
+        {
+            var keyword = _keyword?.Trim();
+            var options = BuildTargetOptions();
+            if (string.IsNullOrWhiteSpace(keyword))
+            {
+                return options;
+            }
+
+            return options.Where(item =>
+                item.Name.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                || item.Id.Contains(keyword, StringComparison.OrdinalIgnoreCase)
+                || item.SearchText.Contains(keyword, StringComparison.OrdinalIgnoreCase));
+        }
+    }
+
+    private string SelectedPreview
+    {
+        get
+        {
+            if (!_selectedTargetIds.Any())
+            {
+                return string.Empty;
+            }
+
+            var names = BuildTargetOptions()
+                .Where(item => _selectedTargetIds.Contains(item.Id))
+                .Select(item => item.Name)
+                .Take(5)
+                .ToList();
+
+            var preview = names.Any()
+                ? string.Join("、", names)
+                : string.Join("、", _selectedTargetIds.Take(5));
+
+            return _selectedTargetIds.Count > 5
+                ? $"{preview} 等 {_selectedTargetIds.Count} 个"
+                : preview;
+        }
+    }
+
+    protected override void OnInitialized()
+    {
+        foreach (var id in SplitTargetIds(InitialTargets))
+        {
+            _selectedTargetIds.Add(id);
+        }
+    }
+
+    /// <summary>
+    /// 构建可选转发目标。
+    /// <para>目标来源只使用当前 Store 内存态，不访问数据库；联系人按微信数据归属，设备仅作为执行载体。</para>
+    /// </summary>
+    private IReadOnlyList<ForwardTargetOption> BuildTargetOptions()
+    {
+        var map = new Dictionary<string, ForwardTargetOption>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var contact in Store.Contacts.Concat(Store.SelectedDevice?.wx?.contacts ?? Enumerable.Empty<Contact>()))
+        {
+            if (string.IsNullOrWhiteSpace(contact.wxid) || contact.isDeleted)
+            {
+                continue;
+            }
+
+            AddOption(map, new ForwardTargetOption
+            {
+                Id = contact.wxid.Trim(),
+                Name = FirstNonEmpty(contact.remarks, contact.nickname, contact.friendNo, contact.wxid),
+                Category = IsChatRoomId(contact.wxid) ? "群聊" : "联系人",
+                Icon = IsChatRoomId(contact.wxid) ? "groups" : "person",
+                SearchText = FirstNonEmpty(contact.friendNo, contact.nickname, contact.remarks)
+            });
+        }
+
+        foreach (var conversation in Store.Conversations)
+        {
+            if (string.IsNullOrWhiteSpace(conversation.conversationWxid) || conversation.isDeleted)
+            {
+                continue;
+            }
+
+            var isGroup = conversation.conversationType == 2 || IsChatRoomId(conversation.conversationWxid);
+            AddOption(map, new ForwardTargetOption
+            {
+                Id = conversation.conversationWxid.Trim(),
+                Name = FirstNonEmpty(conversation.displayName, conversation.conversationWxid),
+                Category = isGroup ? "群聊/群会话" : "最近会话",
+                Icon = isGroup ? "groups" : "forum",
+                SearchText = FirstNonEmpty(conversation.lastMessageContent, conversation.displayName)
+            });
+        }
+
+        return map.Values
+            .OrderBy(item => item.Sort)
+            .ThenBy(item => item.Name)
+            .ThenBy(item => item.Id)
+            .ToList();
+    }
+
+    private static void AddOption(Dictionary<string, ForwardTargetOption> map, ForwardTargetOption option)
+    {
+        if (string.IsNullOrWhiteSpace(option.Id))
+        {
+            return;
+        }
+
+        if (map.TryGetValue(option.Id, out var existing))
+        {
+            // 联系人资料比最近会话更适合作为展示名，但群会话要保留群聊分类。
+            existing.Name = FirstNonEmpty(existing.Name, option.Name, option.Id);
+            existing.SearchText = $"{existing.SearchText} {option.SearchText}".Trim();
+            if (option.Category.Contains("群", StringComparison.OrdinalIgnoreCase))
+            {
+                existing.Category = option.Category;
+                existing.Icon = option.Icon;
+            }
+            return;
+        }
+
+        map[option.Id] = option;
+    }
+
+    private void ToggleTarget(string id)
+    {
+        if (string.IsNullOrWhiteSpace(id))
+        {
+            return;
+        }
+
+        if (!_selectedTargetIds.Add(id))
+        {
+            _selectedTargetIds.Remove(id);
+        }
+    }
+
+    private void ClearSelection()
+    {
+        _selectedTargetIds.Clear();
+    }
+
+    private void ConfirmSelection()
+    {
+        DialogService.Close(string.Join(",", _selectedTargetIds));
+    }
+
+    private static IEnumerable<string> SplitTargetIds(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            yield break;
+        }
+
+        foreach (var part in input.Split(new[] { ',', '，', ';', '；', '\n', '\r', '\t', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            if (!string.IsNullOrWhiteSpace(part))
+            {
+                yield return part.Trim();
+            }
+        }
+    }
+
+    private static bool IsChatRoomId(string? value)
+    {
+        return !string.IsNullOrWhiteSpace(value)
+            && (value.EndsWith("@chatroom", StringComparison.OrdinalIgnoreCase)
+                || value.EndsWith("@openim", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private sealed class ForwardTargetOption
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Category { get; set; } = "联系人";
+        public string Icon { get; set; } = "person";
+        public string SearchText { get; set; } = string.Empty;
+
+        public int Sort => Category switch
+        {
+            "联系人" => 0,
+            "最近会话" => 1,
+            _ => 2
+        };
+    }
+}

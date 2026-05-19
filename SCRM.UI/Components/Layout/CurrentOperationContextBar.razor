@@ -1,0 +1,339 @@
+@using Microsoft.AspNetCore.Components.Authorization
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@inject CrmStore Store
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProvider
+@implements IDisposable
+
+<RadzenStack Orientation="Orientation.Horizontal"
+             AlignItems="AlignItems.Center"
+             Gap="0.75rem"
+             Class="current-operation-context">
+    <RadzenStack Gap="0" Class="context-user">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-mb-0 rz-color-secondary">当前用户</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0 context-strong">@_userName</RadzenText>
+    </RadzenStack>
+
+    <RadzenButton ButtonStyle="ButtonStyle.Light"
+                  Size="ButtonSize.Small"
+                  Class="context-switch-button"
+                  Click="@ToggleSelector"
+                  title="@CurrentWechatTitle">
+        <ChildContent>
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.5rem">
+                <RadzenIcon Icon="account_circle" />
+                <RadzenStack Gap="0" Style="text-align: left;">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-mb-0 rz-color-secondary">当前操作微信 / 执行设备</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0 context-main-text">
+                        @CurrentOperationText
+                    </RadzenText>
+                </RadzenStack>
+                <RadzenIcon Icon="@(_selectorOpen ? "expand_less" : "expand_more")" />
+            </RadzenStack>
+        </ChildContent>
+    </RadzenButton>
+
+    <RadzenBadge BadgeStyle="@CurrentStatusStyle"
+                 Text="@CurrentStatusText"
+                 title="微信账号数据归属于 wxid；设备只是当前在线执行载体，换设备登录后可切换执行设备。" />
+
+    <RadzenButton Icon="refresh"
+                  Text="刷新"
+                  ButtonStyle="ButtonStyle.Light"
+                  Size="ButtonSize.Small"
+                  Click="@ReloadDevicesAsync"
+                  Disabled="@_isLoading" />
+
+    <RadzenButton Icon="manage_accounts"
+                  Text="校准微信"
+                  ButtonStyle="ButtonStyle.Light"
+                  Size="ButtonSize.Small"
+                  Click="@RefreshWechatAccountsAsync"
+                  Disabled="@(_isLoading || Store.SelectedDevice == null || string.IsNullOrWhiteSpace(Store.SelectedDevice.uuid))"
+                  title="向当前执行设备下发 3050 微信账号状态查询，用于校准网页显示的微信登录状态。" />
+</RadzenStack>
+
+@if (_selectorOpen)
+{
+    <div class="context-selector-popover">
+        <RadzenCard Style="width: 430px; max-width: calc(100vw - 2rem);">
+            <RadzenStack Gap="0.75rem">
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                    <RadzenStack Gap="0.15rem">
+                        <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">切换当前操作对象</RadzenText>
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                            微信数据归属于微信号；设备只是当前执行载体。
+                        </RadzenText>
+                    </RadzenStack>
+                    <RadzenButton Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="@ToggleSelector" />
+                </RadzenStack>
+
+                <RadzenDropDown TValue="string"
+                                Data="@DeviceOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                Value="@SelectedDeviceUuid"
+                                Change="@OnDeviceChanged"
+                                Placeholder="选择设备/微信"
+                                Style="width: 100%;" />
+
+                <RadzenStack Gap="0.25rem" Class="context-detail-panel">
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">当前微信</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2">@CurrentWechatText</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">执行设备</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Body2">@CurrentDeviceText</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">说明</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption">
+                        查看联系人、会话、朋友圈时以微信号为主；发送消息、加好友、删好友等动作会通过当前在线执行设备下发。
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenStack>
+        </RadzenCard>
+    </div>
+}
+
+@code {
+    private string _userName = "未登录";
+    private bool _isLoading;
+    private bool _selectorOpen;
+
+    private string SelectedDeviceUuid => Store.SelectedDevice?.uuid ?? string.Empty;
+
+    private IEnumerable<DeviceOption> DeviceOptions => Store.Devices
+        .OrderByDescending(IsWechatReady)
+        .ThenByDescending(device => device.isOnline)
+        .ThenBy(device => BuildDeviceOptionText(device))
+        .Select(device => new DeviceOption
+        {
+            Value = device.uuid,
+            Text = BuildDeviceOptionText(device)
+        });
+
+    private string CurrentWechatText
+    {
+        get
+        {
+            var device = Store.SelectedDevice;
+            if (device == null)
+            {
+                return "未选择";
+            }
+
+            var nickname = device.wx?.wechatAccount?.nickname;
+            var wxid = device.weChatId ?? device.wx?.wechatAccount?.wxid;
+
+            if (!string.IsNullOrWhiteSpace(nickname) && !string.IsNullOrWhiteSpace(wxid))
+            {
+                return $"{nickname} / {Shorten(wxid, 18)}";
+            }
+
+            return nickname ?? wxid ?? "微信未登录";
+        }
+    }
+
+    private string CurrentDeviceText
+    {
+        get
+        {
+            var device = Store.SelectedDevice;
+            if (device == null)
+            {
+                return "未选择执行设备";
+            }
+
+            var deviceName = FirstNonEmpty(device.device?.PhoneModel, device.uuid, "未知设备");
+            return $"{deviceName} / {Shorten(device.uuid, 14)} / {(device.isOnline ? "在线" : "离线")}";
+        }
+    }
+
+    private string CurrentOperationText
+    {
+        get
+        {
+            var device = Store.SelectedDevice;
+            if (device == null)
+            {
+                return "未选择微信/设备";
+            }
+
+            var account = FirstNonEmpty(device.wx?.wechatAccount?.nickname, device.weChatId, device.wx?.wechatAccount?.wxid, "微信未登录");
+            var deviceName = FirstNonEmpty(device.device?.PhoneModel, device.uuid, "未知设备");
+            return $"{account} ｜ {deviceName}";
+        }
+    }
+
+    private string CurrentWechatTitle
+    {
+        get
+        {
+            var device = Store.SelectedDevice;
+            if (device == null)
+            {
+                return "未选择当前操作微信";
+            }
+
+            var account = device.wx?.wechatAccount;
+            return $"昵称：{account?.nickname ?? "-"}\nwxid：{device.weChatId ?? account?.wxid ?? "-"}\n执行设备：{device.uuid}";
+        }
+    }
+
+    private string CurrentStatusText
+    {
+        get
+        {
+            var device = Store.SelectedDevice;
+            if (device == null)
+            {
+                return "未选择";
+            }
+
+            if (!device.isOnline)
+            {
+                return "设备离线";
+            }
+
+            return IsWechatReady(device) ? "微信在线" : "微信未登录/待校准";
+        }
+    }
+
+    private BadgeStyle CurrentStatusStyle
+    {
+        get
+        {
+            var device = Store.SelectedDevice;
+            if (device == null || !device.isOnline)
+            {
+                return BadgeStyle.Danger;
+            }
+
+            return IsWechatReady(device) ? BadgeStyle.Success : BadgeStyle.Warning;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += HandleStoreChanged;
+
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _userName = authState.User.Identity?.IsAuthenticated == true
+            ? authState.User.Identity?.Name ?? "当前用户"
+            : "未登录";
+
+        await Store.InitializeAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleStoreChanged;
+    }
+
+    private void HandleStoreChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleSelector()
+    {
+        _selectorOpen = !_selectorOpen;
+    }
+
+    private async Task OnDeviceChanged(object value)
+    {
+        var deviceUuid = value?.ToString();
+        if (string.IsNullOrWhiteSpace(deviceUuid))
+        {
+            return;
+        }
+
+        var device = Store.Devices.FirstOrDefault(item => item.uuid == deviceUuid);
+        if (device != null)
+        {
+            await Store.SelectDeviceAsync(device);
+            _selectorOpen = false;
+        }
+    }
+
+    private async Task ReloadDevicesAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            await Store.LoadDevicesAsync();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    /// <summary>
+    /// 主动校准当前设备上的微信账号状态。
+    /// <para>用于网页显示“微信未登录”但手机实际已登录时，下发 3050 并等待 3051 回传刷新。</para>
+    /// </summary>
+    private async Task RefreshWechatAccountsAsync()
+    {
+        _isLoading = true;
+        try
+        {
+            await Store.RefreshSelectedWeChatAccountsAsync();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private static bool IsWechatReady(SrClient? device)
+    {
+        return device != null
+            && device.isOnline
+            && !string.IsNullOrWhiteSpace(device.weChatId)
+            && device.wx?.wechatAccount?.accountStatus == 1;
+    }
+
+    private static string BuildDeviceOptionText(SrClient? device)
+    {
+        if (device == null)
+        {
+            return "未知设备";
+        }
+
+        var account = device.wx?.wechatAccount;
+        var wechatName = FirstNonEmpty(account?.nickname, account?.wechatNumber, device.weChatId, account?.wxid, "微信未登录");
+        var deviceName = FirstNonEmpty(device.device?.PhoneModel, device.uuid, "未知设备");
+        var shortUuid = Shorten(device.uuid, 10);
+        var status = !device.isOnline ? "设备离线" : (IsWechatReady(device) ? "微信在线" : "微信未登录/待校准");
+
+        return $"{wechatName} ｜ {deviceName} ｜ {shortUuid} ｜ {status}";
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static string Shorten(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLength)
+        {
+            return value ?? string.Empty;
+        }
+
+        return $"{value[..Math.Max(1, maxLength - 3)]}...";
+    }
+
+    private sealed class DeviceOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

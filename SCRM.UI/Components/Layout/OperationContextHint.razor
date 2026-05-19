@@ -1,0 +1,92 @@
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@inject CrmStore Store
+
+<RadzenAlert AlertStyle="@AlertStyle"
+             Variant="Variant.Flat"
+             ShowIcon="true"
+             Class="@Class"
+             Style="@Style">
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">
+            <b>@Title</b>
+            <span>：@CurrentWechatText</span>
+            <span class="rz-color-secondary"> ｜ 执行设备：@CurrentDeviceText</span>
+        </RadzenText>
+        @if (!string.IsNullOrWhiteSpace(Description))
+        {
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">
+                @Description
+            </RadzenText>
+        }
+    </RadzenStack>
+</RadzenAlert>
+
+@code {
+    /// <summary>
+    /// 当前页面的上下文标题。
+    /// </summary>
+    [Parameter]
+    public string Title { get; set; } = "当前操作对象";
+
+    /// <summary>
+    /// 当前页面的上下文说明。
+    /// </summary>
+    [Parameter]
+    public string? Description { get; set; }
+
+    [Parameter]
+    public AlertStyle AlertStyle { get; set; } = AlertStyle.Info;
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public string? Style { get; set; }
+
+    private string CurrentWechatText
+    {
+        get => Store.CurrentWechatDisplayName;
+    }
+
+    private string CurrentDeviceText
+    {
+        get
+        {
+            var device = Store.SelectedDevice;
+            if (device == null)
+            {
+                return "未选择设备";
+            }
+
+            var deviceName = Store.CurrentExecutionDeviceDisplayName;
+            var isWechatOnline = !string.IsNullOrWhiteSpace(device.weChatId)
+                && device.wx?.wechatAccount?.accountStatus == 1;
+            var status = !device.isOnline ? "离线" : (isWechatOnline ? "微信在线" : "微信未登录/待校准");
+            return $"{deviceName} / {Shorten(device.uuid, 12)} / {status}";
+        }
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value;
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private static string Shorten(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value) || value.Length <= maxLength)
+        {
+            return value ?? string.Empty;
+        }
+
+        return $"{value[..Math.Max(1, maxLength - 3)]}...";
+    }
+}

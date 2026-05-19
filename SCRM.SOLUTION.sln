@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCRM.UI", "SCRM.UI\SCRM.UI.
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCRM.SHARED", "SCRM.SHARED\SCRM.SHARED.csproj", "{C1FB0AED-1C7C-4B91-8B86-BC40C02865EB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SCRM.Tests", "SCRM.Tests\SCRM.Tests.csproj", "{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,18 @@ Global
 		{C1FB0AED-1C7C-4B91-8B86-BC40C02865EB}.Release|x64.Build.0 = Release|Any CPU
 		{C1FB0AED-1C7C-4B91-8B86-BC40C02865EB}.Release|x86.ActiveCfg = Release|Any CPU
 		{C1FB0AED-1C7C-4B91-8B86-BC40C02865EB}.Release|x86.Build.0 = Release|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Debug|x64.Build.0 = Debug|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Debug|x86.Build.0 = Debug|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Release|x64.ActiveCfg = Release|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Release|x64.Build.0 = Release|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Release|x86.ActiveCfg = Release|Any CPU
+		{BB1493FC-91B4-42CB-B4BE-DB3BE22B0F2F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,6 +5,7 @@ using SCRM.API.Models.Entities;
 using SCRM.Services.Data;
 using SCRM.Services;
 using SCRM.API.Services.Core;
+using SCRM.API.Services.Security;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,12 +22,18 @@ namespace SCRM.Controllers.Auth
     {
         private readonly AuthService _authService;
         private readonly ApplicationDbContext _context;
+        private readonly SensitiveMaskingService _sensitiveMaskingService;
         private readonly Microsoft.Extensions.Logging.ILogger<DeviceController> _logger;
 
-        public DeviceController(AuthService authService, ApplicationDbContext context, Microsoft.Extensions.Logging.ILogger<DeviceController> logger)
+        public DeviceController(
+            AuthService authService,
+            ApplicationDbContext context,
+            SensitiveMaskingService sensitiveMaskingService,
+            Microsoft.Extensions.Logging.ILogger<DeviceController> logger)
         {
             _authService = authService;
             _context = context;
+            _sensitiveMaskingService = sensitiveMaskingService;
             _logger = logger;
         }
 
@@ -78,7 +85,8 @@ namespace SCRM.Controllers.Auth
 
             if (string.IsNullOrEmpty(userId)) return Unauthorized();
 
-            return await _authService.GetDevicesForUserAsync(userId, isAdmin);
+            var devices = await _authService.GetDevicesForUserAsync(userId, isAdmin);
+            return await _sensitiveMaskingService.MaskDevicesAsync(User, devices);
         }
 
         /// <summary>
@@ -102,7 +110,8 @@ namespace SCRM.Controllers.Auth
                 return NotFound();
             }
 
-            return client;
+            var masked = await _sensitiveMaskingService.MaskDevicesAsync(User, new[] { client });
+            return masked.First();
         }
     }
 

@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+import "FriendPushNotice.proto";
+import "TransportMessage.proto";
+
+// 异步同步好友列表响应。
+// 当前主链路仍以上报 FriendPushNotice 为准；该响应用于后续需要 3057 明确 ACK/结果承载时扩展。
+message SyncFriendListAsyncRspMessage {
+  bool Success = 1;                        // 是否成功触发/完成同步。
+  EnumErrorCode Code = 2;                  // 结果码。
+  string ErrMsg = 3;                       // 错误信息。
+  int64 TaskId = 4;                        // 同步任务ID。
+  string WeChatId = 5;                     // 微信ID。
+  FriendPushNoticeMessage FriendPush = 6;  // 可选：完整好友列表结果；兼容当前 FriendPushNotice 结构。
+}

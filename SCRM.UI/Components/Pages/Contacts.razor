@@ -1,5 +1,6 @@
 @page "/contacts"
 @using SCRM.UI.Services
+@using SCRM.UI.Components.Dialogs
 @using SCRM.API.Models.Entities
 @using SCRM.SHARED.Models
 @using SCRM.SHARED.Models.Dtos
@@ -16,15 +17,24 @@
 @if(Store.SelectedDevice == null) {
     <RadzenCard Class="rz-my-12 rz-mx-auto" Style="max-width: 400px; text-align: center;">
         <RadzenIcon Icon="phonelink_off" Style="font-size: 3rem; color: var(--rz-danger);" />
-        <RadzenText TextStyle="TextStyle.H5" Class="rz-mt-4">未选择设备</RadzenText>
-        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-4">请先在设备管理页面选择一个设备。</RadzenText>
-        <RadzenButton Text="前往设备管理" ButtonStyle="ButtonStyle.Primary" Click="@(()=>NavManager.NavigateTo("/devices"))" />
+        <RadzenText TextStyle="TextStyle.H5" Class="rz-mt-4">未选择当前操作微信</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-4">请先在顶部选择当前执行设备和微信账号。</RadzenText>
+        <RadzenButton Text="前往 IM 中心选择" ButtonStyle="ButtonStyle.Primary" Click="@(()=>NavManager.NavigateTo("/im"))" />
     </RadzenCard>
 } else {
     <RadzenStack Gap="1rem">
+        <OperationContextHint Title="好友管理当前对象"
+                              Description="这是当前微信的好友操作页；联系人总览请走左侧“联系人总览”。"
+                              Class="rz-mb-0" />
+
         <RadzenCard>
             <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
-                <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">联系人列表 (@Store.Contacts.Count) - @Store.SelectedDevice.wx?.wechatAccount?.nickname</RadzenText>
+                <RadzenStack Gap="0.25rem">
+                    <RadzenText TextStyle="TextStyle.H6" Class="rz-mb-0">当前微信好友 (@Store.Contacts.Count) - @CurrentWechatLabel</RadzenText>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                        好友数据归属于微信账号；删除好友会通过当前执行设备下发，最终以安卓端回传和服务端持久化为准。
+                    </RadzenText>
+                </RadzenStack>
                 <RadzenButton Icon="sync" Text="同步通讯录" IsBusy="@_loading" Click="Sync" ButtonStyle="ButtonStyle.Primary" Size="ButtonSize.Small" />
             </RadzenStack>
         </RadzenCard>
@@ -50,6 +60,7 @@
                         </RadzenStack>
                         <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem">
                             <RadzenButton Icon="chat" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="()=>Chat(contact)" />
+                            <RadzenButton Icon="lock_person" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="()=>SetPermission(contact)" />
                             <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="()=>Delete(contact)" />
                         </RadzenStack>
                     </RadzenStack>
@@ -61,6 +72,23 @@
 
 @code {
     bool _loading = false;
+
+    private string CurrentWechatLabel
+    {
+        get
+        {
+            var device = Store.SelectedDevice;
+            if (device == null)
+            {
+                return "未选择";
+            }
+
+            return device.wx?.wechatAccount?.nickname
+                ?? device.weChatId
+                ?? device.wx?.wechatAccount?.wxid
+                ?? "微信未登录";
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -100,12 +128,49 @@
 
     private async Task Delete(Contact c)
     {
-        var confirm = await DialogService.Confirm($"确定要删除好友 {c.nickname} 吗?", "删除好友", new ConfirmOptions() { OkButtonText = "确定", CancelButtonText = "取消" });
+        var confirm = await DialogService.Confirm(
+            $"确定要通过当前执行设备上的微信【{CurrentWechatLabel}】删除好友 {c.nickname} 吗？",
+            "删除好友",
+            new ConfirmOptions() { OkButtonText = "确定", CancelButtonText = "取消" });
         if (confirm == true)
         {
             await Store.SelectContactAsync(c); 
             await Store.DeleteCurrentContactAsync();
         }
+    }
+
+    private async Task SetPermission(Contact c)
+    {
+        if (Store.SelectedDevice == null)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "无法执行", "请先选择当前操作微信。");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(c.wxid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "目标为空", "好友 wxid 为空，无法设置权限。");
+            return;
+        }
+
+        await DialogService.OpenAsync<FriendPermissionDialog>(
+            "设置好友权限",
+            new Dictionary<string, object>
+            {
+                ["DeviceUuid"] = Store.SelectedDevice.uuid,
+                ["FriendId"] = c.wxid,
+                ["TargetDisplayName"] = string.IsNullOrWhiteSpace(c.remarks)
+                    ? (string.IsNullOrWhiteSpace(c.nickname) ? c.wxid : c.nickname)
+                    : c.remarks,
+                ["InitialPermissionMask"] = 0
+            },
+            new DialogOptions
+            {
+                Width = "560px",
+                Resizable = true,
+                Draggable = true,
+                CloseDialogOnOverlayClick = false
+            });
     }
     
     private void HandleNotification(string msg, bool success)

@@ -1,4 +1,4 @@
-@page "/"
+﻿@page "/"
 @using Microsoft.AspNetCore.Components.Web
 @namespace SCRM.API.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
@@ -35,5 +35,38 @@
 
     <script src="_framework/blazor.server.js"></script>
     <script src="_content/Radzen.Blazor/Radzen.Blazor.js"></script>
+    <script>
+        window.scrmClickElement = function (element) {
+            const target = element && typeof element.click === 'function'
+                ? element
+                : (element && element.querySelector ? element.querySelector('input[type="file"]') : null);
+            if (target && typeof target.click === 'function') {
+                target.click();
+                return true;
+            }
+            return false;
+        };
+
+
+        window.scrmScrollToBottom = function (elementId) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.scrollTop = element.scrollHeight;
+                return true;
+            }
+            return false;
+        };
+        window.scrmClickElementById = function (elementId) {
+            const element = document.getElementById(elementId);
+            const target = element && typeof element.click === 'function'
+                ? element
+                : (element && element.querySelector ? element.querySelector('input[type="file"]') : null);
+            if (target && typeof target.click === 'function') {
+                target.click();
+                return true;
+            }
+            return false;
+        };
+    </script>
 </body>
 </html>

@@ -6,16 +6,12 @@ using Microsoft.Extensions.Logging;
 using SCRM.API.Models.Entities;
 using SCRM.API.Services.Netty.Handlers.Abstractions;
 using SCRM.API.Services.Core;
-using Jubo.JuLiao.IM.Wx.Proto;
-using Microsoft.Extensions.Logging;
 using SCRM.API.Services;
 using SCRM.Services.Data;
 using SCRM.SHARED.Models;
 using System;
 using System.Threading.Tasks;
 using DotNetty.Transport.Channels;
-using SCRM.API.Services.Netty.Handlers.Abstractions;
-using SCRM.API.Services.Core;
 using SCRM.Services.Events;
 using SCRM.SHARED.Models.Events;
 using SCRM.API.Services.Data;
@@ -170,14 +166,40 @@ namespace SCRM.API.Services.Netty.Handlers
                 }) 
             };
             await context.WriteAndFlushAsync(authResp);
+
+            // 6. 轻量查询当前微信账号状态。
+            // 说明：
+            // - TriggerWechatPushTask 仍保留，用于触发安卓端/微信侧主链上报 WeChatOnlineNotice。
+            // - GetWeChatsReq(3050) 是 62203 账号状态查询口径，安卓端无需拉起 UI 即可返回当前内存态账号。
+            // - 两者并行可以降低服务端重启或微信侧冷却窗口内 Web 端短暂显示“微信未登录”的概率。
+            try
+            {
+                var getWeChatsMsg = new TransportMessage
+                {
+                    Id = DateTime.UtcNow.Ticks,
+                    MsgType = EnumMsgType.GetWeChatsReq,
+                    Content = Any.Pack(new GetWeChatsReqMessage
+                    {
+                        UnionId = 0,
+                        AccountType = EnumAccountType.Main
+                    })
+                };
+                await context.WriteAndFlushAsync(getWeChatsMsg);
+                _logger.LogInformation("下发微信账号状态查询指令(GetWeChatsReq 3050)...");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "下发微信账号状态查询指令失败");
+            }
             
-            // 6. 下发 获取wx信息 (强制查询)
+            // 7. 下发 获取wx信息 (强制查询)
             // [Fix] 不再依赖 account.wxid，直接下发空 ID，要求客户端汇报当前状态
             _logger.LogInformation("下发获取微信信息指令(Blank ID)...");
             try
             {
                 var syncMsg = new TransportMessage
                 {
+                    Id = DateTime.UtcNow.Ticks,
                     MsgType = EnumMsgType.TriggerWechatPushTask,
                     Content = Any.Pack(new  TriggerWechatPushTaskMessage
                     {
@@ -199,17 +221,13 @@ namespace SCRM.API.Services.Netty.Handlers
         public async Task HandleHeartBeat(TransportMessage message, IChannelHandlerContext context)
         {
             // 心跳处理逻辑
-            // Logger.LogDebug("收到心跳: {ConnId}", context.Channel.Id); // 减少日志噪音
-
+            // 这里只更新连接活跃时间，不再把客户端 HeartBeatReq 原样回发给客户端。
+            // 原因：
+            // 1. 客户端收到 HeartBeatReq 会立即调用 sendHeartbeat(true) 再发一个 HeartBeatReq。
+            // 2. 如果服务端也把客户端心跳回成 HeartBeatReq，就会形成 Req -> Req 的 ping-pong 死循环。
+            // 3. Web/控制面主动下发 HeartBeatReq 时，客户端仍会回一个 HeartBeatReq 作为 ACK，
+            //    服务端在这里更新活跃时间即可，不需要继续回包。
             await _connectionManager.UpdateConnectionActivityAsync(context.Channel.Id.AsLongText());
-
-            var pong = new TransportMessage
-            {
-                Id = 0,
-                MsgType = EnumMsgType.HeartBeatReq, // 保持与客户端协议一致 (通常是用 Req 作为 Pong 或者有专门的 Pong 类型，这里沿用旧逻辑)
-                RefMessageId = message.Id
-            };
-            await context.WriteAndFlushAsync(pong);
         }
 
         public async Task HandlePhoneStateWarning(TransportMessage message, IChannelHandlerContext context)
@@ -258,6 +276,7 @@ namespace SCRM.API.Services.Netty.Handlers
             try
             {
                 var infoMsg = message.Content.Unpack<PostDeviceInfoNoticeMessage>();
+                var connInfo = await _connectionManager.GetConnectionAsync(connId);
                 if (!string.IsNullOrEmpty(infoMsg.WeChatId))
                 {
                     _logger.LogInformation("收到设备信息上报: WeChatId={WeChatId}", infoMsg.WeChatId);
@@ -265,13 +284,55 @@ namespace SCRM.API.Services.Netty.Handlers
 
                     // PostDeviceInfoNotice 不包含昵称信息，此处仅更新设备在线状态 (传递 null 以保持原昵称不变)
                     await _connectionManager.UpdateConnectionWeChatInfoAsync(connId, infoMsg.WeChatId);
+                }
 
-                    // 获取 DeviceUuid 并发布状态变更事件以刷新 UI
-                    var connInfo = await _connectionManager.GetConnectionAsync(connId);
-                    if (connInfo != null)
+                if (connInfo == null || string.IsNullOrWhiteSpace(connInfo.deviceUuid))
+                {
+                    _logger.LogWarning(
+                        "PostDeviceInfoNotice 已收到但连接缺少 deviceUuid，无法落库。ConnectionId={ConnectionId}, WeChatId={WeChatId}",
+                        connId,
+                        infoMsg.WeChatId);
+                }
+                else
+                {
+                    var srClient = await DbHelper.GetSrClient(_dbContext, connInfo.deviceUuid);
+                    if (srClient == null)
                     {
-                        await _eventBus.PublishAsync(new DeviceStatusChangedEvent(connInfo.deviceUuid, true));
+                        srClient = new SrClient
+                        {
+                            uuid = connInfo.deviceUuid,
+                            ownerId = connInfo.userId,
+                            createdAt = DateTime.UtcNow,
+                            status = 1
+                        };
                     }
+
+                    // PostDeviceInfoNotice 是安卓端完整设备快照，直接落到 SrClient.device，
+                    // 供 Web 端展示机型、系统版本、IMEI、应用列表、Hook/WxSupport 等信息。
+                    srClient.device = infoMsg.Clone();
+                    srClient.isOnline = true;
+                    srClient.status = srClient.status == 0 ? 1 : srClient.status;
+                    srClient.connectionId = connId;
+                    srClient.ownerId = string.IsNullOrWhiteSpace(srClient.ownerId) ? connInfo.userId : srClient.ownerId;
+                    srClient.lastLoginAt = DateTime.UtcNow;
+                    srClient.updatedAt = DateTime.UtcNow;
+                    srClient.ip = context.Channel.RemoteAddress?.ToString() ?? srClient.ip;
+
+                    await DbHelper.SaveSrClient(_dbContext, srClient);
+
+                    _logger.LogInformation(
+                        "PostDeviceInfoNotice 已落库: DeviceUuid={DeviceUuid}, WeChatId={WeChatId}, Brand={PhoneBrand}, Model={PhoneModel}, OS={OSVerNumber}, IMEI={IMEI}, AppCount={AppCount}, IsHook={IsHook}, WxSupport={WxSupport}",
+                        srClient.uuid,
+                        infoMsg.WeChatId,
+                        infoMsg.PhoneBrand,
+                        infoMsg.PhoneModel,
+                        infoMsg.OSVerNumber,
+                        infoMsg.IMEI,
+                        infoMsg.AppInfos.Count,
+                        infoMsg.IsHook,
+                        infoMsg.WxSupport);
+
+                    await _eventBus.PublishAsync(new DeviceStatusChangedEvent(connInfo.deviceUuid, true));
                 }
             }
             catch (Exception ex)
@@ -381,7 +442,7 @@ namespace SCRM.API.Services.Netty.Handlers
                     }
                 }
 
-            if (msg.StrConfs.Count > 0 || msg.BoolConfs.Count > 0 || msg.IntConfs.Count > 0)
+                if (msg.StrConfs.Count > 0 || msg.BoolConfs.Count > 0 || msg.IntConfs.Count > 0)
                 {
                     _logger.LogInformation("[配置推送] 正在向终端 {ChannelId} 推送初始化配置 (共 {Count} 项)...", context.Channel.Id.AsLongText(), msg.StrConfs.Count + msg.BoolConfs.Count + msg.IntConfs.Count);
 
@@ -394,17 +455,19 @@ namespace SCRM.API.Services.Netty.Handlers
                     };
                     await context.WriteAndFlushAsync(transMsg);
                     _logger.LogInformation("[配置推送] 初始化配置推送成功 (指令: SetConfigTask)");
-
-                    // 主动请求设备上报信息 (TriggerDeviceInfo)
-                    var triggerMsg = new TransportMessage
-                    {
-                        Id = 0,
-                        MsgType = EnumMsgType.TriggerDeviceInfo,
-                        Content = Any.Pack(new Empty())
-                    };
-                    await context.WriteAndFlushAsync(triggerMsg);
-                    _logger.LogInformation("[业务同步] 已发送 TriggerDeviceInfo 指令，请求设备上报状态");
                 }
+
+                // 主动请求设备上报信息 (TriggerDeviceInfo)。
+                // 设备快照上报不应依赖配置项是否存在；即使初始化配置为空，
+                // 也要让 Android 端补发 PostDeviceInfoNotice，刷新 SrClient.device。
+                var triggerMsg = new TransportMessage
+                {
+                    Id = 0,
+                    MsgType = EnumMsgType.TriggerDeviceInfo,
+                    Content = Any.Pack(new Empty())
+                };
+                await context.WriteAndFlushAsync(triggerMsg);
+                _logger.LogInformation("[业务同步] 已发送 TriggerDeviceInfo 指令，请求设备上报状态");
             }
             catch (Exception ex)
             {

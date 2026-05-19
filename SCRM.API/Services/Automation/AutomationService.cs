@@ -95,7 +95,18 @@ namespace SCRM.Services.Automation
                         {
                             _logger.LogInformation("自动接受好友请求: 来自 {Friend}, 账号 {WeChat}", e.friendNick, e.weChatId);
                             long taskId = DateTime.UtcNow.Ticks;
-                            await _clientTaskService.SendAcceptFriendAddRequestTaskAsync(e.connectionId, e.friendId, e.friendNick, taskId);
+                            var result = await _clientTaskService.SendAcceptFriendAddRequestTaskAsync(
+                                e.connectionId,
+                                e.friendId,
+                                e.friendNick,
+                                taskId,
+                                weChatId: e.weChatId);
+                            if (result.success)
+                            {
+                                // 自动通过好友请求也需要更新 FriendRequests 状态，否则网页会继续显示待处理。
+                                // 这里只更新好友请求表，联系人仍等待 FriendAddNotice/FriendPushNotice 或后续补同步落库。
+                                await db.MarkFriendRequestAccepted(e.weChatId, e.friendId, "自动通过好友请求任务已成功回执");
+                            }
                         }
                     }
                 }

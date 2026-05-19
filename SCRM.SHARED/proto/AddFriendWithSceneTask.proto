@@ -1,4 +1,4 @@
-syntax = "proto3";
+﻿syntax = "proto3";
 
 package Jubo.JuLiao.IM.Wx.Proto;
 
@@ -12,4 +12,5 @@ message AddFriendWithSceneTaskMessage {
   int64 TaskId = 6;  // 任务ID
   string Label = 7;  // 标签
   int32 Permission = 11;  // 权限
+  string VerificationImagePath = 12;  // 验证/备注图片路径
 }

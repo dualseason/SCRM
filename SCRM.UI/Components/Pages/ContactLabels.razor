@@ -1,0 +1,651 @@
+@page "/features/batch-tag"
+@using System
+@using System.Linq
+@using Microsoft.AspNetCore.Authorization
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@attribute [Authorize]
+@implements IDisposable
+
+<PageTitle>联系人标签管理</PageTitle>
+
+<RadzenStack Gap="1rem" Style="padding: 1rem;">
+    <OperationContextHint Title="联系人标签当前对象"
+                          Description="标签管理按当前微信账号展示；新建、改名、删除和设置好友标签都通过当前在线设备下发到 Android。"
+                          Class="rz-mb-0" />
+
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenStack Gap="0.25rem">
+            <RadzenText Text="联系人标签管理" TextStyle="TextStyle.H5" Style="margin: 0;" />
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                本页读取 ContactTags 快照；写入动作只下发微信任务，不直接改库。新建标签 LabelId=0 时真实标签 ID 需等待手机端 ContactLabelAddNotice 或 ContactLabelInfoNotice 回传校准。
+            </RadzenText>
+        </RadzenStack>
+        <RadzenButton Text="刷新设备" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="ReloadDevicesAsync" Disabled="@_isSubmitting" />
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenStack Gap="1rem">
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="7">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="执行设备 / 当前操作微信" />
+                        <RadzenDropDown TValue="string"
+                                        Data="@DeviceOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_deviceUuid"
+                                        Change="@OnExecutionDeviceChanged"
+                                        Placeholder="请选择在线设备"
+                                        Style="width: 100%;" />
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                            当前选中：@SelectedDeviceText。微信账号数据归属于 wxid，设备只是当前执行载体。
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="5">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="刷新方式" />
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                            <RadzenButton Text="同步手机标签" Icon="cloud_sync" ButtonStyle="ButtonStyle.Primary" Click="SyncLabelsFromPhoneAsync" Disabled="@_isSubmitting" />
+                            <RadzenButton Text="只刷新页面" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="LoadLabelsAsync" Disabled="@_isSubmitting" />
+                            <RadzenButton Text="刷新联系人" Icon="contacts" ButtonStyle="ButtonStyle.Light" Click="ReloadContactsAsync" Disabled="@_isSubmitting" />
+                        </RadzenStack>
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                            同步标签是异步 Notice 链路；指令下发成功不代表标签已立即写入，页面会在事件到达或延迟轮询时自动重查。
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeLG="5">
+            <RadzenCard>
+                <RadzenStack Gap="1rem">
+                    <RadzenText Text="新建 / 重命名 / 删除标签" TextStyle="TextStyle.H6" Style="margin: 0;" />
+
+                    <RadzenRow Gap="1rem">
+                        <RadzenColumn Size="12" SizeMD="4">
+                            <RadzenStack Gap="0.35rem">
+                                <RadzenLabel Text="LabelId" />
+                                <RadzenNumeric TValue="int" @bind-Value="_editLabelId" Min="0" Style="width: 100%;" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                        <RadzenColumn Size="12" SizeMD="8">
+                            <RadzenStack Gap="0.35rem">
+                                <RadzenLabel Text="标签名" />
+                                <RadzenTextBox @bind-Value="_labelName" Style="width: 100%;" Placeholder="新建标签时 LabelId 填 0" />
+                            </RadzenStack>
+                        </RadzenColumn>
+                    </RadzenRow>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                        <RadzenButton Text="@SaveLabelButtonText" Icon="sell" ButtonStyle="ButtonStyle.Success" Click="SaveLabelAsync" Disabled="@_isSubmitting" />
+                        <RadzenButton Text="删除标签" Icon="delete" ButtonStyle="ButtonStyle.Danger" Click="DeleteLabelAsync" Disabled="@(_isSubmitting || _editLabelId <= 0)" />
+                        <RadzenButton Text="清空编辑" Icon="clear" ButtonStyle="ButtonStyle.Light" Click="ClearLabelEditor" Disabled="@_isSubmitting" />
+                    </RadzenStack>
+
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                        重命名和删除可以先在右侧标签表格点击“编辑”带入 LabelId。删除只下发 ContactLabelDeleteTask，服务端收到成功回执或删除 Notice 后软删本地标签。
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeLG="7">
+            <RadzenCard>
+                <RadzenStack Gap="1rem">
+                    <RadzenText Text="给单个好友设置完整标签集合" TextStyle="TextStyle.H6" Style="margin: 0;" />
+
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="好友" />
+                        <RadzenDropDown TValue="string"
+                                        Data="@ContactOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_friendId"
+                                        Change="@OnFriendChanged"
+                                        AllowFiltering="true"
+                                        FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                                        Placeholder="请选择好友或直接在下方输入 wxid"
+                                        Style="width: 100%;" />
+                        <RadzenTextBox @bind-Value="_friendId" Style="width: 100%;" Placeholder="也可手动输入好友 wxid" />
+                    </RadzenStack>
+
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="标签集合" />
+                        <RadzenDropDown TValue="IEnumerable<int>"
+                                        Data="@LabelOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        Multiple="true"
+                                        Chips="true"
+                                        @bind-Value="_selectedLabelIds"
+                                        Placeholder="选择该好友最终应保留的标签集合"
+                                        Style="width: 100%;" />
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                            该操作会下发 ContactSetLabelTask，含义是“设置完整标签集合”，不是增量追加；不选任何标签表示清空该好友标签。
+                        </RadzenText>
+                    </RadzenStack>
+
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
+                        <RadzenButton Text="下发设置好友标签" Icon="label" ButtonStyle="ButtonStyle.Primary" Click="SetFriendLabelsAsync" Disabled="@_isSubmitting" />
+                        <RadzenButton Text="按联系人当前标签预填" Icon="history" ButtonStyle="ButtonStyle.Light" Click="PrefillLabelsFromContact" Disabled="@_isSubmitting" />
+                    </RadzenStack>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.5rem">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                <RadzenText Text="标签字典快照" TextStyle="TextStyle.H6" Style="margin: 0;" />
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                    <RadzenCheckBox @bind-Value="_includeDeleted" TValue="bool" Change="@(_ => LoadLabelsAsync())" Name="IncludeDeleted" />
+                    <RadzenLabel Text="显示已删除" Component="IncludeDeleted" />
+                </RadzenStack>
+            </RadzenStack>
+
+            <RadzenDataGrid Data="@_labels" TItem="ContactLabelDto" AllowPaging="true" PageSize="10" AllowSorting="true"
+                            EmptyText="@(_isLoadingLabels ? "正在加载标签..." : "暂无联系人标签；可先点击“同步手机标签”。")">
+                <Columns>
+                    <RadzenDataGridColumn TItem="ContactLabelDto" Property="labelId" Title="LabelId" Width="110px" />
+                    <RadzenDataGridColumn TItem="ContactLabelDto" Property="tagName" Title="标签名" />
+                    <RadzenDataGridColumn TItem="ContactLabelDto" Title="状态" Width="110px">
+                        <Template Context="label">
+                            <RadzenBadge BadgeStyle="@(label.isDeleted ? BadgeStyle.Warning : BadgeStyle.Success)" Text="@(label.isDeleted ? "已删除" : "正常")" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ContactLabelDto" Title="更新时间" Width="180px">
+                        <Template Context="label">@FormatDateTime(label.updatedAt)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="ContactLabelDto" Title="操作" Width="180px" TextAlign="TextAlign.Center">
+                        <Template Context="label">
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.35rem" JustifyContent="JustifyContent.Center">
+                                <RadzenButton Text="编辑" Icon="edit" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Light" Click="@(() => SelectLabel(label))" />
+                                <RadzenButton Text="删除" Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger" Disabled="@(label.isDeleted || _isSubmitting)" Click="@(() => DeleteLabelByIdAsync(label.labelId))" />
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.5rem">
+            <RadzenText Text="当前联系人标签概览" TextStyle="TextStyle.H6" Style="margin: 0;" />
+            <RadzenDataGrid Data="@VisibleContacts" TItem="Contact" AllowPaging="true" PageSize="8" AllowSorting="true"
+                            EmptyText="当前账号暂无联系人；可先在 IM/联系人页同步好友列表。">
+                <Columns>
+                    <RadzenDataGridColumn TItem="Contact" Title="好友" Width="280px">
+                        <Template Context="contact">
+                            <RadzenStack Gap="0">
+                                <RadzenText TextStyle="TextStyle.Body2">@BuildContactDisplayName(contact)</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">@contact.wxid</RadzenText>
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Contact" Property="friendNo" Title="微信号" Width="180px" />
+                    <RadzenDataGridColumn TItem="Contact" Title="标签">
+                        <Template Context="contact">@BuildContactLabelNames(contact.labelIds)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="Contact" Title="操作" Width="120px" TextAlign="TextAlign.Center">
+                        <Template Context="contact">
+                            <RadzenButton Text="选择" Icon="person" Size="ButtonSize.ExtraSmall" Click="@(() => SelectContactForLabel(contact))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenStack>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private string _deviceUuid = string.Empty;
+    private string _labelName = string.Empty;
+    private string _friendId = string.Empty;
+    private int _editLabelId;
+    private bool _isSubmitting;
+    private bool _isLoadingLabels;
+    private bool _includeDeleted;
+    private IEnumerable<int> _selectedLabelIds = Array.Empty<int>();
+    private readonly List<ContactLabelDto> _labels = new();
+
+    private IEnumerable<DeviceOption> DeviceOptions => Store.Devices
+        .OrderByDescending(IsDeviceUsableForWechatTask)
+        .ThenByDescending(device => device.isOnline)
+        .ThenBy(device => BuildDeviceText(device))
+        .Select(device => new DeviceOption
+        {
+            Value = device.uuid,
+            Text = BuildDeviceText(device)
+        });
+
+    private IEnumerable<LabelOption> LabelOptions => _labels
+        .Where(label => !label.isDeleted)
+        .OrderBy(label => label.labelId)
+        .Select(label => new LabelOption
+        {
+            Value = label.labelId,
+            Text = $"{label.tagName} ({label.labelId})"
+        });
+
+    private IEnumerable<ContactOption> ContactOptions => VisibleContacts
+        .OrderBy(contact => BuildContactDisplayName(contact))
+        .Select(contact => new ContactOption
+        {
+            Value = contact.wxid,
+            Text = $"{BuildContactDisplayName(contact)} / {contact.wxid}"
+        });
+
+    private IEnumerable<Contact> VisibleContacts => Store.Contacts
+        .Where(contact => contact != null && !contact.isDeleted && contact.isFriend != 0);
+
+    private string SelectedDeviceText => string.IsNullOrWhiteSpace(_deviceUuid)
+        ? "未选择设备"
+        : BuildDeviceText(Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid));
+
+    private string SaveLabelButtonText => _editLabelId <= 0 ? "新建标签" : "重命名标签";
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += HandleChange;
+        Store.OnContactLabelsUpdated += HandleContactLabelsUpdated;
+        await Store.InitializeAsync();
+        _deviceUuid = ResolvePreferredDeviceUuid();
+        await EnsureSelectedDeviceAsync();
+        await LoadLabelsAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleChange;
+        Store.OnContactLabelsUpdated -= HandleContactLabelsUpdated;
+    }
+
+    private void HandleChange()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleContactLabelsUpdated(string accountId)
+    {
+        var selectedAccountId = ResolveSelectedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId)
+            || string.IsNullOrWhiteSpace(selectedAccountId)
+            || string.Equals(accountId, selectedAccountId, StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(LoadLabelsAsync);
+        }
+    }
+
+    private async Task ReloadDevicesAsync()
+    {
+        await Store.LoadDevicesAsync();
+        _deviceUuid = ResolvePreferredDeviceUuid();
+        await EnsureSelectedDeviceAsync();
+        await LoadLabelsAsync();
+    }
+
+    private async Task OnExecutionDeviceChanged(object value)
+    {
+        var deviceUuid = value?.ToString();
+        if (string.IsNullOrWhiteSpace(deviceUuid))
+        {
+            return;
+        }
+
+        _deviceUuid = deviceUuid;
+        await EnsureSelectedDeviceAsync();
+        await LoadLabelsAsync();
+    }
+
+    private async Task EnsureSelectedDeviceAsync()
+    {
+        var device = Store.Devices.FirstOrDefault(item => string.Equals(item.uuid, _deviceUuid, StringComparison.OrdinalIgnoreCase));
+        if (device != null && !string.Equals(Store.SelectedDevice?.uuid, device.uuid, StringComparison.OrdinalIgnoreCase))
+        {
+            await Store.SelectDeviceAsync(device);
+        }
+    }
+
+    private async Task LoadLabelsAsync()
+    {
+        var accountId = ResolveSelectedAccountId();
+        _labels.Clear();
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _isLoadingLabels = true;
+        try
+        {
+            var labels = await Store.GetContactLabelsAsync(accountId, _includeDeleted);
+            _labels.AddRange(labels);
+        }
+        finally
+        {
+            _isLoadingLabels = false;
+        }
+    }
+
+    private async Task SyncLabelsFromPhoneAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_deviceUuid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未选择设备", "请先选择执行设备。");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var result = await Store.SyncContactLabelsAsync(_deviceUuid);
+            NoticeService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "指令已下发" : "同步失败",
+                result.success
+                    ? "联系人标签同步指令已下发，等待手机端异步回传标签列表。"
+                    : result.message);
+
+            if (result.success)
+            {
+                _ = ReloadLabelsAfterDelayAsync(TimeSpan.FromSeconds(2));
+                _ = ReloadLabelsAfterDelayAsync(TimeSpan.FromSeconds(6));
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task SaveLabelAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_labelName) && _editLabelId <= 0)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "新建标签必须填写标签名。");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var result = await Store.SaveContactLabelAsync(_labelName.Trim(), _editLabelId, deviceUuid: _deviceUuid);
+            NoticeService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "任务已下发" : "任务失败",
+                result.success
+                    ? (_editLabelId <= 0 ? "新建标签任务已下发，真实 LabelId 等待手机端回传校准。" : "重命名标签任务已下发。")
+                    : result.message);
+
+            if (result.success)
+            {
+                _ = ReloadLabelsAfterDelayAsync(TimeSpan.FromSeconds(2));
+                _ = ReloadLabelsAfterDelayAsync(TimeSpan.FromSeconds(8));
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task DeleteLabelAsync()
+    {
+        await DeleteLabelByIdAsync(_editLabelId);
+    }
+
+    private async Task DeleteLabelByIdAsync(int labelId)
+    {
+        if (labelId <= 0)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "请先选择有效 LabelId。");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var result = await Store.DeleteContactLabelAsync(labelId, _deviceUuid);
+            NoticeService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "任务已下发" : "删除失败",
+                result.success ? $"删除标签任务已下发：LabelId={labelId}" : result.message);
+
+            if (result.success)
+            {
+                _ = ReloadLabelsAfterDelayAsync(TimeSpan.FromSeconds(2));
+                _ = ReloadLabelsAfterDelayAsync(TimeSpan.FromSeconds(8));
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task SetFriendLabelsAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_friendId))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "请先选择或输入好友 wxid。");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var labelIds = (_selectedLabelIds ?? Array.Empty<int>()).Where(id => id > 0).Distinct().ToArray();
+            var result = await Store.SetContactLabelsAsync(_friendId.Trim(), labelIds, _deviceUuid);
+            NoticeService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "任务已下发" : "设置失败",
+                result.success
+                    ? $"好友标签设置任务已下发：{_friendId.Trim()} => {string.Join(",", labelIds)}"
+                    : result.message);
+
+            if (result.success)
+            {
+                await ReloadContactsAfterDelayAsync(TimeSpan.FromSeconds(2));
+                _ = ReloadContactsAfterDelayAsync(TimeSpan.FromSeconds(8));
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task ReloadContactsAsync()
+    {
+        await EnsureSelectedDeviceAsync();
+        await Store.SyncContactsAsync();
+    }
+
+    private async Task ReloadLabelsAfterDelayAsync(TimeSpan delay)
+    {
+        await Task.Delay(delay);
+        await InvokeAsync(LoadLabelsAsync);
+    }
+
+    private async Task ReloadContactsAfterDelayAsync(TimeSpan delay)
+    {
+        await Task.Delay(delay);
+        await InvokeAsync(ReloadContactsAsync);
+    }
+
+    private void SelectLabel(ContactLabelDto label)
+    {
+        _editLabelId = label.labelId;
+        _labelName = label.tagName;
+    }
+
+    private void ClearLabelEditor()
+    {
+        _editLabelId = 0;
+        _labelName = string.Empty;
+    }
+
+    private void SelectContactForLabel(Contact contact)
+    {
+        _friendId = contact.wxid;
+        _selectedLabelIds = ParseLabelIds(contact.labelIds);
+    }
+
+    private void PrefillLabelsFromContact()
+    {
+        var contact = Store.Contacts.FirstOrDefault(item => string.Equals(item.wxid, _friendId, StringComparison.OrdinalIgnoreCase));
+        if (contact == null)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未找到联系人", "当前联系人列表中找不到该好友，请先刷新联系人或手动选择标签。");
+            return;
+        }
+
+        _selectedLabelIds = ParseLabelIds(contact.labelIds);
+    }
+
+    private void OnFriendChanged(object value)
+    {
+        var friendId = value?.ToString() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(friendId))
+        {
+            return;
+        }
+
+        _friendId = friendId;
+        PrefillLabelsFromContact();
+    }
+
+    private string ResolvePreferredDeviceUuid()
+    {
+        if (IsDeviceUsableForWechatTask(Store.SelectedDevice))
+        {
+            return Store.SelectedDevice!.uuid;
+        }
+
+        return Store.Devices.FirstOrDefault(IsDeviceUsableForWechatTask)?.uuid
+            ?? Store.Devices.FirstOrDefault(device => device.isOnline)?.uuid
+            ?? Store.Devices.FirstOrDefault()?.uuid
+            ?? string.Empty;
+    }
+
+    private string ResolveSelectedAccountId()
+    {
+        var device = Store.Devices.FirstOrDefault(item => string.Equals(item.uuid, _deviceUuid, StringComparison.OrdinalIgnoreCase))
+            ?? Store.SelectedDevice;
+
+        return FirstNonEmpty(
+            device?.weChatId,
+            device?.wx?.wechatAccount?.wxid,
+            Store.SelectedDevice?.weChatId,
+            Store.SelectedDevice?.wx?.wechatAccount?.wxid);
+    }
+
+    private static bool IsDeviceUsableForWechatTask(SrClient? device)
+    {
+        return device != null
+            && device.isOnline
+            && !string.IsNullOrWhiteSpace(device.weChatId)
+            && device.wx?.wechatAccount?.accountStatus == 1;
+    }
+
+    private static string BuildDeviceText(SrClient? device)
+    {
+        if (device == null)
+        {
+            return "未知设备";
+        }
+
+        var account = FirstNonEmpty(
+            device.wx?.wechatAccount?.nickname,
+            device.weChatId,
+            device.wx?.wechatAccount?.wxid,
+            "未登录微信");
+        var model = FirstNonEmpty(device.device?.PhoneModel, device.uuid, "未知设备");
+        var online = device.isOnline ? "在线" : "离线";
+        return $"{account} / {model} / {online}";
+    }
+
+    private string BuildContactLabelNames(string? labelIds)
+    {
+        var names = ParseLabelIds(labelIds)
+            .Select(id => _labels.FirstOrDefault(label => label.labelId == id && !label.isDeleted)?.tagName ?? $"标签{id}")
+            .ToList();
+
+        return names.Count == 0 ? "无标签" : string.Join("、", names);
+    }
+
+    private static IEnumerable<int> ParseLabelIds(string? labelIds)
+    {
+        if (string.IsNullOrWhiteSpace(labelIds))
+        {
+            return Array.Empty<int>();
+        }
+
+        return labelIds
+            .Split(new[] { ',', ';', '，', '；', ' ', '\r', '\n', '\t' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(item => int.TryParse(item.Trim(), out var id) ? id : 0)
+            .Where(id => id > 0)
+            .Distinct()
+            .OrderBy(id => id)
+            .ToArray();
+    }
+
+    private static string BuildContactDisplayName(Contact contact)
+    {
+        return FirstNonEmpty(contact.remarks, contact.nickname, contact.friendNo, contact.wxid, "未知好友");
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        if (value == default || value == DateTime.MinValue || value == DateTime.UnixEpoch)
+        {
+            return "-";
+        }
+
+        return value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private sealed class DeviceOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class LabelOption
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class ContactOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

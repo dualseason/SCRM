@@ -14,7 +14,13 @@
 
 <PageTitle>SCRM Unified IM</PageTitle>
 
-<RadzenRow Gap="0" Style="height: calc(100vh - 60px); border: 1px solid var(--rz-border-color); margin: 0; background: var(--rz-base-100);">
+<RadzenStack Gap="0" Style="height: calc(100vh - 60px); min-height: 0; overflow: hidden;">
+    <OperationContextHint Title="IM 当前操作"
+                          Description="会话和消息归属于微信账号；发送消息会通过当前执行设备下发。左侧设备栏和顶部切换会同步当前操作对象。"
+                          Class="rz-m-2"
+                          Style="margin-bottom: 0;" />
+
+<RadzenRow Gap="0" Style="flex: 1 1 auto; min-height: 0; overflow: hidden; border: 1px solid var(--rz-border-color); margin: 0; background: var(--rz-base-100);">
 
     @* Pane 1: Device List *@
     <RadzenColumn Size="1" SizeMD="1" Style="border-right: 1px solid var(--rz-border-color); padding: 0;">
@@ -27,16 +33,17 @@
     </RadzenColumn>
 
     @* Pane 3: Chat Content *@
-    <RadzenColumn Size="5" SizeMD="5" class="rz-p-0 rz-h-100" Style="display: flex; flex-direction: column; overflow: hidden;">
+    <RadzenColumn Size="5" SizeMD="5" class="rz-p-0 rz-h-100" Style="display: flex; flex-direction: column; min-height: 0; overflow: hidden;">
         <ImCenterChatPane @bind-ActiveTab="Store.ActiveImTab" />
     </RadzenColumn>
 
     @* Pane 4: Right Sidebar (Knowledge Base) *@
-    <RadzenColumn Size="3" SizeMD="3" Style="border-left: 1px solid var(--rz-border-color); padding: 0; display: flex; flex-direction: column;">
+    <RadzenColumn Size="3" SizeMD="3" Style="border-left: 1px solid var(--rz-border-color); padding: 0; display: flex; flex-direction: column; min-height: 0; overflow: hidden;">
         <ImCenterInfoPane />
     </RadzenColumn>
 
 </RadzenRow>
+</RadzenStack>
 
 @code {
     protected override async Task OnInitializedAsync()
@@ -46,7 +53,12 @@
 
         if (Store.SelectedDevice == null && Store.Devices.Count > 0)
         {
-            await Store.SelectDeviceAsync(Store.Devices.First());
+            var preferredDevice = Store.Devices
+                .Where(d => d.isOnline && !string.IsNullOrWhiteSpace(d.weChatId))
+                .OrderByDescending(d => d.updatedAt)
+                .FirstOrDefault()
+                ?? Store.Devices.First();
+            await Store.SelectDeviceAsync(preferredDevice);
         }
     }
 

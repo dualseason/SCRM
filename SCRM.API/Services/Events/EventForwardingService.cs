@@ -69,14 +69,77 @@ namespace SCRM.API.Services.Events
                 }
             });
 
+            // 订阅好友请求列表更新事件
+            _eventBus.Subscribe<FriendRequestsUpdatedEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.deviceUuid))
+                {
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("FriendRequestsUpdated", e.accountId, stoppingToken);
+                    _logger.LogInformation("转发好友请求列表更新事件: 设备 {DeviceUuid} -> SignalR组 {DeviceUuid}", e.deviceUuid, e.deviceUuid);
+                }
+            });
+
+            // 订阅群邀请列表更新事件
+            _eventBus.Subscribe<GroupInvitationsUpdatedEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.deviceUuid))
+                {
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("GroupInvitationsUpdated", e.accountId, stoppingToken);
+                    _logger.LogInformation("转发群邀请列表更新事件: 设备 {DeviceUuid} -> SignalR组 {DeviceUuid}", e.deviceUuid, e.deviceUuid);
+                }
+            });
+
+            // 订阅联系人标签列表更新事件
+            _eventBus.Subscribe<ContactLabelsUpdatedEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.deviceUuid))
+                {
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("ContactLabelsUpdated", e.accountId, stoppingToken);
+                    _logger.LogInformation("转发联系人标签列表更新事件: 设备 {DeviceUuid} -> SignalR组 {DeviceUuid}", e.deviceUuid, e.deviceUuid);
+                }
+            });
+
+            // 订阅手机短信记录更新事件
+            _eventBus.Subscribe<SmsRecordsUpdatedEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.deviceUuid))
+                {
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("SmsRecordsUpdated", e.accountId, stoppingToken);
+                    _logger.LogInformation("转发手机短信记录更新事件: 设备 {DeviceUuid} -> SignalR组 {DeviceUuid}", e.deviceUuid, e.deviceUuid);
+                }
+            });
+
+            // 订阅手机通话记录更新事件
+            _eventBus.Subscribe<CallLogRecordsUpdatedEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.deviceUuid))
+                {
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("CallLogRecordsUpdated", e.accountId, stoppingToken);
+                    _logger.LogInformation("转发手机通话记录更新事件: 设备 {DeviceUuid} -> SignalR组 {DeviceUuid}", e.deviceUuid, e.deviceUuid);
+                }
+            });
+
+            // 订阅会话列表更新事件
+            _eventBus.Subscribe<ConversationsUpdatedEvent>(async (e) =>
+            {
+                if (!string.IsNullOrEmpty(e.deviceUuid))
+                {
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("ConversationsUpdated", e.accountId, stoppingToken);
+                    _logger.LogInformation("转发会话列表更新事件: 设备 {DeviceUuid} -> SignalR组 {DeviceUuid}", e.deviceUuid, e.deviceUuid);
+                }
+            });
+
             // 订阅任务结果事件 (TaskResultReceivedEvent)
             _eventBus.Subscribe<TaskResultReceivedEvent>(async (e) =>
             {
                 if (!string.IsNullOrEmpty(e.deviceUuid))
                 {
                     _logger.LogInformation("转发任务结果: TaskId={TaskId}, Success={Success} -> SignalR组 {DeviceUuid}", e.taskId, e.success, e.deviceUuid);
-                    // 使用匿名对象发送，确保前端能收到 TaskId
-                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync("OnTaskResult", new { taskId = e.taskId, success = e.success, message = e.message }, stoppingToken);
+                    // 2026-05-12：补齐 deviceUuid，便于前端仅对当前选中设备展示异步任务结果。
+                    await _hubContext.Clients.Group(e.deviceUuid).SendAsync(
+                        "OnTaskResult",
+                        new { taskId = e.taskId, success = e.success, message = e.message, deviceUuid = e.deviceUuid, data = e.data },
+                        stoppingToken);
                 }
             });
 

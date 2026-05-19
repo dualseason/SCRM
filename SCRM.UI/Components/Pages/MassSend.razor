@@ -1,20 +1,27 @@
 @page "/mass-send"
+@implements IDisposable
+@using System
+@using System.Linq
+@using System.Collections.Generic
 @using SCRM.UI.Services
-@using SCRM.SHARED.Models
+@using SCRM.SHARED.Models.Dtos
 @using Radzen
 @using Radzen.Blazor
+@inject CrmStore Store
 @inject NotificationService NoticeService
-@inject DialogService DialogService
 
 <PageTitle>群发消息</PageTitle>
 
 <RadzenStack Orientation="Orientation.Vertical" Gap="1rem" Style="height: 100%; padding: 1rem;">
-    
+    <OperationContextHint Title="群发当前执行对象"
+                          Description="群发会通过当前在线执行设备下发；好友群发归属于当前微信账号，群发群需要输入当前微信可访问的 chatRoomId。"
+                          Class="rz-mb-0" />
+
     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.SpaceBetween" AlignItems="AlignItems.Center">
         <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="10px">
-            <RadzenText Text="群发列表" TextStyle="TextStyle.H6" Style="margin: 0;" />
-            
-            <RadzenSelectBar @bind-Value="@_activeTab" TValue="string" Size="ButtonSize.Small" class="rz-ml-4">
+            <RadzenText Text="群发消息" TextStyle="TextStyle.H6" Style="margin: 0;" />
+
+            <RadzenSelectBar @bind-Value="_activeTab" TValue="string" Size="ButtonSize.Small" class="rz-ml-4">
                 <Items>
                     <RadzenSelectBarItem Text="群发好友" Value="@("friends")" />
                     <RadzenSelectBarItem Text="群发群" Value="@("groups")" />
@@ -22,32 +29,187 @@
             </RadzenSelectBar>
         </RadzenStack>
 
-        <RadzenButton Text="新增群发" Icon="add" ButtonStyle="ButtonStyle.Warning" Click="OnNewTask" />
+        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+            <RadzenButton Text="同步群发历史" Icon="history" ButtonStyle="ButtonStyle.Light"
+                          Disabled="@(_isSending || _isSyncingHistory)"
+                          Click="SyncMassSendHistoryAsync" />
+            <RadzenButton Text="刷新历史" Icon="refresh" ButtonStyle="ButtonStyle.Light"
+                          Disabled="@_isLoadingHistory"
+                          Click="LoadMassSendHistoryAsync" />
+            <RadzenButton Text="发送文本群发" Icon="send" ButtonStyle="ButtonStyle.Primary"
+                          Disabled="@_isSending"
+                          Click="SendTextMassMessageAsync" />
+        </RadzenStack>
     </RadzenStack>
 
-    <RadzenCard Style="flex: 1; padding: 0;">
-        <RadzenDataGrid Data="@_tasks" TItem="MassSendTask" AllowPaging="true" PageSize="20" AllowSorting="true" 
-                        EmptyText="暂无数据" Style="height: 100%; border: none;">
-            <Columns>
-                <RadzenDataGridColumn TItem="MassSendTask" Property="TaskType" Title="任务类型" Width="120px" />
-                <RadzenDataGridColumn TItem="MassSendTask" Property="WechatNick" Title="微信昵称" Width="150px" />
-                <RadzenDataGridColumn TItem="MassSendTask" Property="Status" Title="当前状态" Width="120px">
-                    <Template Context="data">
-                        <RadzenBadge BadgeStyle="@GetStatusBadge(data.Status)" Text="@data.Status" />
-                    </Template>
-                </RadzenDataGridColumn>
-                <RadzenDataGridColumn TItem="MassSendTask" Property="Remark" Title="备注" />
-                <RadzenDataGridColumn TItem="MassSendTask" Property="ExecTime" Title="执行时间" Width="180px" />
-                <RadzenDataGridColumn TItem="MassSendTask" Property="FinishTime" Title="完成时间" Width="180px" />
-                <RadzenDataGridColumn TItem="MassSendTask" Title="操作" Width="150px" TextAlign="TextAlign.Center">
-                    <Template Context="data">
-                         <RadzenButton Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger" Click="@(() => DeleteTask(data))" />
-                    </Template>
-                </RadzenDataGridColumn>
-            </Columns>
-        </RadzenDataGrid>
+    <RadzenCard Style="padding: 1rem;">
+        <RadzenStack Gap="0.75rem">
+            <RadzenText TextStyle="TextStyle.Subtitle1">快速文本群发</RadzenText>
+            <RadzenText TextStyle="TextStyle.Body2">
+                当前设备：@(Store.SelectedDevice?.wx?.wechatAccount?.nickname ?? Store.SelectedDevice?.uuid ?? "未选择设备")
+            </RadzenText>
+
+            <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat">
+                好友页签继续走 <b>WeChatGroupSendTask / 群发助手</b>；群页签输入 <b>chatRoomId</b> 时，服务端会改走 <b>逐群文本直发</b>。
+                群发助手历史由微信客户端异步上报，点击“同步群发历史”后请等待回执，再点“刷新历史”查看落库记录。
+            </RadzenAlert>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="@(GetTargetLabel())" />
+                        <RadzenText TextStyle="TextStyle.Caption">支持每行一个、英文逗号、中文逗号、分号混合输入。</RadzenText>
+                        <RadzenTextArea @bind-Value="_targetInput"
+                                        Rows="8"
+                                        Style="width: 100%;"
+                                        Placeholder="@(GetTargetPlaceholder())" />
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="群发文本内容" />
+                        <RadzenTextArea @bind-Value="_contentInput"
+                                        Rows="8"
+                                        Style="width: 100%;"
+                                        Placeholder="请输入要群发的文本内容" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center">
+                <RadzenButton Text="执行群发" Icon="play_arrow" ButtonStyle="ButtonStyle.Warning"
+                              Disabled="@_isSending"
+                              Click="SendTextMassMessageAsync" />
+                <RadzenButton Text="清空输入" Icon="clear" ButtonStyle="ButtonStyle.Light"
+                              Disabled="@_isSending"
+                              Click="ClearComposer" />
+                <RadzenText TextStyle="TextStyle.Caption">
+                    已解析目标数：@ParseTargets(_targetInput).Count
+                </RadzenText>
+            </RadzenStack>
+        </RadzenStack>
     </RadzenCard>
-    
+
+    <RadzenCard Style="flex: 1; padding: 0;">
+        <RadzenTabs>
+            <Tabs>
+                <RadzenTabsItem Text="本次任务">
+                    <RadzenDataGrid Data="@_tasks" TItem="MassSendTask" AllowPaging="true" PageSize="20" AllowSorting="true"
+                        EmptyText="暂无群发记录" Style="height: 100%; border: none;">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="MassSendTask" Property="TaskId" Title="TaskId" Width="150px" />
+                            <RadzenDataGridColumn TItem="MassSendTask" Property="TaskType" Title="任务类型" Width="120px" />
+                            <RadzenDataGridColumn TItem="MassSendTask" Property="TargetCount" Title="目标数" Width="80px" />
+                            <RadzenDataGridColumn TItem="MassSendTask" Title="异步回执" Width="120px">
+                                <Template Context="data">
+                                    @if (data.TaskType == "Text-Group")
+                                    {
+                                        <span>@data.AsyncCompletedCount/@data.TargetCount</span>
+                                    }
+                                    else
+                                    {
+                                        <span>-</span>
+                                    }
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="MassSendTask" Property="WechatNick" Title="设备 / 微信昵称" Width="180px" />
+                            <RadzenDataGridColumn TItem="MassSendTask" Property="Status" Title="当前状态" Width="120px">
+                                <Template Context="data">
+                                    <RadzenBadge BadgeStyle="@GetStatusBadge(data.Status)" Text="@data.Status" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="MassSendTask" Property="Remark" Title="备注" />
+                            <RadzenDataGridColumn TItem="MassSendTask" Property="ExecTime" Title="执行时间" Width="180px" />
+                            <RadzenDataGridColumn TItem="MassSendTask" Property="FinishTime" Title="完成时间" Width="180px" />
+                            <RadzenDataGridColumn TItem="MassSendTask" Title="操作" Width="150px" TextAlign="TextAlign.Center">
+                                <Template Context="data">
+                                    <RadzenButton Icon="delete" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Danger"
+                                                  Click="@(() => DeleteTask(data))" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+
+                    @if (_expandedHistoryId.HasValue)
+                    {
+                        var selectedHistory = _history.FirstOrDefault(item => item.id == _expandedHistoryId.Value);
+                        if (selectedHistory != null)
+                        {
+                            <RadzenCard Style="margin: 0.75rem;">
+                                <RadzenStack Gap="0.5rem">
+                                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                                        <RadzenText TextStyle="TextStyle.Subtitle2" Class="rz-mb-0">
+                                            群发明细 #@selectedHistory.id（@selectedHistory.details.Count）
+                                        </RadzenText>
+                                        <RadzenButton Icon="close" Text="关闭" Size="ButtonSize.ExtraSmall" ButtonStyle="ButtonStyle.Light" Click="CloseHistoryDetails" />
+                                    </RadzenStack>
+
+                                    <RadzenDataGrid Data="@selectedHistory.details" TItem="MassSendHistoryDetailDto" AllowPaging="true" PageSize="10" EmptyText="暂无接收人明细">
+                                        <Columns>
+                                            <RadzenDataGridColumn TItem="MassSendHistoryDetailDto" Title="接收人" Width="260px">
+                                                <Template Context="detail">
+                                                    <RadzenStack Gap="0">
+                                                        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@DisplayRecipientName(detail)</RadzenText>
+                                                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">@detail.recipientWxid</RadzenText>
+                                                    </RadzenStack>
+                                                </Template>
+                                            </RadzenDataGridColumn>
+                                            <RadzenDataGridColumn TItem="MassSendHistoryDetailDto" Title="状态" Width="120px">
+                                                <Template Context="detail">
+                                                    <RadzenBadge BadgeStyle="@GetDetailBadge(detail)" Text="@BuildDetailStatusText(detail)" />
+                                                </Template>
+                                            </RadzenDataGridColumn>
+                                            <RadzenDataGridColumn TItem="MassSendHistoryDetailDto" Property="retryCount" Title="重试" Width="80px" />
+                                            <RadzenDataGridColumn TItem="MassSendHistoryDetailDto" Title="发送时间" Width="180px">
+                                                <Template Context="detail">@FormatDateTime(detail.sentTime)</Template>
+                                            </RadzenDataGridColumn>
+                                            <RadzenDataGridColumn TItem="MassSendHistoryDetailDto" Property="errorMessage" Title="错误信息" />
+                                        </Columns>
+                                    </RadzenDataGrid>
+                                </RadzenStack>
+                            </RadzenCard>
+                        }
+                    }
+                </RadzenTabsItem>
+
+                <RadzenTabsItem Text="群发助手历史">
+                    <RadzenDataGrid Data="@_history" TItem="MassSendHistoryDto" AllowPaging="true" PageSize="20" AllowSorting="true"
+                                    EmptyText="@(_isLoadingHistory ? "正在加载群发历史..." : "暂无群发助手历史")" Style="height: 100%; border: none;">
+                        <Columns>
+                            <RadzenDataGridColumn TItem="MassSendHistoryDto" Property="id" Title="ID" Width="90px" />
+                            <RadzenDataGridColumn TItem="MassSendHistoryDto" Title="发送时间" Width="180px">
+                                <Template Context="data">@FormatDateTime(data.sentTime)</Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="MassSendHistoryDto" Property="messageContent" Title="内容" />
+                            <RadzenDataGridColumn TItem="MassSendHistoryDto" Title="目标" Width="220px">
+                                <Template Context="data">@BuildHistoryTargetSummary(data)</Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="MassSendHistoryDto" Title="结果" Width="150px">
+                                <Template Context="data">
+                                    <RadzenBadge BadgeStyle="@GetHistoryBadge(data)" Text="@BuildHistoryStatusText(data)" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="MassSendHistoryDto" Title="类型/状态" Width="130px">
+                                <Template Context="data">@data.messageType / @data.sendStatus</Template>
+                            </RadzenDataGridColumn>
+                            <RadzenDataGridColumn TItem="MassSendHistoryDto" Title="明细" Width="110px" TextAlign="TextAlign.Center">
+                                <Template Context="data">
+                                    <RadzenButton Icon="list"
+                                                  Text="查看"
+                                                  Size="ButtonSize.ExtraSmall"
+                                                  ButtonStyle="ButtonStyle.Light"
+                                                  Disabled="@(data.details == null || data.details.Count == 0)"
+                                                  Click="@(() => ToggleHistoryDetails(data.id))" />
+                                </Template>
+                            </RadzenDataGridColumn>
+                        </Columns>
+                    </RadzenDataGrid>
+                </RadzenTabsItem>
+            </Tabs>
+        </RadzenTabs>
+    </RadzenCard>
+
     <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.Center">
         <RadzenPager Count="@_tasks.Count" PageSize="20" PageNumbersCount="5" />
     </RadzenStack>
@@ -55,17 +217,477 @@
 
 @code {
     private string _activeTab = "friends";
-    private List<MassSendTask> _tasks = new List<MassSendTask>();
+    private bool _isSending;
+    private bool _isSyncingHistory;
+    private bool _isLoadingHistory;
+    private string _targetInput = string.Empty;
+    private string _contentInput = string.Empty;
+    private readonly List<MassSendTask> _tasks = new();
+    private readonly List<MassSendHistoryDto> _history = new();
+    private int? _expandedHistoryId;
 
     protected override void OnInitialized()
     {
-        // Mock Data
-        // _tasks.Add(new MassSendTask { ... });
+        Store.OnAsyncTaskResultReceived += HandleAsyncTaskResultReceived;
+        _ = InvokeAsync(LoadMassSendHistoryAsync);
     }
 
-    private void OnNewTask()
+    private async Task SendTextMassMessageAsync()
     {
-        NoticeService.Notify(NotificationSeverity.Info, "功能开发中", "新增群发任务尚未实现");
+        var targets = ParseTargets(_targetInput);
+        if (!targets.Any())
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", $"请至少输入一个{GetTargetTypeName()}。");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_contentInput))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "请输入群发文本内容。");
+            return;
+        }
+
+        if (Store.SelectedDevice == null)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未选择设备", "请先选择在线设备。");
+            return;
+        }
+
+        _isSending = true;
+        var now = DateTime.Now;
+        var deviceLabel = Store.SelectedDevice.wx?.wechatAccount?.nickname
+            ?? Store.SelectedDevice.device?.PhoneModel
+            ?? Store.SelectedDevice.uuid
+            ?? "未知设备";
+
+        try
+        {
+            var result = await Store.SendGroupMessageAsync(targets, _contentInput.Trim(), 0);
+            _tasks.Insert(0, new MassSendTask
+            {
+                TaskId = result.taskId,
+                TaskType = _activeTab == "groups" ? "Text-Group" : "Text-Friend",
+                WechatNick = deviceLabel,
+                TargetCount = targets.Count,
+                Status = result.success ? "Dispatched" : "Failed",
+                Remark = result.success
+                    ? $"目标 {targets.Count} 个：{string.Join(", ", targets.Take(3))}{(targets.Count > 3 ? " ..." : string.Empty)}"
+                    : $"失败原因：{result.message ?? "未知错误"}",
+                ExecTime = now,
+                FinishTime = DateTime.Now
+            });
+
+            if (result.success)
+            {
+                NoticeService.Notify(NotificationSeverity.Success, "指令已下发", result.message ?? $"已向 {targets.Count} 个{GetTargetTypeName()}下发文本群发。");
+                _targetInput = string.Empty;
+                _contentInput = string.Empty;
+            }
+            else
+            {
+                NoticeService.Notify(NotificationSeverity.Error, "下发失败", result.message ?? "群发消息指令下发失败，请检查设备在线状态与服务端日志。");
+            }
+        }
+        finally
+        {
+            _isSending = false;
+        }
+    }
+
+    private void HandleAsyncTaskResultReceived(TaskResultDto dto)
+    {
+        if (dto == null)
+        {
+            return;
+        }
+
+        var normalizedMessage = dto.message?.Trim() ?? string.Empty;
+        if (!normalizedMessage.Contains("群发", StringComparison.OrdinalIgnoreCase))
+        {
+            var matchedTask = dto.taskId > 0 ? _tasks.FirstOrDefault(task => task.TaskId == dto.taskId) : null;
+            if (matchedTask == null)
+            {
+                return;
+            }
+        }
+
+        _ = InvokeAsync(() =>
+        {
+            var existingTask = dto.taskId > 0
+                ? _tasks.FirstOrDefault(task => task.TaskId == dto.taskId)
+                : null;
+
+            if (existingTask == null && IsGroupBatchFailureMessage(normalizedMessage))
+            {
+                existingTask = FindLatestGroupBatchTask();
+            }
+
+            if (existingTask != null)
+            {
+                if (existingTask.TaskType == "Text-Group" && IsGroupBatchAsyncMessage(normalizedMessage))
+                {
+                    MergeGroupBatchAsyncResult(existingTask, dto.success, normalizedMessage);
+                }
+                else if (existingTask.TaskType == "History-Sync" && normalizedMessage.Contains("群发历史", StringComparison.OrdinalIgnoreCase))
+                {
+                    existingTask.Status = dto.success ? "Completed" : "Failed";
+                    if (!string.IsNullOrWhiteSpace(normalizedMessage))
+                    {
+                        existingTask.Remark = AppendRemarkIfNeeded(existingTask.Remark, normalizedMessage);
+                    }
+                }
+                else
+                {
+                    existingTask.Status = dto.success ? "Completed" : "Failed";
+                    if (!string.IsNullOrWhiteSpace(normalizedMessage))
+                    {
+                        existingTask.Remark = AppendRemarkIfNeeded(existingTask.Remark, normalizedMessage);
+                    }
+                }
+                existingTask.FinishTime = DateTime.Now;
+            }
+            else
+            {
+                _tasks.Insert(0, new MassSendTask
+                {
+                    TaskId = dto.taskId,
+                    TaskType = InferAsyncTaskType(normalizedMessage),
+                    WechatNick = GetCurrentDeviceLabel(),
+                    TargetCount = 1,
+                    Status = dto.success ? "Completed" : "Failed",
+                    Remark = string.IsNullOrWhiteSpace(normalizedMessage) ? "收到异步群发结果" : normalizedMessage,
+                    ExecTime = DateTime.Now,
+                    FinishTime = DateTime.Now
+                });
+            }
+
+            if (normalizedMessage.Contains("群发历史", StringComparison.OrdinalIgnoreCase))
+            {
+                _ = ReloadMassSendHistoryAfterDelayAsync();
+            }
+
+            StateHasChanged();
+        });
+    }
+
+    private async Task SyncMassSendHistoryAsync()
+    {
+        if (Store.SelectedDevice == null)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未选择设备", "请先选择在线设备。");
+            return;
+        }
+
+        _isSyncingHistory = true;
+        try
+        {
+            var result = await Store.SyncMassSendHistoryAsync();
+            if (result.success)
+            {
+                NoticeService.Notify(NotificationSeverity.Success, "同步已下发", result.message ?? "群发历史同步指令已下发。");
+                _tasks.Insert(0, new MassSendTask
+                {
+                    TaskId = result.taskId,
+                    TaskType = "History-Sync",
+                    WechatNick = GetCurrentDeviceLabel(),
+                    TargetCount = 0,
+                    Status = "Dispatched",
+                    Remark = result.message ?? "等待客户端上报群发助手历史",
+                    ExecTime = DateTime.Now,
+                    FinishTime = DateTime.Now
+                });
+
+                _ = ReloadMassSendHistoryAfterDelayAsync();
+            }
+            else
+            {
+                NoticeService.Notify(NotificationSeverity.Error, "同步失败", result.message ?? "群发历史同步指令下发失败。");
+            }
+        }
+        finally
+        {
+            _isSyncingHistory = false;
+        }
+    }
+
+    private async Task LoadMassSendHistoryAsync()
+    {
+        if (Store.SelectedDevice == null)
+        {
+            _history.Clear();
+            return;
+        }
+
+        _isLoadingHistory = true;
+        try
+        {
+            var items = await Store.GetSelectedMassSendHistoryAsync(100);
+            _history.Clear();
+            _history.AddRange(items);
+        }
+        finally
+        {
+            _isLoadingHistory = false;
+            StateHasChanged();
+        }
+    }
+
+    private void ClearComposer()
+    {
+        _targetInput = string.Empty;
+        _contentInput = string.Empty;
+    }
+
+
+    private async Task ReloadMassSendHistoryAfterDelayAsync()
+    {
+        var delays = new[] { 2000, 5000, 10000 };
+        foreach (var delay in delays)
+        {
+            await Task.Delay(delay);
+            await InvokeAsync(LoadMassSendHistoryAsync);
+        }
+    }
+
+    private void ToggleHistoryDetails(int historyId)
+    {
+        _expandedHistoryId = _expandedHistoryId == historyId ? null : historyId;
+    }
+
+    private void CloseHistoryDetails()
+    {
+        _expandedHistoryId = null;
+    }
+
+    private string GetTargetTypeName() => _activeTab == "groups" ? "目标群" : "目标好友";
+
+    private string GetTargetLabel() => _activeTab == "groups" ? "目标群 chatRoomId 列表" : "目标好友 wxid 列表";
+
+    private string GetCurrentDeviceLabel()
+    {
+        return Store.SelectedDevice?.wx?.wechatAccount?.nickname
+            ?? Store.SelectedDevice?.device?.PhoneModel
+            ?? Store.SelectedDevice?.uuid
+            ?? "未知设备";
+    }
+
+    private static string InferAsyncTaskType(string message)
+    {
+        if (message.Contains("群发群", StringComparison.OrdinalIgnoreCase))
+        {
+            return "Async-Group";
+        }
+
+        return "Async-Friend";
+    }
+
+    private MassSendTask? FindLatestGroupBatchTask()
+    {
+        return _tasks
+            .Where(task => task.TaskType == "Text-Group")
+            .OrderByDescending(task => task.ExecTime ?? DateTime.MinValue)
+            .FirstOrDefault();
+    }
+
+    private static bool IsGroupBatchFailureMessage(string message)
+    {
+        return !string.IsNullOrWhiteSpace(message)
+            && message.Contains("群发群文本消息发送失败", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsGroupBatchSuccessMessage(string message)
+    {
+        return !string.IsNullOrWhiteSpace(message)
+            && message.Contains("群发群文本消息发送成功", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsGroupBatchAsyncMessage(string message)
+    {
+        return IsGroupBatchFailureMessage(message) || IsGroupBatchSuccessMessage(message);
+    }
+
+    private static string AppendRemarkIfNeeded(string currentRemark, string addition)
+    {
+        if (string.IsNullOrWhiteSpace(addition))
+        {
+            return currentRemark;
+        }
+
+        if (string.IsNullOrWhiteSpace(currentRemark))
+        {
+            return addition.Trim();
+        }
+
+        if (currentRemark.Contains(addition, StringComparison.OrdinalIgnoreCase))
+        {
+            return currentRemark;
+        }
+
+        return $"{currentRemark} | {addition.Trim()}";
+    }
+
+    private static void MergeGroupBatchAsyncResult(MassSendTask task, bool success, string resultMessage)
+    {
+        if (success)
+        {
+            if (!task.SuccessMessages.Any(item => string.Equals(item, resultMessage, StringComparison.OrdinalIgnoreCase)))
+            {
+                task.SuccessMessages.Add(resultMessage);
+            }
+        }
+        else
+        {
+            if (!task.FailureMessages.Any(item => string.Equals(item, resultMessage, StringComparison.OrdinalIgnoreCase)))
+            {
+                task.FailureMessages.Add(resultMessage);
+            }
+        }
+
+        task.AsyncSuccessCount = task.SuccessMessages.Count;
+        task.AsyncFailureCount = task.FailureMessages.Count;
+        task.AsyncCompletedCount = task.AsyncSuccessCount + task.AsyncFailureCount;
+
+        if (task.AsyncCompletedCount >= task.TargetCount)
+        {
+            if (task.AsyncFailureCount == 0)
+            {
+                task.Status = "Completed";
+            }
+            else if (task.AsyncSuccessCount == 0)
+            {
+                task.Status = "Failed";
+            }
+            else
+            {
+                task.Status = "PartialFailed";
+            }
+        }
+        else
+        {
+            task.Status = task.AsyncFailureCount > 0 ? "PartialFailed" : "Running";
+        }
+
+        var segments = new List<string>
+        {
+            $"目标 {task.TargetCount} 个",
+            $"已回执 {task.AsyncCompletedCount}/{task.TargetCount}",
+            $"成功 {task.AsyncSuccessCount}",
+            $"失败 {task.AsyncFailureCount}"
+        };
+
+        if (task.FailureMessages.Any())
+        {
+            segments.Add("失败示例：" + string.Join("；", task.FailureMessages.Take(2)));
+        }
+
+        task.Remark = string.Join("；", segments);
+    }
+
+    private static string BuildHistoryStatusText(MassSendHistoryDto item)
+    {
+        if (item.totalRecipients > 0)
+        {
+            return $"{item.successSentCount}/{item.totalRecipients}";
+        }
+
+        return item.sendStatus == 0 ? "未知" : $"状态 {item.sendStatus}";
+    }
+
+
+    private static string DisplayRecipientName(MassSendHistoryDetailDto detail)
+    {
+        return string.IsNullOrWhiteSpace(detail.recipientDisplayName)
+            ? detail.recipientWxid
+            : detail.recipientDisplayName;
+    }
+
+    private static string BuildDetailStatusText(MassSendHistoryDetailDto detail)
+    {
+        if (!string.IsNullOrWhiteSpace(detail.errorMessage))
+        {
+            return "失败";
+        }
+
+        return detail.sendStatus switch
+        {
+            1 => "成功",
+            2 => "失败",
+            _ => $"状态 {detail.sendStatus}"
+        };
+    }
+
+    private static BadgeStyle GetDetailBadge(MassSendHistoryDetailDto detail)
+    {
+        if (!string.IsNullOrWhiteSpace(detail.errorMessage) || detail.sendStatus == 2)
+        {
+            return BadgeStyle.Danger;
+        }
+
+        return detail.sendStatus == 1 ? BadgeStyle.Success : BadgeStyle.Light;
+    }
+
+    private static BadgeStyle GetHistoryBadge(MassSendHistoryDto item)
+    {
+        if (item.totalRecipients <= 0)
+        {
+            return BadgeStyle.Light;
+        }
+
+        if (item.failedSentCount <= 0 && item.successSentCount >= item.totalRecipients)
+        {
+            return BadgeStyle.Success;
+        }
+
+        if (item.successSentCount <= 0 && item.failedSentCount > 0)
+        {
+            return BadgeStyle.Danger;
+        }
+
+        return BadgeStyle.Warning;
+    }
+
+    private static string BuildHistoryTargetSummary(MassSendHistoryDto item)
+    {
+        if (item.details.Any())
+        {
+            var names = item.details
+                .Select(detail => string.IsNullOrWhiteSpace(detail.recipientDisplayName) ? detail.recipientWxid : detail.recipientDisplayName)
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Take(3)
+                .ToList();
+
+            return $"{string.Join("、", names)}{(item.details.Count > 3 ? " ..." : string.Empty)}（{item.details.Count}）";
+        }
+
+        return string.IsNullOrWhiteSpace(item.messageTitle)
+            ? $"目标 {item.totalRecipients} 个"
+            : item.messageTitle;
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        return value == default
+            ? "-"
+            : value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private string GetTargetPlaceholder() => _activeTab == "groups"
+        ? "例如：&#10;123456@chatroom&#10;234567@chatroom"
+        : "例如：&#10;wxid_a&#10;wxid_b,wxid_c";
+
+    private List<string> ParseTargets(string rawInput)
+    {
+        if (string.IsNullOrWhiteSpace(rawInput))
+        {
+            return new List<string>();
+        }
+
+        return rawInput
+            .Split(new[] { '\r', '\n', ',', '，', ';', '；', ' ' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(item => item.Trim())
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
     }
 
     private void DeleteTask(MassSendTask task)
@@ -77,20 +699,34 @@
     {
         return status switch
         {
-            "Executing" => BadgeStyle.Info,
+            "Dispatched" => BadgeStyle.Info,
+            "Running" => BadgeStyle.Info,
             "Completed" => BadgeStyle.Success,
+            "PartialFailed" => BadgeStyle.Warning,
             "Failed" => BadgeStyle.Danger,
             _ => BadgeStyle.Light
         };
     }
 
+    public void Dispose()
+    {
+        Store.OnAsyncTaskResultReceived -= HandleAsyncTaskResultReceived;
+    }
+
     public class MassSendTask
     {
+        public long TaskId { get; set; }
         public string TaskType { get; set; } = "Text";
-        public string WechatNick { get; set; } = "Job";
+        public string WechatNick { get; set; } = "未知设备";
+        public int TargetCount { get; set; }
+        public int AsyncCompletedCount { get; set; }
+        public int AsyncSuccessCount { get; set; }
+        public int AsyncFailureCount { get; set; }
         public string Status { get; set; } = "Pending";
-        public string Remark { get; set; } = "Promo";
+        public string Remark { get; set; } = string.Empty;
         public DateTime? ExecTime { get; set; }
         public DateTime? FinishTime { get; set; }
+        public List<string> SuccessMessages { get; set; } = new();
+        public List<string> FailureMessages { get; set; } = new();
     }
 }

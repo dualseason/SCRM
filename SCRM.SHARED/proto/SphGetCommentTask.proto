@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package Jubo.JuLiao.IM.Wx.Proto;
+
+// 视频号评论列表拉取任务
+message SphGetCommentTaskMessage {
+  string WeChatId = 1;
+  int64 FeedId = 2;
+  string NonceId = 3;
+  string FeedAuth = 4;
+  int64 RefCommentId = 5;
+  int64 ReplyCommentId = 6;
+  int32 SortType = 7;
+  int64 TaskId = 12;
+}

@@ -1,4 +1,5 @@
 using System;
+using SCRM.SHARED.Models.Dtos;
 
 namespace SCRM.SHARED.Models.Events
 {
@@ -94,6 +95,28 @@ namespace SCRM.SHARED.Models.Events
         }
     }
 
+    /// <summary>
+    /// 会话列表更新事件。
+    /// <para>
+    /// 群聊列表同步、群资料变更和实时群消息补会话后使用该事件通知前端重新读取 Conversations。
+    /// </para>
+    /// </summary>
+    public class ConversationsUpdatedEvent
+    {
+        public string deviceUuid { get; set; }
+        public string accountId { get; set; }
+        public string ownerId { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public ConversationsUpdatedEvent(string deviceUuid, string accountId, string ownerId)
+        {
+            this.deviceUuid = deviceUuid;
+            this.accountId = accountId;
+            this.ownerId = ownerId;
+            this.timestamp = DateTime.UtcNow;
+        }
+    }
+
     // 好友添加请求事件
     public class FriendRequestEvent
     {
@@ -115,6 +138,106 @@ namespace SCRM.SHARED.Models.Events
         }
     }
 
+    /// <summary>
+    /// 好友请求列表已更新事件。
+    /// <para>用于通知 Web 端刷新 FriendRequests 页面；不同于 ContactsReceivedEvent，它只表示请求列表状态变化。</para>
+    /// </summary>
+    public class FriendRequestsUpdatedEvent
+    {
+        public string deviceUuid { get; set; }
+        public string accountId { get; set; }
+        public string ownerId { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public FriendRequestsUpdatedEvent(string deviceUuid, string accountId, string ownerId)
+        {
+            this.deviceUuid = deviceUuid;
+            this.accountId = accountId;
+            this.ownerId = ownerId;
+            this.timestamp = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// 群邀请列表已更新事件。
+    /// <para>ChatRoomInvitePushNotice / ChatRoomInviteListNotice 落库后使用该事件通知 Web 端刷新审批列表。</para>
+    /// </summary>
+    public class GroupInvitationsUpdatedEvent
+    {
+        public string deviceUuid { get; set; }
+        public string accountId { get; set; }
+        public string ownerId { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public GroupInvitationsUpdatedEvent(string deviceUuid, string accountId, string ownerId)
+        {
+            this.deviceUuid = deviceUuid;
+            this.accountId = accountId;
+            this.ownerId = ownerId;
+            this.timestamp = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// 联系人标签列表已更新事件。
+    /// <para>ContactLabelInfo/Add/Del Notice 或标签任务成功回执落库后使用该事件通知 Web 端刷新标签页面。</para>
+    /// </summary>
+    public class ContactLabelsUpdatedEvent
+    {
+        public string deviceUuid { get; set; }
+        public string accountId { get; set; }
+        public string ownerId { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public ContactLabelsUpdatedEvent(string deviceUuid, string accountId, string ownerId)
+        {
+            this.deviceUuid = deviceUuid;
+            this.accountId = accountId;
+            this.ownerId = ownerId;
+            this.timestamp = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// 手机短信记录已更新事件。
+    /// <para>SmsPushNotice、SmsReadNotice、SmsSentNotice 或 PullSmsTaskResultNotice 落库后通知 Web 端刷新短信列表。</para>
+    /// </summary>
+    public class SmsRecordsUpdatedEvent
+    {
+        public string deviceUuid { get; set; }
+        public string accountId { get; set; }
+        public string ownerId { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public SmsRecordsUpdatedEvent(string deviceUuid, string accountId, string ownerId)
+        {
+            this.deviceUuid = deviceUuid;
+            this.accountId = accountId;
+            this.ownerId = ownerId;
+            this.timestamp = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// 手机通话记录已更新事件。
+    /// <para>CallLogPushNotice 或 PullCallLogTaskResultNotice 落库后通知 Web 端刷新通话列表。</para>
+    /// </summary>
+    public class CallLogRecordsUpdatedEvent
+    {
+        public string deviceUuid { get; set; }
+        public string accountId { get; set; }
+        public string ownerId { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public CallLogRecordsUpdatedEvent(string deviceUuid, string accountId, string ownerId)
+        {
+            this.deviceUuid = deviceUuid;
+            this.accountId = accountId;
+            this.ownerId = ownerId;
+            this.timestamp = DateTime.UtcNow;
+        }
+    }
+
     // 朋友圈新发布事件
     public class CircleNewPublishEvent
     {
@@ -133,6 +256,38 @@ namespace SCRM.SHARED.Models.Events
             this.content = content;
             this.connectionId = connectionId;
             this.accountId = accountId;
+        }
+    }
+
+    /// <summary>
+    /// 朋友圈时间线实时到达事件。
+    /// <para>服务端 Netty handler 落库后通过该事件通知 Blazor Server 侧 Store，避免只推 SignalR 而页面本地状态收不到真实内容。</para>
+    /// </summary>
+    public class MomentTimelineReceivedEvent
+    {
+        public MomentsTimelineDto data { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public MomentTimelineReceivedEvent(MomentsTimelineDto data)
+        {
+            this.data = data;
+            timestamp = DateTime.UtcNow;
+        }
+    }
+
+    /// <summary>
+    /// 朋友圈时间线变更通知事件。
+    /// <para>只携带刷新提示，不携带朋友圈正文、XML、媒体地址等原始敏感字段。</para>
+    /// </summary>
+    public class MomentTimelineChangedEvent
+    {
+        public RealtimeDataChangedNoticeDto data { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public MomentTimelineChangedEvent(RealtimeDataChangedNoticeDto data)
+        {
+            this.data = data;
+            timestamp = DateTime.UtcNow;
         }
     }
 
@@ -165,15 +320,17 @@ namespace SCRM.SHARED.Models.Events
         public string message { get; set; } // 可以是截屏URL或错误信息
         public string connectionId { get; set; }
         public string deviceUuid { get; set; } // 方便前端过滤
+        public object? data { get; set; }
         public DateTime timestamp { get; set; }
 
-        public TaskResultReceivedEvent(long taskId, bool success, string message, string connectionId, string deviceUuid)
+        public TaskResultReceivedEvent(long taskId, bool success, string message, string connectionId, string deviceUuid, object? data = null)
         {
             this.taskId = taskId;
             this.success = success;
             this.message = message;
             this.connectionId = connectionId;
             this.deviceUuid = deviceUuid;
+            this.data = data;
             this.timestamp = DateTime.UtcNow;
         }
     }
@@ -201,6 +358,61 @@ namespace SCRM.SHARED.Models.Events
         {
             DeviceUuid = deviceUuid;
             IsOnline = isOnline;
+        }
+    }
+
+    /// <summary>
+    /// 视频号提及结果事件。
+    /// </summary>
+    public class FinderMentionReceivedEvent
+    {
+        public FinderMentionNoticeDto data { get; set; }
+
+        public FinderMentionReceivedEvent(FinderMentionNoticeDto data)
+        {
+            this.data = data;
+        }
+    }
+
+    /// <summary>
+    /// 视频号用户页结果事件。
+    /// </summary>
+    public class FinderUserPageReceivedEvent
+    {
+        public FinderUserPageDto data { get; set; }
+
+        public FinderUserPageReceivedEvent(FinderUserPageDto data)
+        {
+            this.data = data;
+        }
+    }
+
+    /// <summary>
+    /// 视频号评论列表结果事件。
+    /// </summary>
+    public class FinderCommentListReceivedEvent
+    {
+        public FinderCommentListDto data { get; set; }
+
+        public FinderCommentListReceivedEvent(FinderCommentListDto data)
+        {
+            this.data = data;
+        }
+    }
+
+    /// <summary>
+    /// 视频号结果变更通知事件。
+    /// <para>只携带刷新提示，不携带评论正文、用户昵称、头像、封面、NonceId 等原始敏感字段。</para>
+    /// </summary>
+    public class FinderResultChangedEvent
+    {
+        public RealtimeDataChangedNoticeDto data { get; set; }
+        public DateTime timestamp { get; set; }
+
+        public FinderResultChangedEvent(RealtimeDataChangedNoticeDto data)
+        {
+            this.data = data;
+            timestamp = DateTime.UtcNow;
         }
     }
 }

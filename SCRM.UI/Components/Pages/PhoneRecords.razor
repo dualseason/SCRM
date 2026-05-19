@@ -1,0 +1,583 @@
+@page "/features/mobile-mgmt"
+@using System
+@using System.Linq
+@using Microsoft.AspNetCore.Authorization
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@attribute [Authorize]
+@implements IDisposable
+
+<PageTitle>手机短信与通话</PageTitle>
+
+<RadzenStack Gap="1rem" Style="padding: 1rem;">
+    <OperationContextHint Title="手机数据当前对象"
+                          Description="短信和通话记录归属于当前微信账号与执行设备；微信账号可换设备登录，因此页面同时显示 wxid 与设备。"
+                          Class="rz-mb-0" />
+
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenStack Gap="0.25rem">
+            <RadzenText Text="手机短信与通话记录" TextStyle="TextStyle.H5" Style="margin: 0;" />
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                对齐 62203 的 SendSmsTask / PullSmsTask / PullCallLogTask 以及 1300~1307 上报链路。实时推送到达后会自动刷新列表。
+            </RadzenText>
+        </RadzenStack>
+        <RadzenButton Text="刷新设备" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="ReloadDevicesAsync" Disabled="@_isBusy" />
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenRow Gap="1rem">
+            <RadzenColumn Size="12" SizeMD="7">
+                <RadzenStack Gap="0.35rem">
+                    <RadzenLabel Text="执行设备 / 当前操作微信" />
+                    <RadzenDropDown TValue="string"
+                                    Data="@DeviceOptions"
+                                    TextProperty="Text"
+                                    ValueProperty="Value"
+                                    @bind-Value="_deviceUuid"
+                                    Change="@OnExecutionDeviceChanged"
+                                    Placeholder="请选择在线设备"
+                                    Style="width: 100%;" />
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                        当前选中：@SelectedDeviceText
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenColumn>
+            <RadzenColumn Size="12" SizeMD="5">
+                <RadzenStack Gap="0.35rem">
+                    <RadzenLabel Text="时间范围" />
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                        <RadzenDatePicker TValue="DateTime?" @bind-Value="_startTime" ShowTime="true" DateFormat="yyyy-MM-dd HH:mm" Style="width: 190px;" />
+                        <RadzenDatePicker TValue="DateTime?" @bind-Value="_endTime" ShowTime="true" DateFormat="yyyy-MM-dd HH:mm" Style="width: 190px;" />
+                    </RadzenStack>
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                        下发给 Android 的时间戳使用毫秒；默认拉取最近 7 天。
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenColumn>
+        </RadzenRow>
+    </RadzenCard>
+
+    <RadzenRow Gap="1rem">
+        <RadzenColumn Size="12" SizeLG="4">
+            <RadzenCard>
+                <RadzenStack Gap="1rem">
+                    <RadzenText Text="发送手机短信" TextStyle="TextStyle.H6" Style="margin: 0;" />
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="手机号" />
+                        <RadzenTextBox @bind-Value="_smsNumber" Placeholder="请输入手机号" Style="width: 100%;" />
+                    </RadzenStack>
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="短信内容" />
+                        <RadzenTextArea @bind-Value="_smsContent" Rows="5" Placeholder="请输入短信内容" Style="width: 100%;" />
+                    </RadzenStack>
+                    <RadzenButton Text="发送短信" Icon="sms" ButtonStyle="ButtonStyle.Primary" Click="SendSmsAsync" Disabled="@_isBusy" />
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                        成功表示 Android 返回 SendSmsTask 的通用结果；后续 SmsSentNotice 会继续刷新发送状态。
+                    </RadzenText>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+
+        <RadzenColumn Size="12" SizeLG="8">
+            <RadzenCard>
+                <RadzenStack Gap="1rem">
+                    <RadzenText Text="同步手机数据" TextStyle="TextStyle.H6" Style="margin: 0;" />
+                    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                        <RadzenButton Text="拉取短信历史" Icon="markunread_mailbox" ButtonStyle="ButtonStyle.Primary" Click="PullSmsAsync" Disabled="@_isBusy" />
+                        <RadzenButton Text="拉取通话记录" Icon="call" ButtonStyle="ButtonStyle.Primary" Click="PullCallLogsAsync" Disabled="@_isBusy" />
+                        <RadzenButton Text="只刷新列表" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="LoadRecordsAsync" Disabled="@_isBusy" />
+                    </RadzenStack>
+                    <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true">
+                        PullSmsTaskResultNotice / PullCallLogTaskResultNotice 带 TaskId，页面会收到任务结果；SmsPushNotice / CallLogPushNotice 无 TaskId，只触发列表刷新。
+                    </RadzenAlert>
+                </RadzenStack>
+            </RadzenCard>
+        </RadzenColumn>
+    </RadzenRow>
+
+    <RadzenTabs>
+        <Tabs>
+            <RadzenTabsItem Text="短信记录">
+                <RadzenDataGrid Data="@_smsRecords" TItem="SmsRecordDto" AllowPaging="true" PageSize="15" AllowSorting="true"
+                                EmptyText="@(_isLoading ? "正在加载短信记录..." : "暂无短信记录；可先点击“拉取短信历史”。")">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="SmsRecordDto" Title="时间" Width="170px">
+                            <Template Context="item">@FormatDateTime(item.smsTime)</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SmsRecordDto" Property="number" Title="号码" Width="160px" />
+                        <RadzenDataGridColumn TItem="SmsRecordDto" Title="类型" Width="100px">
+                            <Template Context="item">@FormatSmsType(item.type)</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SmsRecordDto" Title="状态" Width="140px">
+                            <Template Context="item">
+                                <RadzenStack Gap="0.25rem">
+                                    <RadzenBadge BadgeStyle="@(item.isRead ? BadgeStyle.Success : BadgeStyle.Warning)" Text="@(item.isRead ? "已读" : "未读")" />
+                                    @if (item.isSentNoticeReceived)
+                                    {
+                                        <RadzenBadge BadgeStyle="BadgeStyle.Info" Text="@($"发送通知:{item.sentNoticeType}")" />
+                                    }
+                                </RadzenStack>
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="SmsRecordDto" Property="content" Title="内容" />
+                        <RadzenDataGridColumn TItem="SmsRecordDto" Property="source" Title="来源" Width="100px" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+            <RadzenTabsItem Text="通话记录">
+                <RadzenDataGrid Data="@_callLogRecords" TItem="CallLogRecordDto" AllowPaging="true" PageSize="15" AllowSorting="true"
+                                EmptyText="@(_isLoading ? "正在加载通话记录..." : "暂无通话记录；可先点击“拉取通话记录”。")">
+                    <Columns>
+                        <RadzenDataGridColumn TItem="CallLogRecordDto" Title="时间" Width="170px">
+                            <Template Context="item">@FormatDateTime(item.callTime)</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="CallLogRecordDto" Property="number" Title="号码" Width="160px" />
+                        <RadzenDataGridColumn TItem="CallLogRecordDto" Title="类型" Width="100px">
+                            <Template Context="item">@FormatCallType(item.type)</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="CallLogRecordDto" Title="时长" Width="100px">
+                            <Template Context="item">@($"{item.durationSeconds}s")</Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="CallLogRecordDto" Title="录音">
+                            <Template Context="item">
+                                @if (!item.hasRecording)
+                                {
+                                    <span class="rz-color-secondary">无/无权限</span>
+                                }
+                                else
+                                {
+                                    <RadzenStack Gap="0.35rem">
+                                        <RadzenButton Text="@GetRecordingButtonText(item)"
+                                                      Icon="play_arrow"
+                                                      Size="ButtonSize.Small"
+                                                      ButtonStyle="ButtonStyle.Light"
+                                                      Click="@(() => PrepareCallRecordingAsync(item))"
+                                                      Disabled="@(_preparingCallRecordingId == item.id)" />
+                                        @if (_activeCallRecordingId == item.id && !string.IsNullOrWhiteSpace(_activeCallRecordingUrl))
+                                        {
+                                            <audio src="@_activeCallRecordingUrl" controls style="max-width: 260px; width: 100%;"></audio>
+                                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Wrap="FlexWrap.Wrap">
+                                                <a href="@_activeCallRecordingUrl" target="_blank" rel="noopener">打开短期链接</a>
+                                                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                                                    @FormatRecordingTokenExpires()
+                                                </RadzenText>
+                                            </RadzenStack>
+                                        }
+                                    </RadzenStack>
+                                }
+                            </Template>
+                        </RadzenDataGridColumn>
+                        <RadzenDataGridColumn TItem="CallLogRecordDto" Property="source" Title="来源" Width="100px" />
+                    </Columns>
+                </RadzenDataGrid>
+            </RadzenTabsItem>
+        </Tabs>
+    </RadzenTabs>
+</RadzenStack>
+
+@code {
+    private string _deviceUuid = string.Empty;
+    private string _smsNumber = string.Empty;
+    private string _smsContent = string.Empty;
+    private DateTime? _startTime = DateTime.Now.AddDays(-7);
+    private DateTime? _endTime = DateTime.Now;
+    private bool _isBusy;
+    private bool _isLoading;
+    private readonly List<SmsRecordDto> _smsRecords = new();
+    private readonly List<CallLogRecordDto> _callLogRecords = new();
+    private int? _activeCallRecordingId;
+    private int? _preparingCallRecordingId;
+    private string _activeCallRecordingUrl = string.Empty;
+    private DateTimeOffset? _activeCallRecordingExpiresAt;
+
+    private IEnumerable<DeviceOption> DeviceOptions => Store.Devices
+        .OrderByDescending(IsDeviceUsableForWechatTask)
+        .ThenByDescending(device => device.isOnline)
+        .ThenBy(device => BuildDeviceText(device))
+        .Select(device => new DeviceOption
+        {
+            Value = device.uuid,
+            Text = BuildDeviceText(device)
+        });
+
+    private string SelectedDeviceText => string.IsNullOrWhiteSpace(_deviceUuid)
+        ? "未选择设备"
+        : BuildDeviceText(Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += HandleChange;
+        Store.OnSmsRecordsUpdated += HandlePhoneRecordsUpdated;
+        Store.OnCallLogRecordsUpdated += HandlePhoneRecordsUpdated;
+        await Store.InitializeAsync();
+        _deviceUuid = ResolvePreferredDeviceUuid();
+        await EnsureSelectedDeviceAsync();
+        await LoadRecordsAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleChange;
+        Store.OnSmsRecordsUpdated -= HandlePhoneRecordsUpdated;
+        Store.OnCallLogRecordsUpdated -= HandlePhoneRecordsUpdated;
+    }
+
+    private void HandleChange()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandlePhoneRecordsUpdated(string accountId)
+    {
+        var selectedAccountId = ResolveSelectedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId)
+            || string.IsNullOrWhiteSpace(selectedAccountId)
+            || string.Equals(accountId, selectedAccountId, StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(LoadRecordsAsync);
+        }
+    }
+
+    private async Task ReloadDevicesAsync()
+    {
+        await Store.LoadDevicesAsync();
+        _deviceUuid = ResolvePreferredDeviceUuid();
+        await EnsureSelectedDeviceAsync();
+        await LoadRecordsAsync();
+    }
+
+    private async Task OnExecutionDeviceChanged(object value)
+    {
+        var deviceUuid = value?.ToString();
+        if (string.IsNullOrWhiteSpace(deviceUuid))
+        {
+            return;
+        }
+
+        _deviceUuid = deviceUuid;
+        await EnsureSelectedDeviceAsync();
+        await LoadRecordsAsync();
+    }
+
+    private async Task EnsureSelectedDeviceAsync()
+    {
+        var device = Store.Devices.FirstOrDefault(item => string.Equals(item.uuid, _deviceUuid, StringComparison.OrdinalIgnoreCase));
+        if (device != null && !string.Equals(Store.SelectedDevice?.uuid, device.uuid, StringComparison.OrdinalIgnoreCase))
+        {
+            await Store.SelectDeviceAsync(device);
+        }
+    }
+
+    private async Task LoadRecordsAsync()
+    {
+        var accountId = ResolveSelectedAccountId();
+        _smsRecords.Clear();
+        _callLogRecords.Clear();
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+
+        _isLoading = true;
+        try
+        {
+            var imei = ResolveSelectedImei();
+            var sms = await Store.GetSmsRecordsAsync(accountId, imei, 300);
+            var calls = await Store.GetCallLogRecordsAsync(accountId, imei, 300);
+            _smsRecords.AddRange(sms);
+            _callLogRecords.AddRange(calls);
+            if (_activeCallRecordingId.HasValue && _callLogRecords.All(item => item.id != _activeCallRecordingId.Value))
+            {
+                ClearActiveRecording();
+            }
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SendSmsAsync()
+    {
+        await EnsureSelectedDeviceAsync();
+        _isBusy = true;
+        try
+        {
+            var result = await Store.SendSmsAsync(_smsNumber, _smsContent, _deviceUuid);
+            Notify(result);
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task PrepareCallRecordingAsync(CallLogRecordDto item)
+    {
+        if (item.id <= 0)
+        {
+            NotifyWarning("录音播放失败", "通话记录 ID 无效。");
+            return;
+        }
+
+        if (!item.hasRecording)
+        {
+            NotifyWarning("录音播放失败", "该通话记录没有录音或当前账号无录音查看权限。");
+            return;
+        }
+
+        _preparingCallRecordingId = item.id;
+        try
+        {
+            var token = await Store.CreateCallRecordingAccessTokenAsync(item.id, 5);
+            if (!token.Success || string.IsNullOrWhiteSpace(token.Url))
+            {
+                NotifyWarning("录音播放失败", token.Message);
+                return;
+            }
+
+            _activeCallRecordingId = item.id;
+            _activeCallRecordingUrl = token.Url;
+            _activeCallRecordingExpiresAt = token.ExpiresAt;
+            NoticeService.Notify(new NotificationMessage
+            {
+                Severity = NotificationSeverity.Success,
+                Summary = "录音链接已生成",
+                Detail = "已切换为后端短期 token 链接播放。",
+                Duration = 2500
+            });
+        }
+        finally
+        {
+            _preparingCallRecordingId = null;
+        }
+    }
+
+    private async Task PullSmsAsync()
+    {
+        await EnsureSelectedDeviceAsync();
+        var (start, end) = BuildTimeRange();
+        _isBusy = true;
+        try
+        {
+            var result = await Store.PullSmsAsync(start, end, _deviceUuid);
+            Notify(result);
+            await LoadRecordsAsync();
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private async Task PullCallLogsAsync()
+    {
+        await EnsureSelectedDeviceAsync();
+        var (start, end) = BuildTimeRange();
+        _isBusy = true;
+        try
+        {
+            var result = await Store.PullCallLogsAsync(start, end, _deviceUuid);
+            Notify(result);
+            await LoadRecordsAsync();
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private (long Start, long End) BuildTimeRange()
+    {
+        var start = _startTime ?? DateTime.Now.AddDays(-7);
+        var end = _endTime ?? DateTime.Now;
+        if (end < start)
+        {
+            (start, end) = (end, start);
+        }
+
+        return (ToUnixMilliseconds(start), ToUnixMilliseconds(end));
+    }
+
+    private void Notify(TaskResult result)
+    {
+        NoticeService.Notify(new NotificationMessage
+        {
+            Severity = result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+            Summary = result.success ? "任务已下发" : "任务失败",
+            Detail = result.message ?? (result.success ? "操作成功" : "操作失败"),
+            Duration = 3500
+        });
+    }
+
+    private void NotifyWarning(string summary, string? detail)
+    {
+        NoticeService.Notify(new NotificationMessage
+        {
+            Severity = NotificationSeverity.Warning,
+            Summary = summary,
+            Detail = string.IsNullOrWhiteSpace(detail) ? "操作未完成。" : detail,
+            Duration = 3500
+        });
+    }
+
+    private string GetRecordingButtonText(CallLogRecordDto item)
+    {
+        if (_preparingCallRecordingId == item.id)
+        {
+            return "生成中";
+        }
+
+        return _activeCallRecordingId == item.id ? "刷新链接" : "播放录音";
+    }
+
+    private string FormatRecordingTokenExpires()
+    {
+        if (!_activeCallRecordingExpiresAt.HasValue)
+        {
+            return string.Empty;
+        }
+
+        return $"有效至 {_activeCallRecordingExpiresAt.Value.LocalDateTime:HH:mm:ss}";
+    }
+
+    private void ClearActiveRecording()
+    {
+        _activeCallRecordingId = null;
+        _activeCallRecordingUrl = string.Empty;
+        _activeCallRecordingExpiresAt = null;
+    }
+
+    private string ResolvePreferredDeviceUuid()
+    {
+        if (IsDeviceUsableForWechatTask(Store.SelectedDevice))
+        {
+            return Store.SelectedDevice!.uuid;
+        }
+
+        return Store.Devices.FirstOrDefault(IsDeviceUsableForWechatTask)?.uuid
+            ?? Store.Devices.FirstOrDefault(device => device.isOnline)?.uuid
+            ?? Store.Devices.FirstOrDefault()?.uuid
+            ?? string.Empty;
+    }
+
+    private string ResolveSelectedAccountId()
+    {
+        var device = Store.Devices.FirstOrDefault(item => string.Equals(item.uuid, _deviceUuid, StringComparison.OrdinalIgnoreCase))
+            ?? Store.SelectedDevice;
+
+        return FirstNonEmpty(
+            device?.weChatId,
+            device?.wx?.wechatAccount?.wxid,
+            Store.SelectedDevice?.weChatId,
+            Store.SelectedDevice?.wx?.wechatAccount?.wxid);
+    }
+
+    private string ResolveSelectedImei()
+    {
+        var device = Store.Devices.FirstOrDefault(item => string.Equals(item.uuid, _deviceUuid, StringComparison.OrdinalIgnoreCase))
+            ?? Store.SelectedDevice;
+
+        // IMEI 缺失时返回空字符串，让服务端按当前 wxid 查询所有 IMEI。
+        // 不要用设备 uuid 代替 IMEI；Android 1300~1307 上报的是真实 IMEI/空值，uuid 严格过滤会导致页面查不到已落库记录。
+        return device?.device?.IMEI?.Trim() ?? string.Empty;
+    }
+
+    private static bool IsDeviceUsableForWechatTask(SrClient? device)
+    {
+        return device != null
+            && device.isOnline
+            && !string.IsNullOrWhiteSpace(device.weChatId)
+            && device.wx?.wechatAccount?.accountStatus == 1;
+    }
+
+    private static string BuildDeviceText(SrClient? device)
+    {
+        if (device == null)
+        {
+            return "未知设备";
+        }
+
+        var account = FirstNonEmpty(
+            device.wx?.wechatAccount?.nickname,
+            device.weChatId,
+            device.wx?.wechatAccount?.wxid,
+            "未登录微信");
+        var model = FirstNonEmpty(device.device?.PhoneModel, device.uuid, "未知设备");
+        var online = device.isOnline ? "在线" : "离线";
+        return $"{account} / {model} / {online}";
+    }
+
+    private static string FormatSmsType(int type)
+    {
+        return type switch
+        {
+            1 => "接收",
+            2 => "发送",
+            3 => "草稿",
+            4 => "发件箱",
+            5 => "失败",
+            6 => "排队",
+            _ => type.ToString()
+        };
+    }
+
+    private static string FormatCallType(int type)
+    {
+        return type switch
+        {
+            1 => "来电",
+            2 => "去电",
+            3 => "未接",
+            4 => "语音信箱",
+            5 => "拒接",
+            6 => "拦截",
+            _ => type.ToString()
+        };
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        if (value == default || value == DateTime.MinValue || value == DateTime.UnixEpoch)
+        {
+            return "-";
+        }
+
+        return value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private static long ToUnixMilliseconds(DateTime value)
+    {
+        var local = value.Kind == DateTimeKind.Unspecified
+            ? DateTime.SpecifyKind(value, DateTimeKind.Local)
+            : value;
+        return new DateTimeOffset(local).ToUnixTimeMilliseconds();
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private sealed class DeviceOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

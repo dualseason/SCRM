@@ -1,0 +1,499 @@
+@page "/features/friend-requests"
+@using System
+@using System.Linq
+@using Microsoft.AspNetCore.Authorization
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.Shared.Interfaces
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject ICrmService CrmService
+@inject NotificationService NoticeService
+@attribute [Authorize]
+@implements IDisposable
+
+<PageTitle>微信好友请求</PageTitle>
+
+<RadzenStack Gap="1rem" Style="padding: 1rem;">
+    <RadzenStack Gap="0.25rem">
+        <RadzenText Text="微信好友请求" TextStyle="TextStyle.H5" Style="margin: 0;" />
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+            按当前操作微信展示 FriendRequests 表中的好友请求；也支持手动输入 wxid 下发通过任务。
+            页面只下发任务，不直接改联系人表；通过成功后等待安卓端好友/联系人回传同步；历史申请可从手机端补偿拉取。
+        </RadzenText>
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenStack Gap="1rem">
+            <OperationContextHint Title="好友请求当前对象"
+                                  Description="好友请求按当前微信账号展示；通过好友请求会通过这里选择的在线执行设备下发。"
+                                  Class="rz-mb-0" />
+
+            <RadzenStack Gap="0.35rem">
+                <RadzenLabel Text="执行设备 / 当前操作微信" />
+                <RadzenDropDown TValue="string"
+                                Data="@DeviceOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="_deviceUuid"
+                                Change="OnExecutionDeviceChanged"
+                                Placeholder="请选择在线设备"
+                                Style="width: 100%;" />
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">当前选中：@SelectedDeviceText</RadzenText>
+            </RadzenStack>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="请求人 wxid" />
+                        <RadzenTextBox @bind-Value="_friendId" Style="width: 100%;" Placeholder="例如：wxid_xxx" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="请求人昵称" />
+                        <RadzenTextBox @bind-Value="_friendNick" Style="width: 100%;" Placeholder="可选：昵称" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenStack Gap="0.35rem">
+                <RadzenLabel Text="拒绝回复" />
+                <RadzenTextBox @bind-Value="_rejectReplyMsg" Style="width: 100%;" Placeholder="可选：拒绝好友请求时返回给对方的说明" />
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
+                <RadzenButton Text="通过好友请求" Icon="check_circle" ButtonStyle="ButtonStyle.Success" Click="AcceptAsync" Disabled="@_isSubmitting" />
+                <RadzenButton Text="拒绝好友请求" Icon="cancel" ButtonStyle="ButtonStyle.Danger" Click="RejectAsync" Disabled="@_isSubmitting" />
+                <RadzenButton Text="刷新请求" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="LoadRequestsAsync" Disabled="@_isSubmitting" />
+                <RadzenButton Text="从手机拉取申请列表" Icon="cloud_sync" ButtonStyle="ButtonStyle.Info" Click="PullRequestsFromPhoneAsync" Disabled="@_isSubmitting" />
+                <RadzenButton Text="刷新设备" Icon="devices" ButtonStyle="ButtonStyle.Light" Click="ReloadDevicesAsync" Disabled="@_isSubmitting" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.5rem">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                <RadzenText Text="好友请求列表" TextStyle="TextStyle.H6" Style="margin: 0;" />
+                <RadzenCheckBox @bind-Value="_pendingOnly" TValue="bool" Change="@(_ => LoadRequestsAsync())" Name="PendingOnly" />
+                <RadzenLabel Text="只看待处理" Component="PendingOnly" />
+            </RadzenStack>
+            <RadzenDataGrid Data="@_requests" TItem="FriendRequestDto" AllowPaging="true" PageSize="10" AllowSorting="true"
+                            EmptyText="@(_isLoadingRequests ? "正在加载好友请求..." : "暂无好友请求记录")">
+                <Columns>
+                    <RadzenDataGridColumn TItem="FriendRequestDto" Title="请求人" Width="260px">
+                        <Template Context="request">
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                                <RadzenImage Path="@(string.IsNullOrWhiteSpace(request.avatar) ? "images/default-avatar.png" : request.avatar)" Style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;" />
+                                <RadzenStack Gap="0">
+                                    <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@DisplayRequesterName(request)</RadzenText>
+                                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">@request.requestWxid</RadzenText>
+                                </RadzenStack>
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="FriendRequestDto" Property="requestMessage" Title="验证消息" />
+                    <RadzenDataGridColumn TItem="FriendRequestDto" Property="source" Title="来源" Width="180px" />
+                    <RadzenDataGridColumn TItem="FriendRequestDto" Title="状态" Width="110px">
+                        <Template Context="request">
+                            <RadzenBadge BadgeStyle="@GetRequestStatusBadge(request.status)" Text="@BuildRequestStatusText(request.status)" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="FriendRequestDto" Title="请求时间" Width="180px">
+                        <Template Context="request">@FormatDateTime(request.requestTime)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="FriendRequestDto" Title="操作" Width="190px" TextAlign="TextAlign.Center">
+                        <Template Context="request">
+                            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.35rem" JustifyContent="JustifyContent.Center">
+                                <RadzenButton Icon="check"
+                                              Text="通过"
+                                              ButtonStyle="ButtonStyle.Success"
+                                              Size="ButtonSize.ExtraSmall"
+                                              Disabled="@(request.status != 0 || _isSubmitting)"
+                                              Click="@(() => AcceptRequestRowAsync(request))" />
+                                <RadzenButton Icon="close"
+                                              Text="拒绝"
+                                              ButtonStyle="ButtonStyle.Danger"
+                                              Size="ButtonSize.ExtraSmall"
+                                              Disabled="@(request.status != 0 || _isSubmitting)"
+                                              Click="@(() => RejectRequestRowAsync(request))" />
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenStack>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private string _deviceUuid = string.Empty;
+    private string _friendId = string.Empty;
+    private string _friendNick = string.Empty;
+    private string _rejectReplyMsg = "不方便添加";
+    private bool _isSubmitting;
+    private bool _isLoadingRequests;
+    private bool _pendingOnly = true;
+    private readonly List<FriendRequestDto> _requests = new();
+
+    private IEnumerable<DeviceOption> DeviceOptions => Store.Devices
+        .OrderByDescending(IsDeviceUsableForWechatTask)
+        .ThenByDescending(device => device.isOnline)
+        .ThenBy(device => BuildDeviceText(device))
+        .Select(device => new DeviceOption
+        {
+            Value = device.uuid,
+            Text = BuildDeviceText(device)
+        });
+
+    private string SelectedDeviceText => string.IsNullOrWhiteSpace(_deviceUuid)
+        ? "未选择设备"
+        : BuildDeviceText(Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += HandleChange;
+        Store.OnFriendRequestsUpdated += HandleFriendRequestsUpdated;
+        await Store.InitializeAsync();
+        _deviceUuid = ResolvePreferredDeviceUuid();
+        await LoadRequestsAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleChange;
+        Store.OnFriendRequestsUpdated -= HandleFriendRequestsUpdated;
+    }
+
+    private void HandleChange()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleFriendRequestsUpdated(string accountId)
+    {
+        var selectedAccountId = ResolveSelectedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId)
+            || string.IsNullOrWhiteSpace(selectedAccountId)
+            || string.Equals(accountId, selectedAccountId, StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(LoadRequestsAsync);
+        }
+    }
+
+    private async Task ReloadDevicesAsync()
+    {
+        await Store.LoadDevicesAsync();
+        if (string.IsNullOrWhiteSpace(_deviceUuid))
+        {
+            _deviceUuid = ResolvePreferredDeviceUuid();
+        }
+        await LoadRequestsAsync();
+    }
+
+    private async Task AcceptAsync()
+    {
+        await AcceptCoreAsync(_friendId, _friendNick);
+    }
+
+    private async Task RejectAsync()
+    {
+        await RejectCoreAsync(_friendId, _friendNick, _rejectReplyMsg);
+    }
+
+    private async Task PullRequestsFromPhoneAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_deviceUuid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未选择设备", "请先选择执行设备。 ");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var result = await CrmService.PullFriendAddReqListAsync(_deviceUuid, startTime: 0, onlyNew: true, getAll: false);
+            NoticeService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "指令已下发" : "下发失败",
+                result.success ? "好友申请列表拉取指令已下发，等待手机端回传 FriendAddReqListNotice。 " : result.message);
+
+            if (result.success)
+            {
+                _ = ReloadRequestsAfterDelayAsync();
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task AcceptRequestRowAsync(FriendRequestDto request)
+    {
+        await AcceptCoreAsync(request.requestWxid, DisplayRequesterName(request));
+    }
+
+    private async Task RejectRequestRowAsync(FriendRequestDto request)
+    {
+        await RejectCoreAsync(request.requestWxid, DisplayRequesterName(request), _rejectReplyMsg);
+    }
+
+    private async Task AcceptCoreAsync(string friendId, string friendNick)
+    {
+        if (string.IsNullOrWhiteSpace(_deviceUuid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未选择设备", "请先选择执行设备。 ");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(friendId))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "请填写请求人 wxid。 ");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var result = await CrmService.AcceptFriendRequestAsync(_deviceUuid, friendId.Trim(), friendNick.Trim());
+            var success = result.success;
+            NoticeService.Notify(
+                success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                success ? "指令已下发" : "下发失败",
+                success ? (result.message ?? "通过好友请求指令已下发，等待安卓端执行回传。") : (result.message ?? "通过好友请求指令下发失败，请检查设备在线状态。"));
+            if (success)
+            {
+                if (_pendingOnly)
+                {
+                    var acceptedWxid = friendId.Trim();
+                    _requests.RemoveAll(request => string.Equals(request.requestWxid, acceptedWxid, StringComparison.OrdinalIgnoreCase));
+                }
+                else
+                {
+                    var acceptedWxid = friendId.Trim();
+                    foreach (var request in _requests.Where(request => string.Equals(request.requestWxid, acceptedWxid, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        request.status = 1;
+                        request.responseTime = DateTime.UtcNow;
+                        request.responseMessage = "通过好友请求任务已成功回执";
+                    }
+                }
+
+                _friendId = string.Empty;
+                _friendNick = string.Empty;
+                _ = ReloadRequestsAfterDelayAsync();
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task RejectCoreAsync(string friendId, string friendNick, string replyMsg)
+    {
+        if (string.IsNullOrWhiteSpace(_deviceUuid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未选择设备", "请先选择执行设备。 ");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(friendId))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "请填写请求人 wxid。 ");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var result = await CrmService.AcceptFriendRequestAsync(
+                _deviceUuid,
+                friendId.Trim(),
+                friendNick.Trim(),
+                replyMsg: string.IsNullOrWhiteSpace(replyMsg) ? "不方便添加" : replyMsg.Trim(),
+                operation: 2);
+            var success = result.success;
+            NoticeService.Notify(
+                success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                success ? "指令已下发" : "下发失败",
+                success ? (result.message ?? "拒绝好友请求指令已下发，等待安卓端执行回传。") : (result.message ?? "拒绝好友请求指令下发失败，请检查设备在线状态。"));
+            if (success)
+            {
+                if (_pendingOnly)
+                {
+                    var rejectedWxid = friendId.Trim();
+                    _requests.RemoveAll(request => string.Equals(request.requestWxid, rejectedWxid, StringComparison.OrdinalIgnoreCase));
+                }
+                else
+                {
+                    var rejectedWxid = friendId.Trim();
+                    foreach (var request in _requests.Where(request => string.Equals(request.requestWxid, rejectedWxid, StringComparison.OrdinalIgnoreCase)))
+                    {
+                        request.status = 2;
+                        request.responseTime = DateTime.UtcNow;
+                        request.responseMessage = string.IsNullOrWhiteSpace(replyMsg) ? "拒绝好友请求任务已成功回执" : replyMsg.Trim();
+                    }
+                }
+
+                _friendId = string.Empty;
+                _friendNick = string.Empty;
+                _ = ReloadRequestsAfterDelayAsync();
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+
+    private async Task OnExecutionDeviceChanged(object value)
+    {
+        var uuid = value?.ToString();
+        if (string.IsNullOrWhiteSpace(uuid))
+        {
+            return;
+        }
+
+        var device = Store.Devices.FirstOrDefault(item => item.uuid == uuid);
+        if (device != null)
+        {
+            await Store.SelectDeviceAsync(device);
+            _deviceUuid = device.uuid;
+            await LoadRequestsAsync();
+        }
+    }
+
+    private async Task LoadRequestsAsync()
+    {
+        var accountId = ResolveSelectedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            _requests.Clear();
+            return;
+        }
+
+        _isLoadingRequests = true;
+        try
+        {
+            var items = await CrmService.GetFriendRequestsAsync(accountId, 100, _pendingOnly);
+            _requests.Clear();
+            _requests.AddRange(items);
+        }
+        finally
+        {
+            _isLoadingRequests = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ReloadRequestsAfterDelayAsync()
+    {
+        foreach (var delay in new[] { 1000, 3000, 8000 })
+        {
+            await Task.Delay(delay);
+            await InvokeAsync(LoadRequestsAsync);
+        }
+    }
+
+    private string ResolveSelectedAccountId()
+    {
+        var device = Store.Devices.FirstOrDefault(item => item.uuid == _deviceUuid) ?? Store.SelectedDevice;
+        return device?.weChatId ?? device?.wx?.wechatAccount?.wxid ?? string.Empty;
+    }
+
+    private string ResolvePreferredDeviceUuid()
+    {
+        var current = Store.SelectedDevice;
+        if (IsDeviceUsableForWechatTask(current))
+        {
+            return current!.uuid;
+        }
+
+        return Store.Devices.FirstOrDefault(IsDeviceUsableForWechatTask)?.uuid
+            ?? Store.Devices.FirstOrDefault(device => device.isOnline)?.uuid
+            ?? Store.Devices.FirstOrDefault()?.uuid
+            ?? string.Empty;
+    }
+
+    private static bool IsDeviceUsableForWechatTask(SrClient? device)
+    {
+        return device != null
+            && device.isOnline
+            && !string.IsNullOrWhiteSpace(device.uuid)
+            && !string.IsNullOrWhiteSpace(device.weChatId)
+            && device.wx?.wechatAccount?.accountStatus == 1;
+    }
+
+    private static string DisplayRequesterName(FriendRequestDto request)
+    {
+        return string.IsNullOrWhiteSpace(request.nickname) ? request.requestWxid : request.nickname;
+    }
+
+    private static string BuildRequestStatusText(int status)
+    {
+        return status switch
+        {
+            0 => "待处理",
+            1 => "已通过",
+            2 => "已拒绝",
+            3 => "已忽略",
+            _ => $"状态 {status}"
+        };
+    }
+
+    private static BadgeStyle GetRequestStatusBadge(int status)
+    {
+        return status switch
+        {
+            0 => BadgeStyle.Warning,
+            1 => BadgeStyle.Success,
+            2 => BadgeStyle.Danger,
+            3 => BadgeStyle.Light,
+            _ => BadgeStyle.Info
+        };
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        return value == default || value == DateTime.MinValue
+            ? "-"
+            : value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private static string BuildDeviceText(SrClient? device)
+    {
+        if (device == null)
+        {
+            return "未知设备";
+        }
+
+        var name = device.wx?.wechatAccount?.nickname;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.weChatId;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.device?.PhoneModel;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.uuid;
+        }
+
+        var shortUuid = device.uuid.Length > 8 ? $"{device.uuid[..8]}..." : device.uuid;
+        return $"{name} / {shortUuid} / {(device.isOnline ? "在线" : "离线")}";
+    }
+
+    private sealed class DeviceOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

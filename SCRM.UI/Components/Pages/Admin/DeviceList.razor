@@ -14,6 +14,33 @@
     <RadzenText TextStyle="TextStyle.H4">设备管理 (Device Management)</RadzenText>
 
     <RadzenCard>
+        <RadzenStack Gap="0.75rem">
+            <RadzenText TextStyle="TextStyle.H6" Style="margin: 0;">设备 App 升级通知</RadzenText>
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                下发 UpgradeDeviceAppNotice(1094)；成功只表示通知已写入在线 TCP 通道，下载/安装结果请看 Android 日志。
+            </RadzenText>
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="3">
+                    <RadzenLabel Text="PackageName" />
+                    <RadzenTextBox @bind-Value="_upgradePackageName" Style="width:100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenLabel Text="Version" />
+                    <RadzenTextBox @bind-Value="_upgradeVersion" Style="width:100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="2">
+                    <RadzenLabel Text="VerNumber" />
+                    <RadzenNumeric TValue="int" @bind-Value="_upgradeVersionCode" Min="1" Style="width:100%;" />
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="5">
+                    <RadzenLabel Text="PackageUrl" />
+                    <RadzenTextBox @bind-Value="_upgradePackageUrl" Style="width:100%;" Placeholder="Android 可访问的 apk 下载地址或文件ID" />
+                </RadzenColumn>
+            </RadzenRow>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenCard>
         <RadzenDataGrid Data="@_devices" TItem="SrClient" AllowFiltering="true" AllowPaging="true" PageSize="10" AllowSorting="true">
             <Columns>
                 <RadzenDataGridColumn TItem="SrClient" Property="uuid" Title="UUID/IMEI" Width="200px" />
@@ -38,9 +65,12 @@
                     <RadzenDataGridColumn TItem="SrClient" Property="Owner.Email" Title="Owner" Width="200px" />
                 }
 
-                <RadzenDataGridColumn TItem="SrClient" Title="Actions" Width="100px">
+                <RadzenDataGridColumn TItem="SrClient" Title="Actions" Width="170px">
                     <Template Context="data">
-                        <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(args => DeleteDevice(data))" @onclick:stopPropagation="true" />
+                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.35rem">
+                            <RadzenButton Icon="system_update" ButtonStyle="ButtonStyle.Info" Size="ButtonSize.Small" Click="@(args => UpgradeDevice(data))" @onclick:stopPropagation="true" Disabled="@(!data.isOnline)" />
+                            <RadzenButton Icon="delete" ButtonStyle="ButtonStyle.Danger" Size="ButtonSize.Small" Click="@(args => DeleteDevice(data))" @onclick:stopPropagation="true" />
+                        </RadzenStack>
                     </Template>
                 </RadzenDataGridColumn>
             </Columns>
@@ -51,6 +81,10 @@
 @code {
     private List<SrClient> _devices = new();
     private bool _isAdmin = false;
+    private string _upgradePackageName = "com.juliao.ty.imscrm";
+    private string _upgradeVersion = string.Empty;
+    private string _upgradePackageUrl = string.Empty;
+    private int _upgradeVersionCode = 1;
 
     protected override async Task OnInitializedAsync()
     {
@@ -68,12 +102,50 @@
 
     private async Task DeleteDevice(SrClient device)
     {
-        var result = await DialogService.Confirm("Are you sure you want to delete this device?", "Delete Device", new ConfirmOptions() { OkButtonText = "Yes", CancelButtonText = "No" });
+        var result = await DialogService.Confirm(
+            "确定删除该设备吗？如果设备当前在线，服务端会先下发 PostDeleteDeviceNotice 通知 Android 主动断开，然后再删除本地记录。",
+            "删除设备",
+            new ConfirmOptions() { OkButtonText = "确定", CancelButtonText = "取消" });
         if (result == true)
         {
-            await Store.DeleteDeviceAsync(device.uuid);
+            var deleted = await Store.DeleteDeviceAsync(device.uuid);
             await LoadData();
-            NoticeService.Notify(NotificationSeverity.Success, "Device Deleted");
+            NoticeService.Notify(
+                deleted ? NotificationSeverity.Success : NotificationSeverity.Error,
+                deleted ? "设备已删除" : "设备删除失败",
+                deleted ? "在线设备已先尝试通知客户端断开。" : "服务端未找到设备或删除未完成。");
         }
+    }
+
+    private async Task UpgradeDevice(SrClient device)
+    {
+        if (string.IsNullOrWhiteSpace(_upgradePackageUrl))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "请先填写 PackageUrl。");
+            return;
+        }
+
+        var result = await DialogService.Confirm(
+            $"确定向设备 {device.uuid} 下发升级通知吗？\n\n{_upgradePackageName} {_upgradeVersion}({_upgradeVersionCode})",
+            "下发升级通知",
+            new ConfirmOptions() { OkButtonText = "确定", CancelButtonText = "取消" });
+
+        if (result != true)
+        {
+            return;
+        }
+
+        var taskResult = await Store.UpgradeDeviceAppAsync(
+            device.uuid,
+            _upgradePackageName,
+            _upgradeVersion,
+            _upgradeVersionCode,
+            _upgradePackageUrl,
+            device.weChatId ?? string.Empty);
+
+        NoticeService.Notify(
+            taskResult.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+            taskResult.success ? "升级通知已下发" : "升级通知失败",
+            taskResult.message);
     }
 }

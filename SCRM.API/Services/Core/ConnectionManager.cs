@@ -273,11 +273,78 @@ namespace SCRM.API.Services.Core
         /// </summary>
         public Task<string?> GetConnectionIdByDeviceUuidAsync(string deviceUuid)
         {
+            if (string.IsNullOrWhiteSpace(deviceUuid))
+            {
+                return Task.FromResult<string?>(null);
+            }
+
             if (_deviceUuidConnections.TryGetValue(deviceUuid, out var connectionId))
             {
-                return Task.FromResult<string?>(connectionId);
+                if (_connections.ContainsKey(connectionId)
+                    && _activeChannels.TryGetValue(connectionId, out var channel)
+                    && channel.Active)
+                {
+                    return Task.FromResult<string?>(connectionId);
+                }
+
+                // 旧连接断开后字典里可能残留 DeviceUuid -> ConnectionId。
+                // 如果继续返回这个 ID，网页会对离线通道下发任务，表现为先失败再成功的双提示。
+                _deviceUuidConnections.TryRemove(deviceUuid, out _);
+                _logger.LogWarning(
+                    "设备UUID映射指向非活跃连接，已清理: DeviceUuid={DeviceUuid}, ConnectionId={ConnectionId}",
+                    deviceUuid,
+                    connectionId);
             }
+
+            var fallback = _connections.Values
+                .Where(c => string.Equals(c.deviceUuid, deviceUuid, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(c.deviceInfo, deviceUuid, StringComparison.OrdinalIgnoreCase))
+                .Select(c => c.connectionId)
+                .FirstOrDefault(connId => _activeChannels.TryGetValue(connId, out var channel) && channel.Active);
+
+            if (!string.IsNullOrWhiteSpace(fallback))
+            {
+                _deviceUuidConnections[deviceUuid] = fallback;
+                return Task.FromResult<string?>(fallback);
+            }
+
             return Task.FromResult<string?>(null);
+        }
+
+        /// <summary>
+        /// 判断指定设备 UUID 当前是否有活跃 Netty 通道。
+        /// </summary>
+        public Task<bool> IsDeviceUuidActiveAsync(string deviceUuid)
+        {
+            if (string.IsNullOrWhiteSpace(deviceUuid))
+            {
+                return Task.FromResult(false);
+            }
+
+            if (_deviceUuidConnections.TryGetValue(deviceUuid, out var connectionId)
+                && _activeChannels.TryGetValue(connectionId, out var channel)
+                && channel.Active
+                && _connections.ContainsKey(connectionId))
+            {
+                return Task.FromResult(true);
+            }
+
+            var active = _connections.Values.Any(c =>
+                (string.Equals(c.deviceUuid, deviceUuid, StringComparison.OrdinalIgnoreCase)
+                    || string.Equals(c.deviceInfo, deviceUuid, StringComparison.OrdinalIgnoreCase))
+                && _activeChannels.TryGetValue(c.connectionId, out var ch)
+                && ch.Active);
+
+            return Task.FromResult(active);
+        }
+
+        /// <summary>
+        /// 根据设备 UUID 获取当前活跃连接 ID。
+        /// <para>保留给只需要取连接号的调用；内部会清理过期映射。</para>
+        /// </summary>
+        public async Task<string?> GetActiveConnectionIdByDeviceUuidAsync(string deviceUuid)
+        {
+            return await GetConnectionIdByDeviceUuidAsync(deviceUuid).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -415,7 +482,7 @@ namespace SCRM.API.Services.Core
 
         /// <summary>
         /// 检查沉默客户端的任务
-        /// <para>如果客户端连接超过40秒仍未上报WeChatId，则主动发送 TriggerWechatPushTask 指令进行探测。</para>
+        /// <para>如果客户端连接超过40秒仍未上报WeChatId，则主动发送账号状态查询与 TriggerWechatPushTask 指令进行探测。</para>
         /// </summary>
         private void CheckSilentClients(object state)
         {
@@ -427,18 +494,40 @@ namespace SCRM.API.Services.Core
                     // 筛选条件：
                     // 1. WeChatId 为空 (说明还没上报)
                     // 2. 连接时长 > 40秒 (给足启动时间)
-                    // 3. (可选) 可以增加 LastActivityAt 判断，这里主要关注初始启动
-                    if (string.IsNullOrEmpty(conn.wechatId) && (now - conn.connectedAt).TotalSeconds > 40)
+                    // 3. 最近 40 秒没有任何活动 (真正 silent，而不是“已在线但只是在收发心跳/消息”)
+                    //
+                    // 旧实现只看 connectedAt，不看 lastActivityAt。
+                    // 结果是：连接建立超过 40 秒后，只要 wechatId 没同步进连接表，
+                    // 即使客户端一直在发心跳、发消息、收消息，也会被误判成 silent。
+                    // 这里把 “连接已建立足够久” 和 “最近确实没活动” 两个条件同时收紧。
+                    if (string.IsNullOrEmpty(conn.wechatId)
+                        && (now - conn.connectedAt).TotalSeconds > 40
+                        && (now - conn.lastActivityAt).TotalSeconds > 40)
                     {
                         var channel = GetChannel(conn.connectionId);
                         if (channel != null && channel.Active)
                         {
-                            _logger.LogWarning($"[SilentClientCheck] Client {conn.connectionId} (Dev:{conn.deviceType}) silent for >40s. Sending TriggerWechatPushTask...");
+                            _logger.LogWarning($"[SilentClientCheck] Client {conn.connectionId} (Dev:{conn.deviceType}) silent for >40s. Sending GetWeChatsReq + TriggerWechatPushTask...");
 
-                            // 构造 TriggerWechatPushTask 消息 (参考 AuthMessageHandler.cs)
-                            // 客户端会使用此空ID来触发自身状态上报
+                            // 先发 3050 轻量账号状态查询。该链路不需要拉起微信 UI，
+                            // 可以在服务端重启或微信状态已缓存时更快补齐连接表中的 wxid。
+                            var getWeChatsMsg = new TransportMessage
+                            {
+                                Id = DateTime.UtcNow.Ticks,
+                                MsgType = EnumMsgType.GetWeChatsReq,
+                                Content = Any.Pack(new GetWeChatsReqMessage
+                                {
+                                    UnionId = 0,
+                                    AccountType = EnumAccountType.Main
+                                })
+                            };
+                            channel.WriteAndFlushAsync(getWeChatsMsg);
+
+                            // 再构造 TriggerWechatPushTask 消息 (参考 AuthMessageHandler.cs)。
+                            // 客户端会使用此空 ID 来触发自身状态上报，最终仍以 WeChatOnlineNotice 落库为准。
                             var syncMsg = new TransportMessage
                             {
+                                Id = DateTime.UtcNow.Ticks,
                                 MsgType = EnumMsgType.TriggerWechatPushTask,
                                 Content = Any.Pack(new TriggerWechatPushTaskMessage
                                 {

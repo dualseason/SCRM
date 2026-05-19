@@ -17,7 +17,7 @@ namespace SCRM.Services.Netty
     /// <summary>
     /// Netty 服务器
     /// 负责启动 TCP 监听，配置 Channel Pipeline（Protobuf 编解码器，业务处理器）
-    /// [AntiGravity] Refactored: Port Configuration from AppSettings (Infrastructure)
+    /// Netty 端口配置来源于 AppSettings。
     /// </summary>
     public class NettyServer
     {

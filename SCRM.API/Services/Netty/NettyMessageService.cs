@@ -126,12 +126,16 @@ namespace SCRM.Services
                     if (channel != null && channel.Active)
                     {
                         await channel.WriteAndFlushAsync(transportMessage);
-                        _logger.LogInformation("向{ClientId}客户端发送{MsgType}指令", targetId, messageType);
+                        _logger.LogInformation("Netty send ok: TargetId={ClientId}, MsgType={MsgType}, MessageId={MessageId}, ParsedType={ParsedType}",
+                            targetId, messageType, transportMessage.Id, transportMessage.MsgType);
                         return true;
                     }
                     else
                     {
-                         _logger.LogWarning("Client not found or inactive: {ClientId}", targetId);
+                         var allConns = await _connectionManager.GetAllConnectionsAsync();
+                         var knownConnections = string.Join(",", allConns.Select(c => $"{c.connectionId}/{c.deviceUuid}/{c.deviceInfo}"));
+                         _logger.LogWarning("Netty send failed: client not found or inactive. TargetId={ClientId}, MsgType={MsgType}, MessageId={MessageId}, KnownConnections={KnownConnections}",
+                             targetId, messageType, transportMessage.Id, knownConnections);
                          return false;
                     }
                 }
@@ -147,7 +151,8 @@ namespace SCRM.Services
                     }
                 }
                 
-                _logger.LogInformation("Broadcast message sent");
+                _logger.LogInformation("Netty broadcast sent: MsgType={MsgType}, MessageId={MessageId}, ConnectionCount={ConnectionCount}",
+                    messageType, transportMessage.Id, connections.Count());
                 return true;
             }
             catch (Exception ex)

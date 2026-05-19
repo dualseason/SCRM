@@ -18,4 +18,5 @@ message FriendAddReqeustNoticeMessage {
     EnumGender Gender = 9;
     string Province = 10;
     string City = 11;
+    int32 Type = 13; // 62203新增：请求类型，0=普通请求，1=来源类型3的特殊请求
 }

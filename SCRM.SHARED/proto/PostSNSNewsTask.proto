@@ -12,6 +12,7 @@ message PostSNSNewsTaskMessage {
   bool SendSlow = 7;
   PoiMessage Poi = 8;
   repeated string ExtComment = 9;
+  repeated string NotiUsers = 10;
 
   message AttachmentMessage {
     EnumAttachType Type = 1;

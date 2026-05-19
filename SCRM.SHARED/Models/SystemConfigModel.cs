@@ -42,5 +42,6 @@ namespace SCRM.SHARED.Models
         public bool wx_can_changeAcnt { get; set; } = false;
         public bool wx_can_acntInfo { get; set; } = false;
         public bool wx_can_sendcard { get; set; } = false;
+        public bool wx_del_conv { get; set; } = false; // 允许删除会话
     }
 }

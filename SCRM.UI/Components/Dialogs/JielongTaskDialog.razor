@@ -1,0 +1,138 @@
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.UI.Services
+@inject CrmStore Store
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenStack Gap="0.85rem" Style="min-width: 520px; max-width: calc(100vw - 3rem);">
+    <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0;">
+        群接龙会通过当前执行设备下发 SendJielongTask(1268)。协议字段历史拼写为 Chatoom，页面仍使用“群 ID”展示，代码不改协议字段名。
+    </RadzenAlert>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">执行对象</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@Store.CurrentExecutionLabel</RadzenText>
+    </RadzenStack>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">目标群聊</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@TargetDisplayName (@ChatRoomId)</RadzenText>
+    </RadzenStack>
+
+    <RadzenStack Gap="0.35rem">
+        <RadzenLabel Text="接龙标题" />
+        <RadzenTextBox @bind-Value="_title" Placeholder="例如：今晚聚餐报名" Style="width: 100%;" />
+    </RadzenStack>
+
+    <RadzenStack Gap="0.35rem">
+        <RadzenLabel Text="接龙内容" />
+        <RadzenTextArea @bind-Value="_content" Rows="4" Placeholder="接龙正文，不能为空" Style="width: 100%;" />
+    </RadzenStack>
+
+    <RadzenStack Gap="0.35rem">
+        <RadzenLabel Text="示例项 Sample" />
+        <RadzenTextBox @bind-Value="_sample" Placeholder="可选，例如：1. 张三" Style="width: 100%;" />
+    </RadzenStack>
+
+    <RadzenStack Gap="0.35rem">
+        <RadzenLabel Text="备注 Memo" />
+        <RadzenTextBox @bind-Value="_memo" Placeholder="可选" Style="width: 100%;" />
+    </RadzenStack>
+
+    <RadzenStack Gap="0.35rem">
+        <RadzenLabel Text="追加到已有接龙的 MsgSvrId" />
+        <RadzenNumeric TValue="long" @bind-Value="_msgSvrId" Min="0" Style="width: 100%;" />
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">新建接龙保持 0；需要追加已有接龙时填原消息 MsgSvrId。</RadzenText>
+    </RadzenStack>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="取消" ButtonStyle="ButtonStyle.Light" Click="@(() => DialogService.Close(false))" Disabled="@_isBusy" />
+        <RadzenButton Text="下发群接龙" Icon="playlist_add" ButtonStyle="ButtonStyle.Primary" Click="SubmitAsync" IsBusy="@_isBusy" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    [Parameter]
+    public string DeviceUuid { get; set; } = string.Empty;
+
+    [Parameter]
+    public string ChatRoomId { get; set; } = string.Empty;
+
+    [Parameter]
+    public string TargetDisplayName { get; set; } = string.Empty;
+
+    private string _title = string.Empty;
+    private string _content = string.Empty;
+    private string _sample = string.Empty;
+    private string _memo = string.Empty;
+    private long _msgSvrId;
+    private bool _isBusy;
+
+    protected override void OnInitialized()
+    {
+        TargetDisplayName = FirstNonEmpty(TargetDisplayName, ChatRoomId, "目标群聊");
+    }
+
+    private async Task SubmitAsync()
+    {
+        if (string.IsNullOrWhiteSpace(DeviceUuid))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "无法执行", "请先选择在线设备。");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(ChatRoomId))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "群 ID 为空", "请先选择群聊会话。");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_content))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "内容为空", "接龙内容不能为空。");
+            return;
+        }
+
+        var confirm = await DialogService.Confirm(
+            $"确认通过【{Store.CurrentExecutionLabel}】向群聊下发接龙？\n\n群聊：{TargetDisplayName} ({ChatRoomId})",
+            "群接龙",
+            new ConfirmOptions { OkButtonText = "确认下发", CancelButtonText = "取消" });
+
+        if (confirm != true)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        try
+        {
+            var result = await Store.SendJielongAsync(ChatRoomId, _content.Trim(), _title.Trim(), _sample.Trim(), _memo.Trim(), _msgSvrId, DeviceUuid);
+            NotificationService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "任务已下发" : "下发失败",
+                result.message ?? (result.success ? "群接龙任务已下发，等待安卓端回执。" : "请查看服务端和安卓端日志。"));
+
+            if (result.success)
+            {
+                DialogService.Close(true);
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+        }
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+}

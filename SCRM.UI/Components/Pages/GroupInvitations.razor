@@ -1,0 +1,416 @@
+@page "/features/group-invitations"
+@using System
+@using System.Linq
+@using Microsoft.AspNetCore.Authorization
+@using SCRM.API.Models.Entities
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.Shared.Interfaces
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject ICrmService CrmService
+@inject NotificationService NoticeService
+@attribute [Authorize]
+@implements IDisposable
+
+<PageTitle>微信群邀请审批</PageTitle>
+
+<RadzenStack Gap="1rem" Style="padding: 1rem;">
+    <RadzenStack Gap="0.25rem">
+        <RadzenText Text="微信群邀请审批" TextStyle="TextStyle.H5" Style="margin: 0;" />
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+            按当前操作微信展示 62203 群邀请 Notice 落库结果；通过按钮会下发 ChatRoomInviteApproveTask，并在成功回执后自动更新本地审批状态。
+        </RadzenText>
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenStack Gap="1rem">
+            <OperationContextHint Title="群邀请当前对象"
+                                  Description="群邀请按当前微信账号展示；审批任务会通过这里选择的在线执行设备下发。"
+                                  Class="rz-mb-0" />
+
+            <RadzenStack Gap="0.35rem">
+                <RadzenLabel Text="执行设备 / 当前操作微信" />
+                <RadzenDropDown TValue="string"
+                                Data="@DeviceOptions"
+                                TextProperty="Text"
+                                ValueProperty="Value"
+                                @bind-Value="_deviceUuid"
+                                Change="OnExecutionDeviceChanged"
+                                Placeholder="请选择在线设备"
+                                Style="width: 100%;" />
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">当前选中：@SelectedDeviceText</RadzenText>
+            </RadzenStack>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="8">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="群聊 wxid（可选）" />
+                        <RadzenTextBox @bind-Value="_chatRoomId" Style="width: 100%;" Placeholder="留空显示当前微信所有群邀请" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="显示数量" />
+                        <RadzenNumeric @bind-Value="_count" Min="10" Max="500" Step="10" Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
+                <RadzenButton Text="刷新列表" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="LoadInvitationsAsync" Disabled="@_isSubmitting" />
+                <RadzenButton Text="从手机拉取邀请列表" Icon="cloud_sync" ButtonStyle="ButtonStyle.Info" Click="PullInvitationsFromPhoneAsync" Disabled="@_isSubmitting" />
+                <RadzenButton Text="刷新设备" Icon="devices" ButtonStyle="ButtonStyle.Light" Click="ReloadDevicesAsync" Disabled="@_isSubmitting" />
+                <RadzenCheckBox @bind-Value="_pendingOnly" TValue="bool" Change="@(_ => LoadInvitationsAsync())" Name="PendingOnly" />
+                <RadzenLabel Text="只看待处理" Component="PendingOnly" />
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.5rem">
+            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+                <RadzenText Text="群邀请列表" TextStyle="TextStyle.H6" Style="margin: 0;" />
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">账号：@ResolveSelectedAccountId()</RadzenText>
+            </RadzenStack>
+
+            <RadzenDataGrid Data="@_invitations" TItem="GroupInvitationDto" AllowPaging="true" PageSize="10" AllowSorting="true"
+                            EmptyText="@(_isLoading ? "正在加载群邀请..." : "暂无群邀请记录")">
+                <Columns>
+                    <RadzenDataGridColumn TItem="GroupInvitationDto" Title="群聊" Width="240px">
+                        <Template Context="item">
+                            <RadzenStack Gap="0">
+                                <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@item.chatRoomId</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">MsgId: @item.msgId</RadzenText>
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="GroupInvitationDto" Title="邀请人" Width="220px">
+                        <Template Context="item">
+                            <RadzenStack Gap="0">
+                                <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@DisplayInviter(item)</RadzenText>
+                                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">@item.inviter</RadzenText>
+                            </RadzenStack>
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="GroupInvitationDto" Title="被邀请成员" Width="260px">
+                        <Template Context="item">@BuildInvitedText(item)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="GroupInvitationDto" Property="reason" Title="原因/验证" />
+                    <RadzenDataGridColumn TItem="GroupInvitationDto" Title="状态" Width="110px">
+                        <Template Context="item">
+                            <RadzenBadge BadgeStyle="@GetStatusBadge(item.status)" Text="@BuildStatusText(item.status)" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="GroupInvitationDto" Title="来源" Width="110px">
+                        <Template Context="item">@item.source</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="GroupInvitationDto" Title="时间" Width="180px">
+                        <Template Context="item">@FormatDateTime(item.invitationTime)</Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="GroupInvitationDto" Title="操作" Width="130px" TextAlign="TextAlign.Center">
+                        <Template Context="item">
+                            <RadzenButton Icon="check"
+                                          Text="通过"
+                                          ButtonStyle="ButtonStyle.Success"
+                                          Size="ButtonSize.ExtraSmall"
+                                          Disabled="@(item.status != 0 || item.msgId == 0 || _isSubmitting)"
+                                          Click="@(() => ApproveInvitationAsync(item))" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenStack>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private string _deviceUuid = string.Empty;
+    private string _chatRoomId = string.Empty;
+    private int _count = 100;
+    private bool _pendingOnly = true;
+    private bool _isSubmitting;
+    private bool _isLoading;
+    private readonly List<GroupInvitationDto> _invitations = new();
+
+    private IEnumerable<DeviceOption> DeviceOptions => Store.Devices
+        .OrderByDescending(IsDeviceUsableForWechatTask)
+        .ThenByDescending(device => device.isOnline)
+        .ThenBy(device => BuildDeviceText(device))
+        .Select(device => new DeviceOption
+        {
+            Value = device.uuid,
+            Text = BuildDeviceText(device)
+        });
+
+    private string SelectedDeviceText => string.IsNullOrWhiteSpace(_deviceUuid)
+        ? "未选择设备"
+        : BuildDeviceText(Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += HandleChange;
+        Store.OnGroupInvitationsUpdated += HandleGroupInvitationsUpdated;
+        await Store.InitializeAsync();
+        _deviceUuid = ResolvePreferredDeviceUuid();
+        await LoadInvitationsAsync();
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleChange;
+        Store.OnGroupInvitationsUpdated -= HandleGroupInvitationsUpdated;
+    }
+
+    private void HandleChange()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
+    private void HandleGroupInvitationsUpdated(string accountId)
+    {
+        var selectedAccountId = ResolveSelectedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId)
+            || string.IsNullOrWhiteSpace(selectedAccountId)
+            || string.Equals(accountId, selectedAccountId, StringComparison.OrdinalIgnoreCase))
+        {
+            _ = InvokeAsync(LoadInvitationsAsync);
+        }
+    }
+
+    private async Task ReloadDevicesAsync()
+    {
+        await Store.LoadDevicesAsync();
+        if (string.IsNullOrWhiteSpace(_deviceUuid))
+        {
+            _deviceUuid = ResolvePreferredDeviceUuid();
+        }
+        await LoadInvitationsAsync();
+    }
+
+    private async Task PullInvitationsFromPhoneAsync()
+    {
+        if (string.IsNullOrWhiteSpace(_deviceUuid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未选择设备", "请先选择执行设备。");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var success = await CrmService.GetChatRoomInviteListAsync(_deviceUuid);
+            NoticeService.Notify(
+                success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                success ? "指令已下发" : "下发失败",
+                success ? "群邀请列表拉取指令已下发，等待手机端回传 ChatRoomInviteListNotice。" : "群邀请列表拉取指令下发失败，请检查设备在线状态。");
+
+            if (success)
+            {
+                _ = ReloadInvitationsAfterDelayAsync();
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task ApproveInvitationAsync(GroupInvitationDto item)
+    {
+        if (string.IsNullOrWhiteSpace(_deviceUuid))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "未选择设备", "请先选择执行设备。");
+            return;
+        }
+
+        if (item.msgId == 0 && item.msgSvrId == 0)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "该邀请缺少 MsgId/MsgSvrId，无法确认。");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            var success = await CrmService.ApproveChatRoomInviteAsync(_deviceUuid, item.msgSvrId, item.chatRoomId, item.reason, item.msgId);
+            NoticeService.Notify(
+                success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                success ? "审批已下发" : "审批失败",
+                success ? "群邀请审批任务已下发；成功回执到达后列表会自动刷新。" : "群邀请审批任务下发失败，请检查设备在线状态。");
+
+            if (success)
+            {
+                if (_pendingOnly)
+                {
+                    _invitations.RemoveAll(invitation => invitation.id == item.id);
+                }
+                else
+                {
+                    item.status = 1;
+                    item.updatedAt = DateTime.UtcNow;
+                }
+
+                _ = ReloadInvitationsAfterDelayAsync();
+            }
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task OnExecutionDeviceChanged(object value)
+    {
+        var uuid = value?.ToString();
+        if (string.IsNullOrWhiteSpace(uuid))
+        {
+            return;
+        }
+
+        var device = Store.Devices.FirstOrDefault(item => item.uuid == uuid);
+        if (device != null)
+        {
+            await Store.SelectDeviceAsync(device);
+            _deviceUuid = device.uuid;
+            await LoadInvitationsAsync();
+        }
+    }
+
+    private async Task LoadInvitationsAsync()
+    {
+        var accountId = ResolveSelectedAccountId();
+        if (string.IsNullOrWhiteSpace(accountId))
+        {
+            _invitations.Clear();
+            return;
+        }
+
+        _isLoading = true;
+        try
+        {
+            var items = await CrmService.GetGroupInvitationsAsync(accountId, _chatRoomId, _count, _pendingOnly);
+            _invitations.Clear();
+            _invitations.AddRange(items);
+        }
+        finally
+        {
+            _isLoading = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task ReloadInvitationsAfterDelayAsync()
+    {
+        foreach (var delay in new[] { 1000, 3000, 8000 })
+        {
+            await Task.Delay(delay);
+            await InvokeAsync(LoadInvitationsAsync);
+        }
+    }
+
+    private string ResolveSelectedAccountId()
+    {
+        var device = Store.Devices.FirstOrDefault(item => item.uuid == _deviceUuid) ?? Store.SelectedDevice;
+        return device?.weChatId ?? device?.wx?.wechatAccount?.wxid ?? string.Empty;
+    }
+
+    private string ResolvePreferredDeviceUuid()
+    {
+        var current = Store.SelectedDevice;
+        if (IsDeviceUsableForWechatTask(current))
+        {
+            return current!.uuid;
+        }
+
+        return Store.Devices.FirstOrDefault(IsDeviceUsableForWechatTask)?.uuid
+            ?? Store.Devices.FirstOrDefault(device => device.isOnline)?.uuid
+            ?? Store.Devices.FirstOrDefault()?.uuid
+            ?? string.Empty;
+    }
+
+    private static bool IsDeviceUsableForWechatTask(SrClient? device)
+    {
+        return device != null
+            && device.isOnline
+            && !string.IsNullOrWhiteSpace(device.uuid)
+            && !string.IsNullOrWhiteSpace(device.weChatId)
+            && device.wx?.wechatAccount?.accountStatus == 1;
+    }
+
+    private static string DisplayInviter(GroupInvitationDto item)
+    {
+        return string.IsNullOrWhiteSpace(item.inviteName) ? item.inviter : item.inviteName;
+    }
+
+    private static string BuildInvitedText(GroupInvitationDto item)
+    {
+        if (item.invited == null || item.invited.Count == 0)
+        {
+            return "-";
+        }
+
+        return string.Join("、", item.invited.Select(member => string.IsNullOrWhiteSpace(member.nickName) ? member.userName : member.nickName));
+    }
+
+    private static string BuildStatusText(int status)
+    {
+        return status switch
+        {
+            0 => "待处理",
+            1 => "已通过",
+            2 => "已拒绝",
+            _ => $"状态 {status}"
+        };
+    }
+
+    private static BadgeStyle GetStatusBadge(int status)
+    {
+        return status switch
+        {
+            0 => BadgeStyle.Warning,
+            1 => BadgeStyle.Success,
+            2 => BadgeStyle.Danger,
+            _ => BadgeStyle.Info
+        };
+    }
+
+    private static string FormatDateTime(DateTime value)
+    {
+        return value == default || value == DateTime.MinValue || value == DateTime.UnixEpoch
+            ? "-"
+            : value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private static string BuildDeviceText(SrClient? device)
+    {
+        if (device == null)
+        {
+            return "未知设备";
+        }
+
+        var name = device.wx?.wechatAccount?.nickname;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.weChatId;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.device?.PhoneModel;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.uuid;
+        }
+
+        var shortUuid = device.uuid.Length > 8 ? $"{device.uuid[..8]}..." : device.uuid;
+        return $"{name} / {shortUuid} / {(device.isOnline ? "在线" : "离线")}";
+    }
+
+    private sealed class DeviceOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

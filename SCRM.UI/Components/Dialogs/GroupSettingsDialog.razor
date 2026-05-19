@@ -1,27 +1,53 @@
 @using SCRM.UI.Services
 @using SCRM.API.Models.Entities
+@using System.Text.Json
 @inject ICrmService CrmService
+@inject CrmStore Store
 @inject DialogService DialogService
 @inject NotificationService NotificationService
 
 <div style="display: flex; flex-direction: column; gap: 20px;">
+    <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true">
+        当前群操作会通过设备：@DeviceUuid 下发到群：@ChatRoomId。
+    </RadzenAlert>
+
     <!-- Rename Group -->
     <RadzenCard>
-        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Rename Group</RadzenText>
+        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">修改群名称</RadzenText>
         <div style="display: flex; gap: 10px;">
-            <RadzenTextBox @bind-Value="newGroupName" Placeholder="New Group Name" Style="flex: 1;" />
-            <RadzenButton Text="Rename" Icon="edit" Click="@RenameGroup" Disabled="@string.IsNullOrWhiteSpace(newGroupName)" />
+            <RadzenTextBox @bind-Value="newGroupName" Placeholder="新群名称" Style="flex: 1;" />
+            <RadzenButton Text="修改" Icon="edit" Click="@RenameGroup" Disabled="@string.IsNullOrWhiteSpace(newGroupName)" />
         </div>
     </RadzenCard>
 
     <!-- Invite Member -->
     <RadzenCard>
-        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">Invite Member</RadzenText>
+        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">邀请成员</RadzenText>
         <div style="display: flex; gap: 10px; margin-bottom: 5px;">
-             <RadzenTextBox @bind-Value="inviteWxid" Placeholder="Friend Wxid to Invite" Style="flex: 1;" />
-             <RadzenButton Text="Invite" Icon="person_add" ButtonStyle="ButtonStyle.Secondary" Click="@InviteMember" Disabled="@string.IsNullOrWhiteSpace(inviteWxid)" />
+             <RadzenTextBox @bind-Value="inviteWxid" Placeholder="要邀请的好友 wxid" Style="flex: 1;" />
+             <RadzenButton Text="邀请" Icon="person_add" ButtonStyle="ButtonStyle.Secondary" Click="@InviteMember" Disabled="@string.IsNullOrWhiteSpace(inviteWxid)" />
         </div>
-        <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">Enter the Wxid of the friend you want to invite.</RadzenText>
+        <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">请输入要邀请入群的好友 wxid。</RadzenText>
+    </RadzenCard>
+
+    <!-- Group QR Code -->
+    <RadzenCard>
+        <RadzenText TextStyle="TextStyle.Subtitle2" TagName="TagName.H3">群二维码</RadzenText>
+        <RadzenStack Gap="0.5rem">
+            <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-text-secondary-color);">
+                群二维码通常有有效期，只建议临时复制使用，不做长期保存。
+            </RadzenText>
+            <RadzenButton Text="拉取群二维码" Icon="qr_code_2" ButtonStyle="ButtonStyle.Light" Click="@PullGroupQrCode" Disabled="@_isPullingQrCode" />
+            @if (!string.IsNullOrWhiteSpace(_lastQrCodeUrl))
+            {
+                <RadzenTextBox Value="@_lastQrCodeUrl" ReadOnly="true" Style="width: 100%;" />
+                <RadzenLink Path="@_lastQrCodeUrl" Text="打开群二维码链接" Target="_blank" />
+            }
+            @if (!string.IsNullOrWhiteSpace(_lastQrCodeMessage))
+            {
+                <RadzenText TextStyle="TextStyle.Caption">@_lastQrCodeMessage</RadzenText>
+            }
+        </RadzenStack>
     </RadzenCard>
 </div>
 
@@ -40,6 +66,9 @@
 
     string newGroupName;
     string inviteWxid;
+    private bool _isPullingQrCode;
+    private string _lastQrCodeUrl = string.Empty;
+    private string _lastQrCodeMessage = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -48,31 +77,129 @@
 
     async Task RenameGroup()
     {
-        // Action 1 = ModTopic
-        var success = await CrmService.ExecuteGroupActionAsync(DeviceUuid, ChatRoomId, 1, newGroupName, 0); 
+        var confirm = await DialogService.Confirm(
+            $"将通过设备 {DeviceUuid} 把群 {ChatRoomId} 名称修改为：{newGroupName}",
+            "修改群名称",
+            new ConfirmOptions { OkButtonText = "确定修改", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
+        // Action 0 = RoomName，修改群名称
+        var success = await CrmService.ExecuteGroupActionAsync(DeviceUuid, ChatRoomId, 0, newGroupName, 0); 
         if (success)
         {
-            NotificationService.Notify(NotificationSeverity.Success, "Sent", "Rename command sent.");
+            NotificationService.Notify(NotificationSeverity.Success, "已下发", "修改群名称指令已下发。");
             DialogService.Close(true);
         }
         else
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send rename command.");
+            NotificationService.Notify(NotificationSeverity.Error, "下发失败", "修改群名称指令下发失败。");
         }
     }
 
     async Task InviteMember()
     {
+        var confirm = await DialogService.Confirm(
+            $"将通过设备 {DeviceUuid} 邀请 {inviteWxid} 加入群 {ChatRoomId}",
+            "邀请群成员",
+            new ConfirmOptions { OkButtonText = "确定邀请", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
         // Action 2 = AddMember
         var success = await CrmService.ExecuteGroupActionAsync(DeviceUuid, ChatRoomId, 2, inviteWxid, 0);
         if (success)
         {
-            NotificationService.Notify(NotificationSeverity.Success, "Sent", "Invite command sent.");
+            NotificationService.Notify(NotificationSeverity.Success, "已下发", "邀请成员指令已下发。");
             DialogService.Close(true);
         }
         else
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send invite command.");
+            NotificationService.Notify(NotificationSeverity.Error, "下发失败", "邀请成员指令下发失败。");
         }
+    }
+
+    async Task PullGroupQrCode()
+    {
+        if (string.IsNullOrWhiteSpace(DeviceUuid) || string.IsNullOrWhiteSpace(ChatRoomId))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "参数不足", "设备或群 ID 为空。");
+            return;
+        }
+
+        _isPullingQrCode = true;
+        _lastQrCodeMessage = string.Empty;
+        try
+        {
+            var result = await Store.PullChatRoomQrCodeAsync(ChatRoomId, DeviceUuid);
+            _lastQrCodeMessage = result.message ?? string.Empty;
+            _lastQrCodeUrl = ExtractQrCodeUrl(result.data) ?? ExtractQrCodeUrl(_lastQrCodeMessage);
+
+            NotificationService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "群二维码已返回" : "群二维码拉取失败",
+                result.message ?? (result.success ? "二维码结果为空" : "客户端返回失败"));
+        }
+        finally
+        {
+            _isPullingQrCode = false;
+        }
+    }
+
+    private static string? ExtractQrCodeUrl(object? data)
+    {
+        if (data == null)
+        {
+            return null;
+        }
+
+        if (data is JsonElement json)
+        {
+            return TryGetJsonString(json, "QrCodeUrl")
+                ?? TryGetJsonString(json, "qrCodeUrl")
+                ?? TryGetJsonString(json, "qrcodeUrl");
+        }
+
+        var property = data.GetType().GetProperty("QrCodeUrl")
+            ?? data.GetType().GetProperty("qrCodeUrl")
+            ?? data.GetType().GetProperty("qrcodeUrl");
+        return property?.GetValue(data)?.ToString();
+    }
+
+    private static string? TryGetJsonString(JsonElement json, string propertyName)
+    {
+        return json.ValueKind == JsonValueKind.Object
+            && json.TryGetProperty(propertyName, out var value)
+            && value.ValueKind == JsonValueKind.String
+            ? value.GetString()
+            : null;
+    }
+
+    private static string ExtractQrCodeUrl(string message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return string.Empty;
+        }
+
+        const string marker = "QrCodeUrl=";
+        var index = message.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+        if (index < 0)
+        {
+            return string.Empty;
+        }
+
+        var value = message[(index + marker.Length)..].Trim();
+        var end = value.IndexOf(';');
+        if (end >= 0)
+        {
+            value = value[..end].Trim();
+        }
+
+        return value;
     }
 }

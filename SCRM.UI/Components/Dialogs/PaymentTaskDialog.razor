@@ -1,0 +1,232 @@
+@using SCRM.SHARED.Models.Dtos
+@using SCRM.UI.Services
+@inject CrmStore Store
+@inject DialogService DialogService
+@inject NotificationService NotificationService
+
+<RadzenStack Gap="0.85rem" Style="min-width: 460px; max-width: calc(100vw - 3rem);">
+    <RadzenAlert AlertStyle="AlertStyle.Warning" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0;">
+        该操作会通过当前执行设备操作微信支付。支付密码只用于本次下发，不保存到数据库，也不写入日志。
+    </RadzenAlert>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">执行对象</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@Store.CurrentExecutionLabel</RadzenText>
+    </RadzenStack>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary rz-mb-0">当前会话</RadzenText>
+        <RadzenText TextStyle="TextStyle.Body2" Class="rz-mb-0">@TargetDisplayName (@TargetId)</RadzenText>
+    </RadzenStack>
+
+    @if (!IsLuckyMoney && IsGroupConversation)
+    {
+        <RadzenStack Gap="0.25rem">
+            <RadzenLabel Text="群内转账收款人" />
+            <RadzenDropDown TValue="string"
+                            Data="@GroupMemberOptions"
+                            TextProperty="Text"
+                            ValueProperty="Value"
+                            @bind-Value="_recipientWxid"
+                            AllowFiltering="true"
+                            FilterCaseSensitivity="FilterCaseSensitivity.CaseInsensitive"
+                            Placeholder="选择或输入群成员 wxid"
+                            Style="width: 100%;" />
+            <RadzenTextBox @bind-Value="_recipientWxid" Placeholder="也可手动输入收款人 wxid" Style="width: 100%;" />
+        </RadzenStack>
+    }
+
+    <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem">
+        <RadzenStack Gap="0.25rem" Style="flex: 1;">
+            <RadzenLabel Text="金额（元）" />
+            <RadzenNumeric TValue="decimal"
+                           @bind-Value="_amountYuan"
+                           Min="@(0.01m)"
+                           Max="@MaxAmountYuan"
+                           Step="0.01"
+                           Style="width: 100%;" />
+        </RadzenStack>
+
+        @if (IsLuckyMoney)
+        {
+            <RadzenStack Gap="0.25rem" Style="width: 140px;">
+                <RadzenLabel Text="红包个数" />
+                <RadzenNumeric TValue="int" @bind-Value="_number" Min="1" Max="100" Style="width: 100%;" />
+            </RadzenStack>
+        }
+    </RadzenStack>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenLabel Text="支付密码" />
+        <RadzenPassword @bind-Value="_paymentPassword" Placeholder="6 位数字" Style="width: 100%;" />
+    </RadzenStack>
+
+    <RadzenStack Gap="0.25rem">
+        <RadzenLabel Text="@(IsLuckyMoney ? "祝福语" : "转账备注")" />
+        <RadzenTextBox @bind-Value="_note" Placeholder="可选" Style="width: 100%;" />
+    </RadzenStack>
+
+    <RadzenStack Orientation="Orientation.Horizontal" JustifyContent="JustifyContent.End" Gap="0.5rem">
+        <RadzenButton Text="取消" ButtonStyle="ButtonStyle.Light" Click="@(() => DialogService.Close(false))" Disabled="@_isBusy" />
+        <RadzenButton Text="@SubmitText"
+                      Icon="payments"
+                      ButtonStyle="ButtonStyle.Danger"
+                      Click="@SubmitAsync"
+                      IsBusy="@_isBusy" />
+    </RadzenStack>
+</RadzenStack>
+
+@code {
+    /// <summary>
+    /// 操作类型：LuckyMoney 表示发红包，Remittance 表示转账。
+    /// </summary>
+    [Parameter]
+    public string Mode { get; set; } = "LuckyMoney";
+
+    [Parameter]
+    public string DeviceUuid { get; set; } = string.Empty;
+
+    [Parameter]
+    public string TargetId { get; set; } = string.Empty;
+
+    [Parameter]
+    public string TargetDisplayName { get; set; } = string.Empty;
+
+    [Parameter]
+    public bool IsGroupConversation { get; set; }
+
+    private decimal _amountYuan = 1.00m;
+    private int _number = 1;
+    private string _paymentPassword = string.Empty;
+    private string _note = string.Empty;
+    private string _recipientWxid = string.Empty;
+    private bool _isBusy;
+
+    private bool IsLuckyMoney => string.Equals(Mode, "LuckyMoney", StringComparison.OrdinalIgnoreCase);
+    private decimal MaxAmountYuan => IsLuckyMoney ? 200m : 100000m;
+    private string SubmitText => IsLuckyMoney ? "确认发红包" : "确认转账";
+
+    private IEnumerable<MemberOption> GroupMemberOptions => Store.CurrentGroupMembers
+        .Where(member => !string.IsNullOrWhiteSpace(member.memberWxid))
+        .Select(member => new MemberOption
+        {
+            Value = member.memberWxid,
+            Text = $"{FirstNonEmpty(member.memberRemarks, member.alias, member.memberNickname, member.memberWxid)} / {member.memberWxid}"
+        })
+        .OrderBy(item => item.Text);
+
+    protected override void OnInitialized()
+    {
+        TargetDisplayName = FirstNonEmpty(TargetDisplayName, TargetId, "当前会话");
+    }
+
+    private async Task SubmitAsync()
+    {
+        var moneyFen = ToFen(_amountYuan);
+        var recipient = ResolveRecipient();
+
+        if (string.IsNullOrWhiteSpace(DeviceUuid))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "无法执行", "请先选择在线设备。");
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(recipient))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "目标为空", IsLuckyMoney ? "红包接收人为空。" : "转账收款人为空。");
+            return;
+        }
+
+        if (moneyFen <= 0)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "金额无效", "金额必须大于 0。");
+            return;
+        }
+
+        if (IsLuckyMoney && moneyFen > 20000)
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "红包金额超限", "单个红包金额不能超过 200 元。");
+            return;
+        }
+
+        if (!IsValidPaymentPassword(_paymentPassword))
+        {
+            NotificationService.Notify(NotificationSeverity.Warning, "支付密码无效", "支付密码必须为 6 位数字。");
+            return;
+        }
+
+        var confirm = await DialogService.Confirm(
+            $"确认通过【{Store.CurrentExecutionLabel}】{(IsLuckyMoney ? "发送红包" : "执行转账")}？\n\n目标：{recipient}\n金额：{_amountYuan:F2} 元",
+            SubmitText,
+            new ConfirmOptions { OkButtonText = "确认执行", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
+        _isBusy = true;
+        try
+        {
+            TaskResult result = IsLuckyMoney
+                ? await Store.SendLuckyMoneyAsync(recipient, moneyFen, _number, _paymentPassword, _note, DeviceUuid)
+                : await Store.RemittanceAsync(recipient, moneyFen, _paymentPassword, _note, IsGroupConversation ? TargetId : string.Empty, DeviceUuid);
+
+            NotificationService.Notify(
+                result.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                result.success ? "任务已下发" : "任务失败",
+                result.message ?? (result.success ? "等待客户端回执" : "请查看服务端和安卓端日志"));
+
+            if (result.success)
+            {
+                DialogService.Close(true);
+            }
+        }
+        finally
+        {
+            _isBusy = false;
+            _paymentPassword = string.Empty;
+        }
+    }
+
+    private string ResolveRecipient()
+    {
+        if (IsLuckyMoney)
+        {
+            return TargetId?.Trim() ?? string.Empty;
+        }
+
+        return IsGroupConversation
+            ? _recipientWxid.Trim()
+            : TargetId?.Trim() ?? string.Empty;
+    }
+
+    private static int ToFen(decimal yuan)
+    {
+        return (int)Math.Round(yuan * 100m, MidpointRounding.AwayFromZero);
+    }
+
+    private static bool IsValidPaymentPassword(string? passwd)
+    {
+        var value = passwd?.Trim() ?? string.Empty;
+        return value.Length == 6 && value.All(char.IsDigit);
+    }
+
+    private static string FirstNonEmpty(params string?[] values)
+    {
+        foreach (var value in values)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                return value.Trim();
+            }
+        }
+
+        return string.Empty;
+    }
+
+    private sealed class MemberOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+}

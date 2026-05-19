@@ -1,0 +1,768 @@
+﻿@page "/features/add-friend"
+@page "/features/batch-add-friends"
+@page "/features/add-friend-results"
+@using System
+@using System.IO
+@using System.Linq
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Configuration
+@using SCRM.API.Models.Entities
+@using SCRM.UI.Services
+@using Radzen
+@using Radzen.Blazor
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@inject ISystemConfigService SystemConfigService
+@inject IConfiguration Config
+@inject NavigationManager NavManager
+@attribute [Authorize]
+@implements IDisposable
+
+<PageTitle>添加微信好友</PageTitle>
+
+<RadzenStack Gap="1rem" Style="padding: 1rem;">
+    <OperationContextHint Title="添加好友当前执行对象"
+                          Description="添加好友必须通过一个在线微信执行；页面下拉选择会同步顶部当前操作微信/执行设备。"
+                          Class="rz-mb-0" />
+
+    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween">
+        <RadzenStack Gap="0.25rem">
+            <RadzenText Text="添加微信好友" TextStyle="TextStyle.H5" Style="margin: 0;" />
+            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                支持单个或批量添加；请先确认当前操作微信和执行设备。本页面只下发任务，不直接改联系人表；联系人增删最终以安卓端回传并由 DbHelper 相关链路入库为准。
+            </RadzenText>
+        </RadzenStack>
+        <RadzenButton Text="刷新设备" Icon="refresh" ButtonStyle="ButtonStyle.Light" Click="ReloadDevicesAsync" Disabled="@_isSubmitting" />
+    </RadzenStack>
+
+    <RadzenCard>
+        <RadzenStack Gap="1rem">
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="执行设备 / 当前操作微信" />
+                        <RadzenDropDown TValue="string"
+                                        Data="@DeviceOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_deviceUuid"
+                                        Change="@OnExecutionDeviceChanged"
+                                        Placeholder="请选择在线设备"
+                                        Style="width: 100%;" />
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                            当前选中：@SelectedDeviceText。微信账号数据归属于 wxid，设备只是当前执行载体。
+                        </RadzenText>
+                    </RadzenStack>
+                </RadzenColumn>
+
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="添加方式" />
+                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                            <RadzenCheckBox @bind-Value="_useChatRoom" TValue="bool" Name="UseChatRoom" />
+                            <RadzenLabel Text="从群聊里添加好友" Component="UseChatRoom" />
+                        </RadzenStack>
+                        <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                            勾选群聊时走群内添加；否则可选择场景添加、手机号添加、通讯录添加、名片添加或重新发送验证。
+                        </RadzenText>
+                        <RadzenDropDown TValue="int"
+                                        Data="@AddModeOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_addMode"
+                                        Style="width: 100%;"
+                                        Disabled="@_useChatRoom" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            @if (_useChatRoom)
+            {
+                <RadzenStack Gap="0.35rem">
+                    <RadzenLabel Text="群聊 ID / chatroomId" />
+                    <RadzenTextBox @bind-Value="_chatRoomId" Style="width: 100%;" Placeholder="例如：xxxx@chatroom" />
+                </RadzenStack>
+            }
+
+            @if (!_useChatRoom && _addMode == 2)
+            {
+                <RadzenRow Gap="1rem">
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack Gap="0.35rem">
+                            <RadzenLabel Text="通讯录添加数量 Count" />
+                            <RadzenNumeric TValue="int" @bind-Value="_phonebookCount" Min="1" Max="100" Style="width: 100%;" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack Gap="0.35rem">
+                            <RadzenLabel Text="起始索引 Index" />
+                            <RadzenNumeric TValue="int" @bind-Value="_phonebookIndex" Min="0" Style="width: 100%;" />
+                        </RadzenStack>
+                    </RadzenColumn>
+                    <RadzenColumn Size="12" SizeMD="4">
+                        <RadzenStack Gap="0.35rem">
+                            <RadzenLabel Text="Reset 协议字段" />
+                            <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                                <RadzenCheckBox @bind-Value="_phonebookReset" TValue="bool" Name="PhonebookReset" />
+                                <RadzenLabel Text="下发 Reset=true" Component="PhonebookReset" />
+                            </RadzenStack>
+                            <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">62203/当前 Android 分发层暂未确认读取 Reset，只保留协议兼容。</RadzenText>
+                        </RadzenStack>
+                    </RadzenColumn>
+                </RadzenRow>
+            }
+
+            <RadzenStack Gap="0.35rem">
+                <RadzenLabel Text="@TargetInputLabel" />
+                <RadzenTextArea @bind-Value="_friendInput"
+                                Rows="7"
+                                Style="width: 100%;"
+                                Placeholder="@TargetInputPlaceholder"
+                                Disabled="@(!_useChatRoom && _addMode == 2)" />
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                    @TargetInputHint
+                </RadzenText>
+            </RadzenStack>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="验证消息" />
+                        <RadzenTextArea @bind-Value="_message" Rows="3" Style="width: 100%;" Placeholder="例如：你好" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="6">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="备注名" />
+                        <RadzenTextBox @bind-Value="_remark" Style="width: 100%;" Placeholder="可选：添加后设置的备注" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenRow Gap="1rem">
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="标签" />
+                        <RadzenTextBox @bind-Value="_label" Style="width: 100%;" Placeholder="可选：标签名或标签ID" Disabled="@_useChatRoom" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="添加场景 / 方式" />
+                        <RadzenDropDown TValue="int"
+                                        Data="@SceneOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_scene"
+                                        Style="width: 100%;"
+                                        Disabled="@(_useChatRoom || _addMode != 0)" />
+                    </RadzenStack>
+                </RadzenColumn>
+                <RadzenColumn Size="12" SizeMD="4">
+                    <RadzenStack Gap="0.35rem">
+                        <RadzenLabel Text="权限位 permission" />
+                        <RadzenDropDown TValue="int"
+                                        Data="@PermissionOptions"
+                                        TextProperty="Text"
+                                        ValueProperty="Value"
+                                        @bind-Value="_permission"
+                                        Style="width: 100%;" />
+                    </RadzenStack>
+                </RadzenColumn>
+            </RadzenRow>
+
+            <RadzenStack Gap="0.35rem">
+                <RadzenLabel Text="验证申请图片路径" />
+                <RadzenTextBox @bind-Value="_verificationImagePath" Style="width: 100%;" Placeholder="可选：安卓端可访问的本地路径或已上传图片路径" Disabled="@(_useChatRoom || _addMode != 0)" />
+                <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="0.75rem">
+                    <InputFile OnChange="UploadVerificationImageAsync" accept="image/*" disabled="@(_useChatRoom || _addMode != 0 || _isSubmitting || _isUploadingImage)" />
+                    @if (_isUploadingImage)
+                    {
+                        <RadzenText TextStyle="TextStyle.Caption">正在上传图片...</RadzenText>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(_verificationImagePath))
+                    {
+                        <RadzenButton Text="清除图片" Icon="close" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small" Click="ClearUploadedImage" Disabled="@_isSubmitting" />
+                    }
+                </RadzenStack>
+                @if (!string.IsNullOrWhiteSpace(_uploadedImageName))
+                {
+                    <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                        已上传：@_uploadedImageName
+                    </RadzenText>
+                }
+                @if (!string.IsNullOrWhiteSpace(_verificationImagePath))
+                {
+                    <RadzenImage Path="@_verificationImagePath" Style="max-width: 160px; max-height: 120px; border-radius: 6px; border: 1px solid var(--rz-border-color);" />
+                }
+                <RadzenText TextStyle="TextStyle.Caption" Class="rz-color-secondary">
+                    可直接选择本地图片，网页会先上传到服务端，再由安卓端下载为本地文件后尝试随好友验证申请上传；这不是好友资料页里的“备注图片/描述图片”。8067/62203 高版本当前会优先保证加好友主链稳定，安卓端可能降级跳过图片附加。群内添加好友模式暂不使用。
+                </RadzenText>
+            </RadzenStack>
+
+            <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" AlignItems="AlignItems.Center">
+                <RadzenButton Text="下发添加好友任务" Icon="person_add" ButtonStyle="ButtonStyle.Primary" Click="SubmitAsync" Disabled="@_isSubmitting" />
+                <RadzenButton Text="清空" Icon="clear" ButtonStyle="ButtonStyle.Light" Click="ClearForm" Disabled="@_isSubmitting" />
+                @if (_isSubmitting)
+                {
+                    <RadzenText TextStyle="TextStyle.Caption">正在下发任务，请稍候...</RadzenText>
+                }
+            </RadzenStack>
+        </RadzenStack>
+    </RadzenCard>
+
+    <RadzenCard>
+        <RadzenStack Gap="0.5rem">
+            <RadzenText Text="本次下发结果" TextStyle="TextStyle.H6" Style="margin: 0;" />
+            <RadzenDataGrid Data="@_results" TItem="AddFriendDispatchResult" AllowPaging="true" PageSize="10" EmptyText="暂无本次页面下发记录">
+                <Columns>
+                    <RadzenDataGridColumn TItem="AddFriendDispatchResult" Property="Time" Title="时间" FormatString="{0:HH:mm:ss}" Width="100px" />
+                    <RadzenDataGridColumn TItem="AddFriendDispatchResult" Property="Device" Title="设备" Width="220px" />
+                    <RadzenDataGridColumn TItem="AddFriendDispatchResult" Property="Target" Title="目标" Width="220px" />
+                    <RadzenDataGridColumn TItem="AddFriendDispatchResult" Property="Mode" Title="方式" Width="120px" />
+                    <RadzenDataGridColumn TItem="AddFriendDispatchResult" Title="状态" Width="100px">
+                        <Template Context="data">
+                            <RadzenBadge BadgeStyle="@(data.Success ? BadgeStyle.Success : BadgeStyle.Danger)" Text="@(data.Success ? "已下发" : "失败")" />
+                        </Template>
+                    </RadzenDataGridColumn>
+                    <RadzenDataGridColumn TItem="AddFriendDispatchResult" Property="Message" Title="说明" />
+                </Columns>
+            </RadzenDataGrid>
+        </RadzenStack>
+    </RadzenCard>
+</RadzenStack>
+
+@code {
+    private string _deviceUuid = string.Empty;
+    private string _friendInput = string.Empty;
+    private string _chatRoomId = string.Empty;
+    private string _message = "你好";
+    private string _remark = string.Empty;
+    private string _label = string.Empty;
+    private string _verificationImagePath = string.Empty;
+    private string _uploadedImageName = string.Empty;
+    private string _httpApiBaseUrl = string.Empty;
+    private int _addMode = 0;
+    private int _scene = 0;
+    private int _permission = 0;
+    private int _phonebookCount = 1;
+    private int _phonebookIndex = 0;
+    private bool _phonebookReset;
+    private bool _useChatRoom;
+    private bool _isSubmitting;
+    private bool _isUploadingImage;
+    private readonly List<AddFriendDispatchResult> _results = new();
+    private const long MaxVerificationImageSize = 20 * 1024 * 1024;
+
+    private List<string> ParsedTargets => ParseTargets(_friendInput);
+
+    private bool IsPhonebookMode => !_useChatRoom && _addMode == 2;
+
+    private string TargetInputLabel => IsPhonebookMode
+        ? "通讯录模式不需要填写目标"
+        : _addMode switch
+        {
+            1 => "手机号",
+            3 => "名片消息 MsgSvrId",
+            4 => "好友 wxid",
+            _ => "好友微信号 / wxid / 手机号"
+        };
+
+    private string TargetInputPlaceholder => IsPhonebookMode
+        ? "通讯录模式按 Count/Index 从手机通讯录添加"
+        : _addMode switch
+        {
+            1 => "支持批量手机号：每行一个，也支持逗号、分号、空格分隔",
+            3 => "请输入名片消息 MsgSvrId；批量时每行一个",
+            4 => "请输入需要重新发送验证的好友 wxid；批量时每行一个",
+            _ => "支持批量输入：每行一个，也支持逗号、分号、空格分隔"
+        };
+
+    private string TargetInputHint => IsPhonebookMode
+        ? "通讯录模式会下发 AddFriendFromPhonebookTask，联系人最终以安卓端回传为准。"
+        : $"已解析目标数：{ParsedTargets.Count}";
+
+    private IEnumerable<DeviceOption> DeviceOptions => Store.Devices
+        .OrderByDescending(IsDeviceUsableForWechatTask)
+        .ThenByDescending(device => device.isOnline)
+        .ThenBy(device => BuildDeviceText(device))
+        .Select(device => new DeviceOption
+        {
+            Value = device.uuid,
+            Text = BuildDeviceText(device)
+        });
+
+    private IEnumerable<PermissionOption> PermissionOptions => new[]
+    {
+        new PermissionOption { Value = 0, Text = "默认权限" },
+        new PermissionOption { Value = 8, Text = "仅聊天" },
+        new PermissionOption { Value = 2, Text = "不让他看我朋友圈" },
+        new PermissionOption { Value = 1, Text = "不看他朋友圈" },
+        new PermissionOption { Value = 3, Text = "互不看朋友圈" }
+    };
+
+    private IEnumerable<AddModeOption> AddModeOptions => new[]
+    {
+        new AddModeOption { Value = 0, Text = "按场景添加（wxid/微信号）" },
+        new AddModeOption { Value = 1, Text = "手机号加好友 AddFriendsTask" },
+        new AddModeOption { Value = 2, Text = "通讯录加好友 AddFriendFromPhonebookTask" },
+        new AddModeOption { Value = 3, Text = "名片加好友 AddFriendNameCardTask" },
+        new AddModeOption { Value = 4, Text = "重新发送好友验证 SendFriendVerifyTask" }
+    };
+
+    private IEnumerable<SceneOption> SceneOptions => new[]
+    {
+        new SceneOption { Value = 0, Text = "自动判断（推荐：手机号自动走手机号场景）" },
+        new SceneOption { Value = 1, Text = "来源 14" },
+        new SceneOption { Value = 2, Text = "来源 13" },
+        new SceneOption { Value = 3, Text = "来源 17" },
+        new SceneOption { Value = 4, Text = "来源 18" }
+    };
+
+    private string SelectedDeviceText => string.IsNullOrWhiteSpace(_deviceUuid)
+        ? "未选择设备"
+        : BuildDeviceText(Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid));
+
+    protected override async Task OnInitializedAsync()
+    {
+        Store.OnChange += HandleChange;
+        await Store.InitializeAsync();
+        await LoadUploadBaseUrlAsync();
+        ResolveAddFriendDevice(notifyWhenSwitched: false);
+    }
+
+    public void Dispose()
+    {
+        Store.OnChange -= HandleChange;
+    }
+
+    private async void HandleChange()
+    {
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task ReloadDevicesAsync()
+    {
+        await Store.LoadDevicesAsync();
+        ResolveAddFriendDevice(notifyWhenSwitched: true);
+    }
+
+    private async Task OnExecutionDeviceChanged(object value)
+    {
+        var deviceUuid = value?.ToString();
+        if (string.IsNullOrWhiteSpace(deviceUuid))
+        {
+            return;
+        }
+
+        var device = Store.Devices.FirstOrDefault(item => item.uuid == deviceUuid);
+        if (device != null)
+        {
+            await Store.SelectDeviceAsync(device);
+        }
+    }
+
+    private async Task SubmitAsync()
+    {
+        var targets = ParsedTargets;
+        if (!IsPhonebookMode && !targets.Any())
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "请至少输入一个目标。 ");
+            return;
+        }
+
+        await Store.LoadDevicesAsync();
+        var device = ResolveAddFriendDevice(notifyWhenSwitched: true);
+        if (device == null)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "无可用设备", "请先让安卓端和微信都保持在线，再下发添加好友任务。 ");
+            return;
+        }
+
+        if (_useChatRoom && string.IsNullOrWhiteSpace(_chatRoomId))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "参数不完整", "群内添加好友需要填写 chatroomId。 ");
+            return;
+        }
+
+        _isSubmitting = true;
+        try
+        {
+            if (Store.SelectedDevice?.uuid != device.uuid)
+            {
+                await Store.SelectDeviceAsync(device);
+            }
+
+            if (IsPhonebookMode)
+            {
+                var phonebookResult = await Store.AddFriendFromPhonebookOnDeviceAsync(
+                    device.uuid,
+                    NormalizeMessage(),
+                    _phonebookCount,
+                    _phonebookIndex,
+                    _phonebookReset);
+                _results.Insert(0, new AddFriendDispatchResult
+                {
+                    Time = DateTime.Now,
+                    Device = BuildDeviceText(device),
+                    Target = $"通讯录 Count={_phonebookCount}, Index={_phonebookIndex}",
+                    Mode = "通讯录添加",
+                    Success = phonebookResult.success,
+                    Message = phonebookResult.success
+                        ? $"通讯录加好友任务已下发；联系人列表以后续安卓端上报为准。TaskId={phonebookResult.taskId}"
+                        : $"任务下发失败：{phonebookResult.message}"
+                });
+
+                NoticeService.Notify(
+                    phonebookResult.success ? NotificationSeverity.Success : NotificationSeverity.Error,
+                    phonebookResult.success ? "指令已下发" : "下发失败",
+                    phonebookResult.message ?? (phonebookResult.success ? "通讯录加好友任务已下发。" : "通讯录加好友任务下发失败。"));
+                return;
+            }
+
+            var successCount = 0;
+            foreach (var target in targets)
+            {
+                var result = await DispatchTargetAsync(device.uuid, target);
+                var success = result.success;
+
+                if (success)
+                {
+                    successCount++;
+                }
+
+                _results.Insert(0, new AddFriendDispatchResult
+                {
+                    Time = DateTime.Now,
+                    Device = BuildDeviceText(device),
+                    Target = target,
+                    Mode = CurrentModeText,
+                    Success = success,
+                    Message = success
+                        ? $"申请已提交，等待对方验证；联系人列表以后续安卓端上报为准。TaskId={result.taskId}"
+                        : $"任务下发失败：{result.message}"
+                });
+
+                await InvokeAsync(StateHasChanged);
+                if (targets.Count > 1)
+                {
+                    await Task.Delay(300);
+                }
+            }
+
+            var severity = successCount == targets.Count ? NotificationSeverity.Success : NotificationSeverity.Warning;
+            NoticeService.Notify(severity, "申请已提交", $"已成功提交 {successCount}/{targets.Count} 个好友相关任务；通过验证后会自动触发联系人同步。 ");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private string CurrentModeText => _useChatRoom
+        ? "群内添加"
+        : _addMode switch
+        {
+            1 => "手机号添加",
+            2 => "通讯录添加",
+            3 => "名片添加",
+            4 => "重发验证",
+            _ => "场景添加"
+        };
+
+    private async Task<SCRM.SHARED.Models.Dtos.TaskResult> DispatchTargetAsync(string deviceUuid, string target)
+    {
+        if (_useChatRoom)
+        {
+            return await Store.AddFriendInChatRoomOnDeviceAsync(deviceUuid, _chatRoomId.Trim(), target, NormalizeMessage(), _remark.Trim(), _permission);
+        }
+
+        return _addMode switch
+        {
+            1 => await Store.AddFriendsByPhoneOnDeviceAsync(deviceUuid, new[] { target }, NormalizeMessage(), _remark.Trim(), _label.Trim(), _permission),
+            3 => long.TryParse(target, out var msgSvrId)
+                ? await Store.AddFriendNameCardOnDeviceAsync(deviceUuid, msgSvrId, NormalizeMessage(), _remark.Trim())
+                : SCRM.SHARED.Models.Dtos.TaskResult.Fail($"MsgSvrId 格式不正确：{target}"),
+            4 => await Store.SendFriendVerifyOnDeviceAsync(deviceUuid, target, NormalizeMessage()),
+            _ => await Store.AddFriendWithSceneOnDeviceAsync(deviceUuid, target, NormalizeMessage(), _remark.Trim(), _label.Trim(), _scene, _permission, _verificationImagePath.Trim())
+        };
+    }
+
+
+    /// <summary>
+    /// 判断设备是否可执行微信任务。
+    /// <para>添加好友依赖安卓端在线且微信账号已登录；只看旧的 SelectedDevice 容易选中离线历史设备。</para>
+    /// </summary>
+    private static bool IsDeviceUsableForWechatTask(SrClient? device)
+    {
+        return device != null
+            && device.isOnline
+            && !string.IsNullOrWhiteSpace(device.weChatId)
+            && device.wx?.wechatAccount?.accountStatus == 1;
+    }
+
+    /// <summary>
+    /// 解析添加好友可用设备。
+    /// <para>优先保留当前下拉选中的在线微信设备；否则自动切换到第一个在线且已登录微信的设备。</para>
+    /// </summary>
+    private SrClient? ResolveAddFriendDevice(bool notifyWhenSwitched)
+    {
+        var current = Store.Devices.FirstOrDefault(device => device.uuid == _deviceUuid);
+        if (IsDeviceUsableForWechatTask(current))
+        {
+            return current;
+        }
+
+        var selected = IsDeviceUsableForWechatTask(Store.SelectedDevice)
+            ? Store.SelectedDevice
+            : null;
+        var fallback = selected ?? Store.Devices.FirstOrDefault(IsDeviceUsableForWechatTask);
+        if (fallback == null)
+        {
+            _deviceUuid = string.Empty;
+            return null;
+        }
+
+        var changed = !string.Equals(_deviceUuid, fallback.uuid, StringComparison.OrdinalIgnoreCase);
+        _deviceUuid = fallback.uuid;
+        if (changed && notifyWhenSwitched)
+        {
+            NoticeService.Notify(NotificationSeverity.Info, "已切换设备", $"已自动选择在线微信设备：{BuildDeviceText(fallback)}");
+        }
+
+        return fallback;
+    }
+
+    private string NormalizeMessage()
+    {
+        return string.IsNullOrWhiteSpace(_message) ? "你好" : _message.Trim();
+    }
+
+    private void ClearForm()
+    {
+        _friendInput = string.Empty;
+        _chatRoomId = string.Empty;
+        _message = "你好";
+        _remark = string.Empty;
+        _label = string.Empty;
+        _verificationImagePath = string.Empty;
+        _uploadedImageName = string.Empty;
+        _addMode = 0;
+        _scene = 0;
+        _permission = 0;
+        _phonebookCount = 1;
+        _phonebookIndex = 0;
+        _phonebookReset = false;
+        _useChatRoom = false;
+    }
+
+    private async Task UploadVerificationImageAsync(InputFileChangeEventArgs args)
+    {
+        var file = args.File;
+        if (file == null)
+        {
+            return;
+        }
+
+        if (file.Size <= 0)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "图片无效", "请选择有效图片文件。");
+            return;
+        }
+
+        if (file.Size > MaxVerificationImageSize)
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "图片过大", "验证申请图片不能超过 20MB。");
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(file.ContentType) && !file.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "类型不支持", "请选择图片文件。");
+            return;
+        }
+
+        _isUploadingImage = true;
+        try
+        {
+            var storePath = Config["FileUploadSettings:StorePath"];
+            if (string.IsNullOrWhiteSpace(storePath))
+            {
+                storePath = "wwwroot/uploads";
+            }
+
+            var uploadRoot = Path.IsPathRooted(storePath)
+                ? storePath
+                // Blazor Server 运行时 Directory.GetCurrentDirectory() 为 SCRM.API 内容根目录。
+                : Path.Combine(Directory.GetCurrentDirectory(), storePath);
+
+            var subDir = Path.Combine("web", "addfriend");
+            var uploadDir = Path.Combine(uploadRoot, subDir);
+            Directory.CreateDirectory(uploadDir);
+
+            var extension = Path.GetExtension(file.Name);
+            if (string.IsNullOrWhiteSpace(extension))
+            {
+                extension = InferImageExtension(file.ContentType);
+            }
+
+            var fileName = $"{DateTime.UtcNow.Ticks}_{Guid.NewGuid():N}{extension}";
+            var filePath = Path.Combine(uploadDir, fileName);
+
+            await using (var stream = File.Create(filePath))
+            await using (var readStream = file.OpenReadStream(MaxVerificationImageSize))
+            {
+                await readStream.CopyToAsync(stream);
+            }
+
+            var requestPrefix = Config["FileUploadSettings:RequestUrlPrefix"] ?? "uploads";
+            requestPrefix = requestPrefix.Trim('/');
+            var relativeUrl = $"{requestPrefix}/web/addfriend/{fileName}".Replace("\\", "/");
+            _verificationImagePath = BuildAbsoluteUploadUrl(relativeUrl);
+            _uploadedImageName = file.Name;
+
+            NoticeService.Notify(NotificationSeverity.Success, "图片已上传", "已自动填入验证申请图片路径。");
+        }
+        catch (Exception ex)
+        {
+            NoticeService.Notify(NotificationSeverity.Error, "上传失败", ex.Message);
+        }
+        finally
+        {
+            _isUploadingImage = false;
+        }
+    }
+
+    private void ClearUploadedImage()
+    {
+        _verificationImagePath = string.Empty;
+        _uploadedImageName = string.Empty;
+    }
+
+    /// <summary>
+    /// 读取安卓端可访问的 HTTP 基础地址。
+    /// 优先使用系统设置里的 httpApiBaseUrl，避免浏览器用 localhost 打开页面时，安卓端下载图片也拿到 localhost。
+    /// </summary>
+    private async Task LoadUploadBaseUrlAsync()
+    {
+        try
+        {
+            var apiBaseConfig = await SystemConfigService.GetConfigByKeyAsync("httpApiBaseUrl");
+            _httpApiBaseUrl = apiBaseConfig?.value?.Trim() ?? string.Empty;
+        }
+        catch
+        {
+            _httpApiBaseUrl = string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(_httpApiBaseUrl))
+        {
+            _httpApiBaseUrl = Config["ApiSettings:BaseUrl"]?.Trim() ?? string.Empty;
+        }
+
+        if (string.IsNullOrWhiteSpace(_httpApiBaseUrl))
+        {
+            _httpApiBaseUrl = NavManager.BaseUri;
+        }
+    }
+
+    /// <summary>
+    /// 拼出图片访问 URL。这里生成的 URL 会下发给安卓端，所以不能盲目使用网页当前地址。
+    /// </summary>
+    private string BuildAbsoluteUploadUrl(string relativeUrl)
+    {
+        var baseUrl = string.IsNullOrWhiteSpace(_httpApiBaseUrl) ? NavManager.BaseUri : _httpApiBaseUrl;
+        if (!baseUrl.EndsWith("/", StringComparison.Ordinal))
+        {
+            baseUrl += "/";
+        }
+
+        return new Uri(new Uri(baseUrl), relativeUrl.TrimStart('/')).ToString();
+    }
+
+    private static string InferImageExtension(string? contentType)
+    {
+        return contentType?.ToLowerInvariant() switch
+        {
+            "image/png" => ".png",
+            "image/gif" => ".gif",
+            "image/webp" => ".webp",
+            "image/bmp" => ".bmp",
+            _ => ".jpg"
+        };
+    }
+
+    private static List<string> ParseTargets(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return new List<string>();
+        }
+
+        return input
+            .Split(new[] { '\r', '\n', ',', '，', ';', '；', ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+    }
+
+    private static string BuildDeviceText(SrClient? device)
+    {
+        if (device == null)
+        {
+            return "未知设备";
+        }
+
+        var name = device.wx?.wechatAccount?.nickname;
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.weChatId;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.device?.PhoneModel;
+        }
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            name = device.uuid;
+        }
+
+        var shortUuid = device.uuid.Length > 8 ? $"{device.uuid[..8]}..." : device.uuid;
+        return $"{name} / {shortUuid} / {(device.isOnline ? "在线" : "离线")}";
+    }
+
+    private sealed class DeviceOption
+    {
+        public string Value { get; set; } = string.Empty;
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class PermissionOption
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class SceneOption
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class AddModeOption
+    {
+        public int Value { get; set; }
+        public string Text { get; set; } = string.Empty;
+    }
+
+    private sealed class AddFriendDispatchResult
+    {
+        public DateTime Time { get; set; }
+        public string Device { get; set; } = string.Empty;
+        public string Target { get; set; } = string.Empty;
+        public string Mode { get; set; } = string.Empty;
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+}

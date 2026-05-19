@@ -247,6 +247,91 @@ namespace SCRM.API.Migrations
                     b.ToTable("app_versions", (string)null);
                 });
 
+            modelBuilder.Entity("SCRM.API.Models.Entities.CallLogRecord", b =>
+                {
+                    b.Property<int>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("Id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
+
+                    b.Property<int>("blockType")
+                        .HasColumnType("integer")
+                        .HasColumnName("BlockType");
+
+                    b.Property<int>("callLogId")
+                        .HasColumnType("integer")
+                        .HasColumnName("CallLogId");
+
+                    b.Property<DateTime>("callTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CallTime");
+
+                    b.Property<DateTime>("createdAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<int>("durationSeconds")
+                        .HasColumnType("integer")
+                        .HasColumnName("DurationSeconds");
+
+                    b.Property<string>("imei")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Imei");
+
+                    b.Property<string>("number")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Number");
+
+                    b.Property<string>("ownerWxid")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("OwnerWxid");
+
+                    b.Property<long>("rawDate")
+                        .HasColumnType("bigint")
+                        .HasColumnName("RawDate");
+
+                    b.Property<string>("recordUrl")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("RecordUrl");
+
+                    b.Property<int>("simId")
+                        .HasColumnType("integer")
+                        .HasColumnName("SimId");
+
+                    b.Property<string>("source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Source");
+
+                    b.Property<int>("type")
+                        .HasColumnType("integer")
+                        .HasColumnName("Type");
+
+                    b.Property<DateTime>("updatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("callTime");
+
+                    b.HasIndex("ownerWxid", "imei", "callLogId");
+
+                    b.HasIndex("ownerWxid", "imei", "rawDate", "number", "type");
+
+                    b.ToTable("CallLogRecords", (string)null);
+                });
+
             modelBuilder.Entity("SCRM.API.Models.Entities.Contact", b =>
                 {
                     b.Property<int>("id")
@@ -644,6 +729,63 @@ namespace SCRM.API.Migrations
                     b.ToTable("Conversations");
                 });
 
+            modelBuilder.Entity("SCRM.API.Models.Entities.FinderResultHistory", b =>
+                {
+                    b.Property<long>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("id"));
+
+                    b.Property<DateTime>("createdAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("deviceUuid")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ownerKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("payloadJson")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<DateTime>("receivedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("resultType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("success")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("summary")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<long>("taskId")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("weChatId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("ownerKey", "resultType", "receivedAt");
+
+                    b.HasIndex("ownerKey", "resultType", "taskId");
+
+                    b.ToTable("FinderResultHistory", (string)null);
+                });
+
             modelBuilder.Entity("SCRM.API.Models.Entities.FriendDetectionLog", b =>
                 {
                     b.Property<int>("id")
@@ -948,6 +1090,11 @@ namespace SCRM.API.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
 
+                    b.Property<string>("chatRoomId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("ChatRoomId");
+
                     b.Property<DateTime>("createdAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("CreatedAt");
@@ -969,6 +1116,18 @@ namespace SCRM.API.Migrations
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("InvitationTime");
 
+                    b.Property<string>("inviteName")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("InviteName");
+
+                    b.Property<string>("invitedJson")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("jsonb")
+                        .HasDefaultValue("[]")
+                        .HasColumnName("InvitedJson");
+
                     b.Property<string>("inviteeWxid")
                         .IsRequired()
                         .HasColumnType("text")
@@ -979,15 +1138,52 @@ namespace SCRM.API.Migrations
                         .HasColumnType("text")
                         .HasColumnName("InviterWxid");
 
+                    b.Property<long>("msgId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("MsgId");
+
+                    b.Property<long>("msgSvrId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("MsgSvrId");
+
+                    b.Property<string>("reason")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Reason");
+
                     b.Property<DateTime>("responseTime")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("ResponseTime");
+
+                    b.Property<string>("source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Source");
+
+                    b.Property<long>("taskId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("TaskId");
+
+                    b.Property<long>("updateTime")
+                        .HasColumnType("bigint")
+                        .HasColumnName("UpdateTime");
 
                     b.Property<DateTime>("updatedAt")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("UpdatedAt");
 
+                    b.Property<string>("weChatId")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("WeChatId");
+
                     b.HasKey("id");
+
+                    b.HasIndex("weChatId", "invitationStatus");
+
+                    b.HasIndex("weChatId", "msgId");
+
+                    b.HasIndex("weChatId", "chatRoomId", "updateTime");
 
                     b.ToTable("GroupInvitations");
                 });
@@ -2830,6 +3026,111 @@ namespace SCRM.API.Migrations
                     b.HasKey("id");
 
                     b.ToTable("ServerRedirects");
+                });
+
+            modelBuilder.Entity("SCRM.API.Models.Entities.SmsRecord", b =>
+                {
+                    b.Property<int>("id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasColumnName("Id");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("id"));
+
+                    b.Property<int>("blockType")
+                        .HasColumnType("integer")
+                        .HasColumnName("BlockType");
+
+                    b.Property<string>("content")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Content");
+
+                    b.Property<DateTime>("createdAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("CreatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.Property<string>("imei")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Imei");
+
+                    b.Property<bool>("isRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("IsRead");
+
+                    b.Property<bool>("isSentNoticeReceived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("IsSentNoticeReceived");
+
+                    b.Property<string>("number")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Number");
+
+                    b.Property<string>("ownerWxid")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("OwnerWxid");
+
+                    b.Property<long>("rawDate")
+                        .HasColumnType("bigint")
+                        .HasColumnName("RawDate");
+
+                    b.Property<DateTime?>("readAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("ReadAt");
+
+                    b.Property<DateTime?>("sentNoticeAt")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("SentNoticeAt");
+
+                    b.Property<int>("sentNoticeType")
+                        .HasColumnType("integer")
+                        .HasColumnName("SentNoticeType");
+
+                    b.Property<int>("simId")
+                        .HasColumnType("integer")
+                        .HasColumnName("SimId");
+
+                    b.Property<int>("smsId")
+                        .HasColumnType("integer")
+                        .HasColumnName("SmsId");
+
+                    b.Property<DateTime>("smsTime")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("SmsTime");
+
+                    b.Property<string>("source")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("Source");
+
+                    b.Property<int>("threadId")
+                        .HasColumnType("integer")
+                        .HasColumnName("ThreadId");
+
+                    b.Property<int>("type")
+                        .HasColumnType("integer")
+                        .HasColumnName("Type");
+
+                    b.Property<DateTime>("updatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("UpdatedAt")
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
+
+                    b.HasKey("id");
+
+                    b.HasIndex("smsTime");
+
+                    b.HasIndex("ownerWxid", "imei", "smsId");
+
+                    b.HasIndex("ownerWxid", "imei", "threadId", "rawDate");
+
+                    b.ToTable("SmsRecords", (string)null);
                 });
 
             modelBuilder.Entity("SCRM.API.Models.Entities.SrClient", b =>

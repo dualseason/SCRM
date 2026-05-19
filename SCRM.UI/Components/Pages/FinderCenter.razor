@@ -1,0 +1,5489 @@
+@page "/finder"
+
+
+
+@using System
+
+
+
+@using Radzen
+
+
+
+@using Radzen.Blazor
+
+
+
+@using System.Linq
+
+
+
+@using System.Text.Json
+
+
+
+@using Microsoft.JSInterop
+
+
+
+@using SCRM.API.Models.Entities
+
+
+
+@using SCRM.SHARED.Models.Dtos
+
+
+
+@using SCRM.UI.Services
+
+
+
+@inject CrmStore Store
+
+
+
+@inject NotificationService NoticeService
+
+
+
+@inject IJSRuntime JS
+
+
+
+@inject DialogService DialogService
+
+
+
+@implements IAsyncDisposable
+
+
+
+
+
+
+
+<PageTitle>视频号中心</PageTitle>
+
+
+
+
+
+
+
+<RadzenRow Gap="0" Style="height: calc(100vh - 56px); margin: 0; background: var(--rz-base-100); overflow: hidden;">
+
+
+
+    <RadzenColumn Size="3" SizeMD="2" Style="background: var(--rz-base-0); border-right: 1px solid var(--rz-border-color); overflow-y: auto;">
+
+
+
+        <RadzenListBox Data="@Store.Devices" Value="@Store.SelectedDevice" TValue="SrClient"
+
+
+
+                       Change="@(EventCallback.Factory.Create<object>(this, OnDeviceChange))"
+
+
+
+                       Style="height: 100%; width: 100%; border: none; text-align: center; background-color: transparent;">
+
+
+
+            <Template Context="device">
+
+
+
+                @{
+
+
+
+                    bool isDeviceOnline = device.isOnline;
+
+
+
+                    bool isWxOnline = isDeviceOnline && (device.wx?.wechatAccount?.accountStatus == 1);
+
+
+
+                    string dotColor = !isDeviceOnline ? "var(--rz-danger)" : (isWxOnline ? "var(--rz-success)" : "var(--rz-warning)");
+
+
+
+                    string statusText = !isDeviceOnline ? "离线" : (isWxOnline ? "微信在线" : "设备在线");
+
+
+
+                }
+
+
+
+                <RadzenStack Orientation="Orientation.Vertical" AlignItems="AlignItems.Center" Gap="2px" Style="width: 100%; overflow: hidden; padding-top: 5px; padding-bottom: 5px;">
+
+
+
+                    <div title="@(device.wx?.wechatAccount?.nickname ?? device.device?.PhoneModel ?? "Device")" style="position: relative; display: inline-block;">
+
+
+
+                        @if (!string.IsNullOrEmpty(device.wx?.wechatAccount?.avatarUrl))
+
+
+
+                        {
+
+
+
+                            <RadzenImage Path="@(device.wx?.wechatAccount?.avatarUrl)" Style="width: 40px; height: 40px; border-radius: 6px; object-fit: cover;" />
+
+
+
+                        }
+
+
+
+                        else
+
+
+
+                        {
+
+
+
+                            <RadzenIcon Icon="smartphone" Style="font-size: 24px; width: 40px; height: 40px; background-color: var(--rz-base-200); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: var(--rz-text-secondary-color);" />
+
+
+
+                        }
+
+
+
+                        <span style="position: absolute; bottom: -2px; right: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--rz-base-0); background-color: @dotColor;"></span>
+
+
+
+                    </div>
+
+
+
+
+
+
+
+                    <RadzenText TextStyle="TextStyle.Caption" Style="@($"font-size: 10px; line-height: 1.2; font-weight: bold; color: {dotColor}")">
+
+
+
+                        @statusText
+
+
+
+                    </RadzenText>
+
+
+
+
+
+
+
+                    <RadzenText TextStyle="TextStyle.Caption"
+
+
+
+                                Style="font-size: 10px; line-height: 1.2; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;"
+
+
+
+                                Text="@(string.IsNullOrEmpty(device.wx?.wechatAccount?.nickname) ? "未登录" : device.wx?.wechatAccount?.nickname)" />
+
+
+
+                </RadzenStack>
+
+
+
+            </Template>
+
+
+
+        </RadzenListBox>
+
+
+
+    </RadzenColumn>
+
+
+
+
+
+
+
+    <RadzenColumn Size="9" SizeMD="10" Style="padding: 1rem; overflow-y: auto; height: 100%;">
+
+
+
+        @if (Store.SelectedDevice == null)
+
+
+
+        {
+
+
+
+            <RadzenCard Class="rz-p-5 rz-text-align-center" Style="background: var(--rz-base-0); max-width: 720px; margin: 0 auto;">
+
+
+
+                <RadzenIcon Icon="videocam" Style="font-size: 3rem; color: var(--rz-text-disabled-color);" />
+
+
+
+                <RadzenText TextStyle="TextStyle.H6" Class="rz-mt-4">请选择一个设备以操作视频号能力</RadzenText>
+
+
+
+            </RadzenCard>
+
+
+
+        }
+
+
+
+        else
+
+
+
+        {
+
+
+
+            <RadzenStack Gap="1rem" Style="max-width: 1080px; margin: 0 auto;">
+
+
+
+                <OperationContextHint Title="视频号当前操作"
+                                      Description="视频号任务按当前微信执行；如果微信换到另一台设备登录，请先在顶部或左侧切换执行设备。"
+                                      Class="rz-mb-0" />
+
+                <RadzenCard>
+
+
+
+                    <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="1rem" Wrap="FlexWrap.Wrap">
+
+
+
+                        <div>
+
+
+
+                            <RadzenText TextStyle="TextStyle.H5" Class="rz-mb-0">视频号中心</RadzenText>
+
+
+
+                            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">
+
+
+
+                                当前设备：@GetSelectedDeviceLabel()
+
+
+
+                            </RadzenText>
+
+
+
+                        </div>
+
+
+
+                        <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0;">
+
+
+
+                            `SphLikeTask / SphDelCommentTask` 当前安卓侧仍按 62203 口径显式返回“功能未实现”。
+                            为避免继续表现为“点击无反应”，本页先将点赞 / 删评入口降级为只读提示，待 SmRun 底层能力真正补齐后再恢复下发。
+
+
+
+                        </RadzenAlert>
+
+
+
+                    </RadzenStack>
+
+
+
+                </RadzenCard>
+
+
+
+
+
+
+
+                @if (!string.IsNullOrWhiteSpace(_lastOperation))
+
+
+
+                {
+
+
+
+                    <RadzenAlert AlertStyle="@(_lastSuccess ? AlertStyle.Success : AlertStyle.Danger)" Variant="Variant.Flat" ShowIcon="true">
+
+
+
+                        <b>@_lastOperation</b>
+
+
+
+                        <div>@_lastMessage</div>
+
+
+
+                    </RadzenAlert>
+
+
+
+                }
+
+
+
+
+
+
+
+                <RadzenTabs>
+
+
+
+                    <Tabs>
+
+
+
+                        <RadzenTabsItem Text="拉取任务" Icon="download">
+
+
+
+                            <RadzenRow Gap="1rem">
+
+
+
+                                <RadzenColumn Size="12" SizeLG="6">
+
+
+
+                                    <RadzenCard>
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Subtitle1">提及列表拉取</RadzenText>
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="LastLikeId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_mentionForm.LastLikeId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="LastCommentId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_mentionForm.LastCommentId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="LastFollowId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_mentionForm.LastFollowId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <RadzenButton Text="下发提及拉取"
+
+
+
+                                                          Icon="send"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Primary"
+
+
+
+                                                          IsBusy="@(_busyKey == "mention")"
+
+
+
+                                                          Click="SendMentionAsync" />
+
+
+
+                                        </RadzenStack>
+
+
+
+                                    </RadzenCard>
+
+
+
+                                </RadzenColumn>
+
+
+
+
+
+
+
+                                <RadzenColumn Size="12" SizeLG="6">
+
+
+
+                                    <RadzenCard>
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Subtitle1">评论列表拉取</RadzenText>
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="FeedId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_commentListForm.FeedId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="RefCommentId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_commentListForm.RefCommentId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="ReplyCommentId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_commentListForm.ReplyCommentId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="SortType" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_commentListForm.SortType" TValue="int?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="NonceId" />
+
+
+
+                                                    <RadzenTextBox @bind-Value="_commentListForm.NonceId" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="FeedAuth" />
+
+
+
+                                                    <RadzenTextBox @bind-Value="_commentListForm.FeedAuth" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <RadzenButton Text="下发评论列表拉取"
+
+
+
+                                                          Icon="send"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Primary"
+
+
+
+                                                          IsBusy="@(_busyKey == "comment-list")"
+
+
+
+                                                          Click="SendCommentListAsync" />
+
+
+
+                                        </RadzenStack>
+
+
+
+                                    </RadzenCard>
+
+
+
+                                </RadzenColumn>
+
+
+
+
+
+
+
+                                <RadzenColumn Size="12">
+
+
+
+                                    <RadzenCard>
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Subtitle1">用户页拉取</RadzenText>
+
+
+
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="1rem" Wrap="FlexWrap.Wrap" AlignItems="AlignItems.End" Class="rz-mt-3">
+
+
+
+                                            <div style="min-width: 320px; flex: 1;">
+
+
+
+                                                <RadzenLabel Text="SphUserName" />
+
+
+
+                                                <RadzenTextBox @bind-Value="_userPageForm.SphUserName" Style="width: 100%;" />
+
+
+
+                                            </div>
+
+
+
+                                            <RadzenButton Text="下发用户页拉取"
+
+
+
+                                                          Icon="send"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Primary"
+
+
+
+                                                          IsBusy="@(_busyKey == "user-page")"
+
+
+
+                                                          Click="SendUserPageAsync" />
+
+
+
+                                        </RadzenStack>
+
+
+
+                                    </RadzenCard>
+
+
+
+                                </RadzenColumn>
+
+
+
+                            </RadzenRow>
+
+
+
+                        </RadzenTabsItem>
+
+
+
+
+
+
+
+                        <RadzenTabsItem Text="发布 / 互动" Icon="forum">
+
+
+
+                            <RadzenRow Gap="1rem">
+
+
+
+                                <RadzenColumn Size="12" SizeLG="6">
+
+
+
+                                    <RadzenCard>
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Subtitle1">视频号发布</RadzenText>
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <div>
+
+
+
+                                                <RadzenLabel Text="Content" />
+
+
+
+                                                <RadzenTextArea @bind-Value="_postForm.Content" Style="width: 100%; min-height: 96px;" />
+
+
+
+                                            </div>
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="MediaType" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_postForm.MediaType" TValue="int?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="8">
+
+
+
+                                                    <RadzenLabel Text="Cover" />
+
+
+
+                                                    <RadzenTextBox @bind-Value="_postForm.Cover" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <div>
+
+
+
+                                                <RadzenLabel Text="Medias（每行一个路径/URL）" />
+
+
+
+                                                <RadzenTextArea @bind-Value="_postForm.MediasText" Style="width: 100%; min-height: 120px;" />
+
+
+
+                                            </div>
+
+
+
+                                            <RadzenButton Text="下发发布任务"
+
+
+
+                                                          Icon="send"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Primary"
+
+
+
+                                                          IsBusy="@(_busyKey == "post")"
+
+
+
+                                                          Click="SendPostAsync" />
+
+
+
+                                        </RadzenStack>
+
+
+
+                                    </RadzenCard>
+
+
+
+                                </RadzenColumn>
+
+
+
+
+
+
+
+                                <RadzenColumn Size="12" SizeLG="6">
+
+
+
+                                    <RadzenCard>
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Subtitle1">视频号评论</RadzenText>
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="FeedId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_commentForm.FeedId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="Type" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_commentForm.Type" TValue="int?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="4">
+
+
+
+                                                    <RadzenLabel Text="ReplyCommentId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_commentForm.ReplyCommentId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="6">
+
+
+
+                                                    <RadzenLabel Text="NonceId" />
+
+
+
+                                                    <RadzenTextBox @bind-Value="_commentForm.NonceId" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="6">
+
+
+
+                                                    <RadzenLabel Text="FeedAuth" />
+
+
+
+                                                    <RadzenTextBox @bind-Value="_commentForm.FeedAuth" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <div>
+
+
+
+                                                <RadzenLabel Text="Content" />
+
+
+
+                                                <RadzenTextArea @bind-Value="_commentForm.Content" Style="width: 100%; min-height: 96px;" />
+
+
+
+                                            </div>
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="6">
+
+
+
+                                                    <RadzenLabel Text="Media" />
+
+
+
+                                                    <RadzenTextBox @bind-Value="_commentForm.Media" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="6">
+
+
+
+                                                    <RadzenLabel Text="ReplyUsername" />
+
+
+
+                                                    <RadzenTextBox @bind-Value="_commentForm.ReplyUsername" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <RadzenButton Text="下发评论任务"
+
+
+
+                                                          Icon="send"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Primary"
+
+
+
+                                                          IsBusy="@(_busyKey == "comment")"
+
+
+
+                                                          Click="SendCommentAsync" />
+
+
+
+                                        </RadzenStack>
+
+
+
+                                    </RadzenCard>
+
+
+
+                                </RadzenColumn>
+
+
+
+
+
+
+
+                                <RadzenColumn Size="12" SizeLG="6">
+
+
+
+                                    <RadzenCard>
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Subtitle1">视频号点赞 / 取消点赞</RadzenText>
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="6">
+
+
+
+                                                    <RadzenLabel Text="FeedId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_likeForm.FeedId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="6">
+
+
+
+                                                    <RadzenLabel Text="Type" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_likeForm.Type" TValue="int?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <RadzenCheckBox @bind-Value="_likeForm.IsCancel" TValue="bool" />
+
+
+
+                                            <RadzenLabel Text="是否取消点赞" Style="margin-top: -28px; margin-left: 32px;" />
+
+
+
+                                            <RadzenButton Text="下发点赞任务"
+
+
+
+                                                          Icon="thumb_up"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Warning"
+
+
+
+                                                          IsBusy="@(_busyKey == "like")"
+                                                          Disabled="true"
+
+
+
+                                                          Click="SendLikeAsync" />
+
+
+
+                                        </RadzenStack>
+
+
+
+                                    </RadzenCard>
+
+
+
+                                </RadzenColumn>
+
+
+
+
+
+
+
+                                <RadzenColumn Size="12" SizeLG="6">
+
+
+
+                                    <RadzenCard>
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Subtitle1">视频号删评</RadzenText>
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="6">
+
+
+
+                                                    <RadzenLabel Text="FeedId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_deleteCommentForm.FeedId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeMD="6">
+
+
+
+                                                    <RadzenLabel Text="CommentId" />
+
+
+
+                                                    <RadzenNumeric @bind-Value="_deleteCommentForm.CommentId" TValue="long?" Style="width: 100%;" />
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+                                            <RadzenButton Text="下发删评任务"
+
+
+
+                                                          Icon="delete"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Danger"
+
+
+
+                                                          IsBusy="@(_busyKey == "delete-comment")"
+                                                          Disabled="true"
+
+
+
+                                                          Click="SendDeleteCommentAsync" />
+
+
+
+                                        </RadzenStack>
+
+
+
+                                    </RadzenCard>
+
+
+
+                                </RadzenColumn>
+
+
+
+                            </RadzenRow>
+
+
+
+                        </RadzenTabsItem>
+
+
+
+
+
+
+
+                        <RadzenTabsItem Text="最近结果" Icon="analytics">
+
+
+
+                            <RadzenStack Gap="1rem">
+
+
+
+                                <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true">
+
+
+
+                                    当前页会按设备缓存最近 10 次视频号运行态回包；结果已落数据库，切换设备或服务重启后仍会自动恢复该设备自己的结果历史。
+
+
+
+                                </RadzenAlert>
+
+
+
+
+
+
+
+                                <RadzenCard Variant="Variant.Flat">
+
+
+
+                                    <RadzenStack Gap="1rem">
+
+
+
+                                        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" JustifyContent="JustifyContent.SpaceBetween" Gap="1rem" Wrap="FlexWrap.Wrap">
+
+
+
+                                            <div>
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Subtitle2">Finder 历史运维面</RadzenText>
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">
+
+
+
+                                                    这里可以按状态 / TaskId / 时间范围从数据库重载当前设备最近 10 条 Finder 历史，并把筛选结果一次性导出为 JSON，用于 62203 回归复盘。
+
+
+
+                                                </RadzenText>
+
+
+
+                                            </div>
+
+
+
+                                            <RadzenAlert AlertStyle="AlertStyle.Info" Variant="Variant.Flat" ShowIcon="true" Style="margin: 0; min-width: 260px;">
+
+                                                @GetFinderHistoryFilterSummary()
+
+                                            </RadzenAlert>
+
+
+
+                                        </RadzenStack>
+
+
+
+                                        <RadzenRow Gap="1rem">
+
+                                            <RadzenColumn Size="12" SizeLG="3">
+
+                                                <RadzenLabel Text="状态筛选" />
+
+                                                <RadzenDropDown Data="@FinderHistoryStatusOptions"
+
+                                                                TextProperty="Label"
+
+                                                                ValueProperty="Value"
+
+                                                                @bind-Value="_historyFilter.Status"
+
+                                                                TValue="string"
+
+                                                                Style="width: 100%;" />
+
+                                            </RadzenColumn>
+
+                                            <RadzenColumn Size="12" SizeLG="3">
+
+                                                <RadzenLabel Text="TaskId" />
+
+                                                <RadzenNumeric @bind-Value="_historyFilter.TaskId" TValue="long?" Style="width: 100%;" />
+
+                                            </RadzenColumn>
+
+                                            <RadzenColumn Size="12" SizeLG="3">
+
+                                                <RadzenLabel Text="开始时间" />
+
+                                                <RadzenDatePicker @bind-Value="_historyFilter.ReceivedFrom"
+
+                                                                  TValue="DateTime?"
+
+                                                                  ShowTime="true"
+
+                                                                  HourFormat="24"
+
+                                                                  DateFormat="yyyy-MM-dd HH:mm:ss"
+
+                                                                  Style="width: 100%;" />
+
+                                            </RadzenColumn>
+
+                                            <RadzenColumn Size="12" SizeLG="3">
+
+                                                <RadzenLabel Text="结束时间" />
+
+                                                <RadzenDatePicker @bind-Value="_historyFilter.ReceivedTo"
+
+                                                                  TValue="DateTime?"
+
+                                                                  ShowTime="true"
+
+                                                                  HourFormat="24"
+
+                                                                  DateFormat="yyyy-MM-dd HH:mm:ss"
+
+                                                                  Style="width: 100%;" />
+
+                                            </RadzenColumn>
+
+                                        </RadzenRow>
+
+
+
+                                        <RadzenStack Orientation="Orientation.Horizontal" Gap="0.75rem" Wrap="FlexWrap.Wrap">
+
+
+
+                                            <RadzenButton Text="按条件刷新"
+
+
+
+                                                          Icon="filter_alt"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Primary"
+
+
+
+                                                          IsBusy="@(_busyKey == "history-apply")"
+
+
+
+                                                          Click="ApplyHistoryFilterAsync" />
+
+
+
+                                            <RadzenButton Text="清空筛选"
+
+
+
+                                                          Icon="filter_alt_off"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Light"
+
+
+
+                                                          IsBusy="@(_busyKey == "history-clear")"
+
+
+
+                                                          Click="ClearHistoryFilterAsync" />
+
+
+
+                                            <RadzenButton Text="导出当前筛选 JSON"
+
+
+
+                                                          Icon="download"
+
+
+
+                                                          ButtonStyle="ButtonStyle.Secondary"
+
+
+
+                                                          IsBusy="@(_busyKey == "history-export")"
+
+
+
+                                                          Click="ExportFinderHistoryAsync" />
+
+
+
+                                        </RadzenStack>
+
+
+
+                                    </RadzenStack>
+
+
+
+                                </RadzenCard>
+
+
+
+
+
+
+
+                                <RadzenRow Gap="1rem">
+
+                                    @{
+
+                                        var mentionHistory = Store.SelectedFinderMentionHistory;
+
+                                        var userPageHistory = Store.SelectedFinderUserPageHistory;
+
+                                        var commentHistory = Store.SelectedFinderCommentHistory;
+
+                                        var mentionSuccessCount = mentionHistory.Count(item => item.success);
+
+                                        var mentionFailureCount = mentionHistory.Count - mentionSuccessCount;
+
+                                        var mentionLatestReceivedAt = GetLatestReceivedAt(mentionHistory.Select(item => item.receivedAt));
+
+                                        var userPageSuccessCount = userPageHistory.Count(item => item.success);
+
+                                        var userPageFailureCount = userPageHistory.Count - userPageSuccessCount;
+
+                                        var userPageLatestReceivedAt = GetLatestReceivedAt(userPageHistory.Select(item => item.receivedAt));
+
+                                        var commentSuccessCount = commentHistory.Count(item => item.success);
+
+                                        var commentFailureCount = commentHistory.Count - commentSuccessCount;
+
+                                        var commentLatestReceivedAt = GetLatestReceivedAt(commentHistory.Select(item => item.receivedAt));
+
+                                    }
+
+                                    <RadzenColumn Size="12" SizeLG="4">
+
+                                        <RadzenCard Variant="Variant.Flat">
+
+                                            <RadzenText TextStyle="TextStyle.Caption">提及历史统计</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.H6">@mentionHistory.Count</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.Body2">成功：@mentionSuccessCount ｜ 失败：@mentionFailureCount</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">最近时间：@FormatNullableReceivedAt(mentionLatestReceivedAt)</RadzenText>
+
+                                        </RadzenCard>
+
+                                    </RadzenColumn>
+
+                                    <RadzenColumn Size="12" SizeLG="4">
+
+                                        <RadzenCard Variant="Variant.Flat">
+
+                                            <RadzenText TextStyle="TextStyle.Caption">用户页历史统计</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.H6">@userPageHistory.Count</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.Body2">成功：@userPageSuccessCount ｜ 失败：@userPageFailureCount</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">最近时间：@FormatNullableReceivedAt(userPageLatestReceivedAt)</RadzenText>
+
+                                        </RadzenCard>
+
+                                    </RadzenColumn>
+
+                                    <RadzenColumn Size="12" SizeLG="4">
+
+                                        <RadzenCard Variant="Variant.Flat">
+
+                                            <RadzenText TextStyle="TextStyle.Caption">评论历史统计</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.H6">@commentHistory.Count</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.Body2">成功：@commentSuccessCount ｜ 失败：@commentFailureCount</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">最近时间：@FormatNullableReceivedAt(commentLatestReceivedAt)</RadzenText>
+
+                                        </RadzenCard>
+
+                                    </RadzenColumn>
+
+                                </RadzenRow>
+
+
+
+                                <RadzenCard Variant="Variant.Flat">
+
+                                    <RadzenStack Gap="0.75rem">
+
+                                        <div>
+
+                                            <RadzenText TextStyle="TextStyle.Subtitle2">当前筛选失败摘要</RadzenText>
+
+                                            <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">
+
+                                                这里汇总当前设备在当前筛选条件下的全部失败 Finder 历史，方便先定位失败面，再回看具体结果。
+
+                                            </RadzenText>
+
+                                        </div>
+
+                                        @{
+
+                                            var failureItems = GetFinderFailureHistoryItems();
+
+                                        }
+
+                                        @if (!failureItems.Any())
+
+                                        {
+
+                                            <RadzenAlert AlertStyle="AlertStyle.Success" Variant="Variant.Flat" ShowIcon="true">
+
+                                                当前筛选范围内暂无失败记录。
+
+                                            </RadzenAlert>
+
+                                        }
+
+                                        else
+
+                                        {
+
+                                            <div style="overflow-x: auto;">
+
+                                                <table style="width: 100%; border-collapse: collapse;">
+
+                                                    <thead>
+
+                                                        <tr style="background: var(--rz-base-200);">
+
+                                                            <th style="text-align:left; padding:8px;">类型</th>
+
+                                                            <th style="text-align:left; padding:8px;">时间</th>
+
+                                                            <th style="text-align:left; padding:8px;">TaskId</th>
+
+                                                            <th style="text-align:left; padding:8px;">摘要</th>
+
+                                                            <th style="text-align:left; padding:8px;">错误信息</th>
+
+                                                        </tr>
+
+                                                    </thead>
+
+                                                    <tbody>
+
+                                                        @foreach (var item in failureItems)
+
+                                                        {
+
+                                                            <tr style="border-top: 1px solid var(--rz-border-color);">
+
+                                                                <td style="padding:8px;">@item.ResultTypeName</td>
+
+                                                                <td style="padding:8px;">@FormatReceivedAt(item.ReceivedAt)</td>
+
+                                                                <td style="padding:8px;">@item.TaskId</td>
+
+                                                                <td style="padding:8px;">@item.Summary</td>
+
+                                                                <td style="padding:8px; white-space: pre-wrap;">@item.ErrorMessage</td>
+
+                                                            </tr>
+
+                                                        }
+
+                                                    </tbody>
+
+                                                </table>
+
+                                            </div>
+
+                                        }
+
+                                    </RadzenStack>
+
+                                </RadzenCard>
+
+
+
+                                <RadzenCard>
+
+
+
+                                    <RadzenText TextStyle="TextStyle.Subtitle1">最近一次提及列表结果</RadzenText>
+
+
+
+                                    @if (Store.CurrentFinderMentions == null)
+
+
+
+                                    {
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);" Class="rz-mt-3">
+
+
+
+                                            暂无提及列表回包。可先在“拉取任务”页签下发 `SphGetMention`。
+
+
+
+                                        </RadzenText>
+
+
+
+                                    }
+
+
+
+                                    else
+
+
+
+                                    {
+
+
+
+                                        var mention = Store.CurrentFinderMentions;
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <RadzenAlert AlertStyle="@(mention.success ? AlertStyle.Success : AlertStyle.Warning)" Variant="Variant.Flat" ShowIcon="true">
+
+
+
+                                                任务ID：@mention.taskId ｜ 微信号：@mention.weChatId ｜ 视频号：@mention.sphUserName ｜ 回包时间：@FormatReceivedAt(mention.receivedAt)
+
+
+
+                                                @if (!mention.success && !string.IsNullOrWhiteSpace(mention.errMsg))
+
+
+
+                                                {
+
+
+
+                                                    <div>错误：@mention.errMsg</div>
+
+
+
+                                                }
+
+
+
+                                            </RadzenAlert>
+
+
+
+
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeLG="4">
+
+
+
+                                                    <RadzenCard Variant="Variant.Flat">
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.Caption">点赞提及</RadzenText>
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.H6">@mention.likeList.Count</RadzenText>
+
+
+
+                                                    </RadzenCard>
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeLG="4">
+
+
+
+                                                    <RadzenCard Variant="Variant.Flat">
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.Caption">评论提及</RadzenText>
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.H6">@mention.commentList.Count</RadzenText>
+
+
+
+                                                    </RadzenCard>
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeLG="4">
+
+
+
+                                                    <RadzenCard Variant="Variant.Flat">
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.Caption">关注提及</RadzenText>
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.H6">@mention.followList.Count</RadzenText>
+
+
+
+                                                    </RadzenCard>
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+
+
+
+
+                                            <div>
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600;">评论提及明细</RadzenText>
+
+
+
+                                                @if (!mention.commentList.Any())
+
+
+
+                                                {
+
+
+
+                                                    <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">暂无评论提及。</RadzenText>
+
+
+
+                                                }
+
+
+
+                                                else
+
+
+
+                                                {
+
+
+
+                                                    <div style="overflow-x: auto;">
+
+
+
+                                                        <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+
+
+
+                                                            <thead>
+
+
+
+                                                                <tr style="background: var(--rz-base-200);">
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">用户</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">内容</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">引用内容</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">FeedId</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">时间</th>
+
+
+
+                                                                </tr>
+
+
+
+                                                            </thead>
+
+
+
+                                                            <tbody>
+
+
+
+                                                                @foreach (var item in mention.commentList)
+
+
+
+                                                                {
+
+
+
+                                                                    <tr style="border-top: 1px solid var(--rz-border-color);">
+
+
+
+                                                                        <td style="padding:8px;">@item.nickName (@item.userName)</td>
+
+
+
+                                                                        <td style="padding:8px;" title="@item.content">@FormatShortText(item.content, 80)</td>
+
+
+
+                                                                        <td style="padding:8px;" title="@item.refContent">@FormatShortText(item.refContent, 80)</td>
+
+
+
+                                                                        <td style="padding:8px;">@item.sphItem.feedId</td>
+
+
+
+                                                                        <td style="padding:8px;">@FormatUnixSeconds(item.createTime)</td>
+
+
+
+                                                                    </tr>
+
+
+
+                                                                }
+
+
+
+                                                            </tbody>
+
+
+
+                                                        </table>
+
+
+
+                                                    </div>
+
+
+
+                                                }
+
+
+
+                                            </div>
+
+
+
+
+
+
+
+                                            <div>
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600;">点赞提及明细</RadzenText>
+
+
+
+                                                @if (!mention.likeList.Any())
+
+
+
+                                                {
+
+
+
+                                                    <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">暂无点赞提及。</RadzenText>
+
+
+
+                                                }
+
+
+
+                                                else
+
+
+
+                                                {
+
+
+
+                                                    <div style="overflow-x: auto;">
+
+
+
+                                                        <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+
+
+
+                                                            <thead>
+
+
+
+                                                                <tr style="background: var(--rz-base-200);">
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">用户</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">FeedId</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">视频号作者</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">时间</th>
+
+
+
+                                                                </tr>
+
+
+
+                                                            </thead>
+
+
+
+                                                            <tbody>
+
+
+
+                                                                @foreach (var item in mention.likeList)
+
+
+
+                                                                {
+
+
+
+                                                                    <tr style="border-top: 1px solid var(--rz-border-color);">
+
+
+
+                                                                        <td style="padding:8px;">@item.nickName (@item.userName)</td>
+
+
+
+                                                                        <td style="padding:8px;">@item.sphItem.feedId</td>
+
+
+
+                                                                        <td style="padding:8px;">@item.sphItem.userName</td>
+
+
+
+                                                                        <td style="padding:8px;">@FormatUnixSeconds(item.createTime)</td>
+
+
+
+                                                                    </tr>
+
+
+
+                                                                }
+
+
+
+                                                            </tbody>
+
+
+
+                                                        </table>
+
+
+
+                                                    </div>
+
+
+
+                                                }
+
+
+
+                                            </div>
+
+
+
+
+
+
+
+                                            <div>
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600;">关注提及明细</RadzenText>
+
+
+
+                                                @if (!mention.followList.Any())
+
+
+
+                                                {
+
+
+
+                                                    <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">暂无关注提及。</RadzenText>
+
+
+
+                                                }
+
+
+
+                                                else
+
+
+
+                                                {
+
+
+
+                                                    <div style="overflow-x: auto;">
+
+
+
+                                                        <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+
+
+
+                                                            <thead>
+
+
+
+                                                                <tr style="background: var(--rz-base-200);">
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">用户</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">关注ID</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">关系类型</th>
+
+
+
+                                                                    <th style="text-align:left; padding:8px;">时间</th>
+
+
+
+                                                                </tr>
+
+
+
+                                                            </thead>
+
+
+
+                                                            <tbody>
+
+
+
+                                                                @foreach (var item in mention.followList)
+
+
+
+                                                                {
+
+
+
+                                                                    <tr style="border-top: 1px solid var(--rz-border-color);">
+
+
+
+                                                                        <td style="padding:8px;">@item.nickName (@item.userName)</td>
+
+
+
+                                                                        <td style="padding:8px;">@item.followId</td>
+
+
+
+                                                                        <td style="padding:8px;">@item.relationType</td>
+
+
+
+                                                                        <td style="padding:8px;">@FormatUnixSeconds(item.createTime)</td>
+
+
+
+                                                                    </tr>
+
+
+
+                                                                }
+
+
+
+                                                            </tbody>
+
+
+
+                                                        </table>
+
+
+
+                                                    </div>
+
+
+
+                                                }
+
+
+
+                                            </div>
+
+
+
+                                        </RadzenStack>
+
+
+
+
+
+
+
+                                        <RadzenCard Variant="Variant.Flat">
+
+
+
+                                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600;">提及结果历史（最近 10 次）</RadzenText>
+
+
+
+                                            @if (!Store.SelectedFinderMentionHistory.Any())
+
+
+
+                                            {
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);" Class="rz-mt-2">
+
+
+
+                                                    当前设备暂无提及历史。
+
+
+
+                                                </RadzenText>
+
+
+
+                                            }
+
+
+
+                                            else
+
+
+
+                                            {
+
+
+
+                                                <div style="overflow-x: auto; margin-top: 8px;">
+
+
+
+                                                    <table style="width: 100%; border-collapse: collapse;">
+
+
+
+                                                        <thead>
+
+
+
+                                                            <tr style="background: var(--rz-base-200);">
+
+
+
+                                                                <th style="text-align:left; padding:8px;">时间</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">TaskId</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">状态</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">点赞/评论/关注</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">操作</th>
+
+
+
+                                                            </tr>
+
+
+
+                                                        </thead>
+
+
+
+                                                        <tbody>
+
+
+
+                                                            @foreach (var item in Store.SelectedFinderMentionHistory)
+
+
+
+                                                            {
+
+
+
+                                                                <tr style="border-top: 1px solid var(--rz-border-color); @(IsCurrentFinderMention(item) ? "background: rgba(33, 150, 243, 0.08);" : string.Empty)">
+
+
+
+                                                                    <td style="padding:8px;">@FormatReceivedAt(item.receivedAt)</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.taskId</td>
+
+
+
+                                                                    <td style="padding:8px;">@GetResultStatusText(item.success)</td>
+
+
+
+                                                                    <td style="padding:8px;">@($"{item.likeList.Count}/{item.commentList.Count}/{item.followList.Count}")</td>
+
+
+
+                                                                    <td style="padding:8px;">
+
+
+
+                                                                        <RadzenButton Text="查看"
+
+
+
+                                                                                      Size="ButtonSize.Small"
+
+
+
+                                                                                      Variant="Variant.Flat"
+
+
+
+                                                                                      Click="@(() => ShowFinderMentionResult(item))" />
+
+
+
+                                                                    </td>
+
+
+
+                                                                </tr>
+
+
+
+                                                            }
+
+
+
+                                                        </tbody>
+
+
+
+                                                    </table>
+
+
+
+                                                </div>
+
+
+
+                                            }
+
+
+
+                                        </RadzenCard>
+
+
+
+                                    }
+
+
+
+                                </RadzenCard>
+
+
+
+
+
+
+
+                                <RadzenCard>
+
+
+
+                                    <RadzenText TextStyle="TextStyle.Subtitle1">最近一次用户页结果</RadzenText>
+
+
+
+                                    @if (Store.CurrentFinderUserPage == null)
+
+
+
+                                    {
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);" Class="rz-mt-3">
+
+
+
+                                            暂无用户页回包。可先在“拉取任务”页签下发 `SphUserPage`。
+
+
+
+                                        </RadzenText>
+
+
+
+                                    }
+
+
+
+                                    else
+
+
+
+                                    {
+
+
+
+                                        var userPage = Store.CurrentFinderUserPage;
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <RadzenAlert AlertStyle="@(userPage.success ? AlertStyle.Success : AlertStyle.Warning)" Variant="Variant.Flat" ShowIcon="true">
+
+
+
+                                                任务ID：@userPage.taskId ｜ 微信号：@userPage.weChatId ｜ 视频号：@userPage.userName ｜ 回包时间：@FormatReceivedAt(userPage.receivedAt)
+
+
+
+                                                @if (!userPage.success && !string.IsNullOrWhiteSpace(userPage.errMsg))
+
+
+
+                                                {
+
+
+
+                                                    <div>错误：@userPage.errMsg</div>
+
+
+
+                                                }
+
+
+
+                                            </RadzenAlert>
+
+
+
+
+
+
+
+                                            <RadzenRow Gap="1rem">
+
+
+
+                                                <RadzenColumn Size="12" SizeLG="8">
+
+
+
+                                                    <RadzenCard Variant="Variant.Flat">
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.Body1" Style="font-weight:600;">@userPage.nickName</RadzenText>
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.Body2">@userPage.userName</RadzenText>
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.Body2">性别：@GetGenderText(userPage.gender) ｜ 地区：@($"{userPage.province} {userPage.city}".Trim())</RadzenText>
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.Body2">签名：@userPage.signature</RadzenText>
+
+
+
+                                                    </RadzenCard>
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                                <RadzenColumn Size="12" SizeLG="4">
+
+
+
+                                                    <RadzenCard Variant="Variant.Flat">
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.Caption">作品数量</RadzenText>
+
+
+
+                                                        <RadzenText TextStyle="TextStyle.H6">@userPage.sphList.Count</RadzenText>
+
+
+
+                                                    </RadzenCard>
+
+
+
+                                                </RadzenColumn>
+
+
+
+                                            </RadzenRow>
+
+
+
+
+
+
+
+                                            @if (!userPage.sphList.Any())
+
+
+
+                                            {
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">当前回包未带作品条目。</RadzenText>
+
+
+
+                                            }
+
+
+
+                                            else
+
+
+
+                                            {
+
+
+
+                                                <div style="overflow-x: auto;">
+
+
+
+                                                    <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+
+
+
+                                                        <thead>
+
+
+
+                                                            <tr style="background: var(--rz-base-200);">
+
+
+
+                                                                <th style="text-align:left; padding:8px;">FeedId</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">描述</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">阅读/赞/评</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">时间</th>
+
+
+
+                                                            </tr>
+
+
+
+                                                        </thead>
+
+
+
+                                                        <tbody>
+
+
+
+                                                            @foreach (var item in userPage.sphList)
+
+
+
+                                                            {
+
+
+
+                                                                <tr style="border-top: 1px solid var(--rz-border-color);">
+
+
+
+                                                                    <td style="padding:8px;">@item.feedId</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.desc</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.readCnt / @item.likeCnt / @item.commentCnt</td>
+
+
+
+                                                                    <td style="padding:8px;">@FormatUnixSeconds(item.timestamp)</td>
+
+
+
+                                                                </tr>
+
+
+
+                                                            }
+
+
+
+                                                        </tbody>
+
+
+
+                                                    </table>
+
+
+
+                                                </div>
+
+
+
+                                            }
+
+
+
+                                        </RadzenStack>
+
+
+
+
+
+
+
+                                        <RadzenCard Variant="Variant.Flat">
+
+
+
+                                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600;">用户页结果历史（最近 10 次）</RadzenText>
+
+
+
+                                            @if (!Store.SelectedFinderUserPageHistory.Any())
+
+
+
+                                            {
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);" Class="rz-mt-2">
+
+
+
+                                                    当前设备暂无用户页历史。
+
+
+
+                                                </RadzenText>
+
+
+
+                                            }
+
+
+
+                                            else
+
+
+
+                                            {
+
+
+
+                                                <div style="overflow-x: auto; margin-top: 8px;">
+
+
+
+                                                    <table style="width: 100%; border-collapse: collapse;">
+
+
+
+                                                        <thead>
+
+
+
+                                                            <tr style="background: var(--rz-base-200);">
+
+
+
+                                                                <th style="text-align:left; padding:8px;">时间</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">TaskId</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">视频号</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">状态</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">作品数</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">操作</th>
+
+
+
+                                                            </tr>
+
+
+
+                                                        </thead>
+
+
+
+                                                        <tbody>
+
+
+
+                                                            @foreach (var item in Store.SelectedFinderUserPageHistory)
+
+
+
+                                                            {
+
+
+
+                                                                <tr style="border-top: 1px solid var(--rz-border-color); @(IsCurrentFinderUserPage(item) ? "background: rgba(33, 150, 243, 0.08);" : string.Empty)">
+
+
+
+                                                                    <td style="padding:8px;">@FormatReceivedAt(item.receivedAt)</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.taskId</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.userName</td>
+
+
+
+                                                                    <td style="padding:8px;">@GetResultStatusText(item.success)</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.sphList.Count</td>
+
+
+
+                                                                    <td style="padding:8px;">
+
+
+
+                                                                        <RadzenButton Text="查看"
+
+
+
+                                                                                      Size="ButtonSize.Small"
+
+
+
+                                                                                      Variant="Variant.Flat"
+
+
+
+                                                                                      Click="@(() => ShowFinderUserPageResult(item))" />
+
+
+
+                                                                    </td>
+
+
+
+                                                                </tr>
+
+
+
+                                                            }
+
+
+
+                                                        </tbody>
+
+
+
+                                                    </table>
+
+
+
+                                                </div>
+
+
+
+                                            }
+
+
+
+                                        </RadzenCard>
+
+
+
+                                    }
+
+
+
+                                </RadzenCard>
+
+
+
+
+
+
+
+                                <RadzenCard>
+
+
+
+                                    <RadzenText TextStyle="TextStyle.Subtitle1">最近一次评论列表结果</RadzenText>
+
+
+
+                                    @if (Store.CurrentFinderComments == null)
+
+
+
+                                    {
+
+
+
+                                        <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);" Class="rz-mt-3">
+
+
+
+                                            暂无评论列表回包。可先在“拉取任务”页签下发 `SphGetComment`。
+
+
+
+                                        </RadzenText>
+
+
+
+                                    }
+
+
+
+                                    else
+
+
+
+                                    {
+
+
+
+                                        var comments = Store.CurrentFinderComments;
+
+
+
+                                        <RadzenStack Gap="0.75rem" Class="rz-mt-3">
+
+
+
+                                            <RadzenAlert AlertStyle="@(comments.success ? AlertStyle.Success : AlertStyle.Warning)" Variant="Variant.Flat" ShowIcon="true">
+
+
+
+                                                任务ID：@comments.taskId ｜ 微信号：@comments.weChatId ｜ 视频号：@comments.sphUserName ｜ 回包时间：@FormatReceivedAt(comments.receivedAt)
+
+
+
+                                                @if (!comments.success && !string.IsNullOrWhiteSpace(comments.errMsg))
+
+
+
+                                                {
+
+
+
+                                                    <div>错误：@comments.errMsg</div>
+
+
+
+                                                }
+
+
+
+                                            </RadzenAlert>
+
+
+
+
+
+
+
+                                            <RadzenCard Variant="Variant.Flat">
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Caption">评论数量</RadzenText>
+
+
+
+                                                <RadzenText TextStyle="TextStyle.H6">@comments.commentList.Count</RadzenText>
+
+
+
+                                            </RadzenCard>
+
+
+
+
+
+
+
+                                            @if (!comments.commentList.Any())
+
+
+
+                                            {
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);">当前回包未带评论条目。</RadzenText>
+
+
+
+                                            }
+
+
+
+                                            else
+
+
+
+                                            {
+
+
+
+                                                <div style="overflow-x: auto;">
+
+
+
+                                                    <table style="width: 100%; border-collapse: collapse; margin-top: 8px;">
+
+
+
+                                                        <thead>
+
+
+
+                                                            <tr style="background: var(--rz-base-200);">
+
+
+
+                                                                <th style="text-align:left; padding:8px;">CommentId</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">用户</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">内容</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">点赞数</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">时间</th>
+
+
+
+                                                            </tr>
+
+
+
+                                                        </thead>
+
+
+
+                                                        <tbody>
+
+
+
+                                                            @foreach (var item in comments.commentList)
+
+
+
+                                                            {
+
+
+
+                                                                <tr style="border-top: 1px solid var(--rz-border-color);">
+
+
+
+                                                                    <td style="padding:8px;">@item.commentId</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.nickName (@item.userName)</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.content</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.likeCount</td>
+
+
+
+                                                                    <td style="padding:8px;">@FormatUnixSeconds(item.createTime)</td>
+
+
+
+                                                                </tr>
+
+
+
+                                                            }
+
+
+
+                                                        </tbody>
+
+
+
+                                                    </table>
+
+
+
+                                                </div>
+
+
+
+                                            }
+
+
+
+                                        </RadzenStack>
+
+
+
+
+
+
+
+                                        <RadzenCard Variant="Variant.Flat">
+
+
+
+                                            <RadzenText TextStyle="TextStyle.Body1" Style="font-weight: 600;">评论结果历史（最近 10 次）</RadzenText>
+
+
+
+                                            @if (!Store.SelectedFinderCommentHistory.Any())
+
+
+
+                                            {
+
+
+
+                                                <RadzenText TextStyle="TextStyle.Body2" Style="color: var(--rz-text-secondary-color);" Class="rz-mt-2">
+
+
+
+                                                    当前设备暂无评论列表历史。
+
+
+
+                                                </RadzenText>
+
+
+
+                                            }
+
+
+
+                                            else
+
+
+
+                                            {
+
+
+
+                                                <div style="overflow-x: auto; margin-top: 8px;">
+
+
+
+                                                    <table style="width: 100%; border-collapse: collapse;">
+
+
+
+                                                        <thead>
+
+
+
+                                                            <tr style="background: var(--rz-base-200);">
+
+
+
+                                                                <th style="text-align:left; padding:8px;">时间</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">TaskId</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">状态</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">评论数</th>
+
+
+
+                                                                <th style="text-align:left; padding:8px;">操作</th>
+
+
+
+                                                            </tr>
+
+
+
+                                                        </thead>
+
+
+
+                                                        <tbody>
+
+
+
+                                                            @foreach (var item in Store.SelectedFinderCommentHistory)
+
+
+
+                                                            {
+
+
+
+                                                                <tr style="border-top: 1px solid var(--rz-border-color); @(IsCurrentFinderComment(item) ? "background: rgba(33, 150, 243, 0.08);" : string.Empty)">
+
+
+
+                                                                    <td style="padding:8px;">@FormatReceivedAt(item.receivedAt)</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.taskId</td>
+
+
+
+                                                                    <td style="padding:8px;">@GetResultStatusText(item.success)</td>
+
+
+
+                                                                    <td style="padding:8px;">@item.commentList.Count</td>
+
+
+
+                                                                    <td style="padding:8px;">
+
+
+
+                                                                        <RadzenButton Text="查看"
+
+
+
+                                                                                      Size="ButtonSize.Small"
+
+
+
+                                                                                      Variant="Variant.Flat"
+
+
+
+                                                                                      Click="@(() => ShowFinderCommentResult(item))" />
+
+
+
+                                                                    </td>
+
+
+
+                                                                </tr>
+
+
+
+                                                            }
+
+
+
+                                                        </tbody>
+
+
+
+                                                    </table>
+
+
+
+                                                </div>
+
+
+
+                                            }
+
+
+
+                                        </RadzenCard>
+
+
+
+                                    }
+
+
+
+                                </RadzenCard>
+
+
+
+                            </RadzenStack>
+
+
+
+                        </RadzenTabsItem>
+
+
+
+                    </Tabs>
+
+
+
+                </RadzenTabs>
+
+
+
+            </RadzenStack>
+
+
+
+        }
+
+
+
+    </RadzenColumn>
+
+
+
+</RadzenRow>
+
+
+
+
+
+
+
+@code {
+
+
+
+    private readonly MentionFormModel _mentionForm = new();
+
+
+
+    private readonly CommentListFormModel _commentListForm = new();
+
+
+
+    private readonly UserPageFormModel _userPageForm = new();
+
+
+
+    private readonly PostFormModel _postForm = new();
+
+
+
+    private readonly CommentFormModel _commentForm = new();
+
+
+
+    private readonly LikeFormModel _likeForm = new();
+
+
+
+    private readonly DeleteCommentFormModel _deleteCommentForm = new();
+
+    private readonly FinderHistoryFilterModel _historyFilter = new();
+
+    private const int FinderHistoryExportCountPerType = 100;
+
+    private static readonly IReadOnlyList<HistoryStatusOption> FinderHistoryStatusOptions = new List<HistoryStatusOption>
+
+    {
+
+        new("all", "全部"),
+
+        new("success", "仅成功"),
+
+        new("fail", "仅失败")
+
+    };
+
+
+
+    private IJSObjectReference? _finderInteropModule;
+
+
+
+    private static readonly JsonSerializerOptions FinderExportJsonOptions = new()
+
+
+
+    {
+
+
+
+        WriteIndented = true,
+
+
+
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+
+
+
+    };
+
+
+
+
+
+
+
+    private string _busyKey = string.Empty;
+
+
+
+    private string _lastOperation = string.Empty;
+
+
+
+    private string _lastMessage = string.Empty;
+
+
+
+    private bool _lastSuccess = false;
+
+
+
+
+
+
+
+    protected override async Task OnInitializedAsync()
+
+
+
+    {
+
+
+
+        Store.OnChange += HandleChange;
+
+
+
+        Store.OnNotification += HandleNotification;
+
+
+
+        if (!Store.Devices.Any())
+
+
+
+        {
+
+
+
+            await Store.InitializeAsync();
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    public async ValueTask DisposeAsync()
+
+
+
+    {
+
+
+
+        Store.OnChange -= HandleChange;
+
+
+
+        Store.OnNotification -= HandleNotification;
+
+
+
+
+
+
+
+        if (_finderInteropModule != null)
+
+
+
+        {
+
+
+
+            try
+
+
+
+            {
+
+
+
+                await _finderInteropModule.DisposeAsync();
+
+
+
+            }
+
+
+
+            catch (JSDisconnectedException)
+
+
+
+            {
+
+
+
+                // 页面已断开时忽略模块释放异常。
+
+
+
+            }
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    private async void HandleChange()
+
+
+
+    {
+
+
+
+        await InvokeAsync(StateHasChanged);
+
+
+
+    }
+
+
+
+
+
+
+
+    private void HandleNotification(string message, bool success)
+
+
+
+    {
+
+
+
+        _ = InvokeAsync(() =>
+
+
+
+        {
+
+
+
+            NoticeService.Notify(new NotificationMessage
+
+
+
+            {
+
+
+
+                Severity = success ? NotificationSeverity.Success : NotificationSeverity.Error,
+
+
+
+                Summary = success ? "成功" : "错误",
+
+
+
+                Detail = message,
+
+
+
+                Duration = 4000
+
+
+
+            });
+
+
+
+        });
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task OnDeviceChange(object item)
+
+
+
+    {
+
+
+
+        if (item is SrClient device)
+
+
+
+        {
+
+
+
+            await Store.SelectDeviceAsync(device);
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    private string GetSelectedDeviceLabel()
+
+
+
+    {
+
+
+
+        var device = Store.SelectedDevice;
+
+
+
+        if (device == null)
+
+
+
+        {
+
+
+
+            return "未选择设备";
+
+
+
+        }
+
+
+
+
+
+
+
+        var nick = device.wx?.wechatAccount?.nickname;
+
+
+
+        if (!string.IsNullOrWhiteSpace(nick))
+
+
+
+        {
+
+
+
+            return $"{nick} ({device.uuid})";
+
+
+
+        }
+
+
+
+
+
+
+
+        return device.uuid;
+
+
+
+    }
+
+
+
+
+
+
+
+    private bool EnsureDeviceSelected(string operationName)
+
+
+
+    {
+
+
+
+        if (Store.SelectedDevice != null)
+
+
+
+        {
+
+
+
+            return true;
+
+
+
+        }
+
+
+
+
+
+
+
+        SetResult(operationName, false, "请先选择设备");
+
+
+
+        return false;
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task RunBoolOperationAsync(string busyKey, string operationName, Func<Task<bool>> action)
+
+
+
+    {
+
+
+
+        if (!EnsureDeviceSelected(operationName))
+
+
+
+        {
+
+
+
+            return;
+
+
+
+        }
+
+
+
+
+
+
+
+        _busyKey = busyKey;
+
+
+
+        try
+
+
+
+        {
+
+
+
+            var success = await action();
+
+
+
+            SetResult(operationName, success, success ? "指令已提交，等待运行态结果。" : "指令下发失败。");
+
+
+
+        }
+
+
+
+        catch (Exception ex)
+
+
+
+        {
+
+
+
+            SetResult(operationName, false, ex.Message);
+
+
+
+        }
+
+
+
+        finally
+
+
+
+        {
+
+
+
+            _busyKey = string.Empty;
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task RunTaskResultOperationAsync(string busyKey, string operationName, Func<Task<TaskResult>> action)
+
+
+
+    {
+
+
+
+        if (!EnsureDeviceSelected(operationName))
+
+
+
+        {
+
+
+
+            return;
+
+
+
+        }
+
+        var confirm = await DialogService.Confirm(
+            $"将通过【{Store.CurrentExecutionLabel}】执行：{operationName}。\n\n如果微信已换设备登录，请先在顶部或左侧切换执行设备。",
+            operationName,
+            new ConfirmOptions { OkButtonText = "确定执行", CancelButtonText = "取消" });
+        if (confirm != true)
+        {
+            return;
+        }
+
+
+
+
+
+
+
+        _busyKey = busyKey;
+
+
+
+        try
+
+
+
+        {
+
+
+
+            var result = await action();
+
+
+
+            SetResult(operationName, result.success, string.IsNullOrWhiteSpace(result.message) ? (result.success ? "指令已提交。" : "指令执行失败。") : result.message);
+
+
+
+        }
+
+
+
+        catch (Exception ex)
+
+
+
+        {
+
+
+
+            SetResult(operationName, false, ex.Message);
+
+
+
+        }
+
+
+
+        finally
+
+
+
+        {
+
+
+
+            _busyKey = string.Empty;
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    private void SetResult(string operationName, bool success, string message)
+
+
+
+    {
+
+
+
+        _lastOperation = operationName;
+
+
+
+        _lastSuccess = success;
+
+
+
+        _lastMessage = message;
+
+
+
+        StateHasChanged();
+
+
+
+    }
+
+
+
+
+
+
+
+    private void ShowFinderMentionResult(FinderMentionNoticeDto item)
+
+
+
+    {
+
+
+
+        Store.SelectFinderMentionResult(item);
+
+
+
+    }
+
+
+
+
+
+
+
+    private void ShowFinderUserPageResult(FinderUserPageDto item)
+
+
+
+    {
+
+
+
+        Store.SelectFinderUserPageResult(item);
+
+
+
+    }
+
+
+
+
+
+
+
+    private void ShowFinderCommentResult(FinderCommentListDto item)
+
+
+
+    {
+
+
+
+        Store.SelectFinderCommentResult(item);
+
+
+
+    }
+
+
+
+
+
+
+
+    private static DateTimeOffset? GetLatestReceivedAt(IEnumerable<DateTimeOffset> values)
+
+    {
+
+        DateTimeOffset? latest = null;
+
+        foreach (var value in values)
+
+        {
+
+            if (!latest.HasValue || value > latest.Value)
+
+            {
+
+                latest = value;
+
+            }
+
+        }
+
+        return latest;
+
+    }
+
+
+
+    private static string FormatNullableReceivedAt(DateTimeOffset? value)
+
+    {
+
+        return value.HasValue ? FormatReceivedAt(value.Value) : "暂无";
+
+    }
+
+
+
+    private List<FinderFailureSummaryItem> GetFinderFailureHistoryItems()
+
+    {
+
+        var items = new List<FinderFailureSummaryItem>();
+
+
+
+        items.AddRange(Store.SelectedFinderMentionHistory
+
+            .Where(item => !item.success)
+
+            .Select(item => new FinderFailureSummaryItem
+
+            {
+
+                ResultTypeName = "提及列表",
+
+                TaskId = item.taskId,
+
+                ReceivedAt = item.receivedAt,
+
+                Summary = $"视频号：{item.sphUserName} ｜ 赞/评/关：{item.likeList.Count}/{item.commentList.Count}/{item.followList.Count}",
+
+                ErrorMessage = NormalizeFinderFailureMessage(item.errMsg)
+
+            }));
+
+
+
+        items.AddRange(Store.SelectedFinderUserPageHistory
+
+            .Where(item => !item.success)
+
+            .Select(item => new FinderFailureSummaryItem
+
+            {
+
+                ResultTypeName = "用户页",
+
+                TaskId = item.taskId,
+
+                ReceivedAt = item.receivedAt,
+
+                Summary = $"视频号：{item.userName} ｜ 作品数：{item.sphList.Count}",
+
+                ErrorMessage = NormalizeFinderFailureMessage(item.errMsg)
+
+            }));
+
+
+
+        items.AddRange(Store.SelectedFinderCommentHistory
+
+            .Where(item => !item.success)
+
+            .Select(item => new FinderFailureSummaryItem
+
+            {
+
+                ResultTypeName = "评论列表",
+
+                TaskId = item.taskId,
+
+                ReceivedAt = item.receivedAt,
+
+                Summary = $"视频号：{item.sphUserName} ｜ 评论数：{item.commentList.Count}",
+
+                ErrorMessage = NormalizeFinderFailureMessage(item.errMsg)
+
+            }));
+
+
+
+        return items
+
+            .OrderByDescending(item => item.ReceivedAt)
+
+            .ToList();
+
+    }
+
+
+
+    private static string NormalizeFinderFailureMessage(string? message)
+
+    {
+
+        return string.IsNullOrWhiteSpace(message) ? "未返回错误文案" : message.Trim();
+
+    }
+
+
+
+    private bool IsCurrentFinderMention(FinderMentionNoticeDto item)
+
+
+
+    {
+
+
+
+        return IsSameFinderResult(Store.CurrentFinderMentions?.taskId, Store.CurrentFinderMentions?.receivedAt, item.taskId, item.receivedAt);
+
+
+
+    }
+
+
+
+
+
+
+
+    private bool IsCurrentFinderUserPage(FinderUserPageDto item)
+
+
+
+    {
+
+
+
+        return IsSameFinderResult(Store.CurrentFinderUserPage?.taskId, Store.CurrentFinderUserPage?.receivedAt, item.taskId, item.receivedAt);
+
+
+
+    }
+
+
+
+
+
+
+
+    private bool IsCurrentFinderComment(FinderCommentListDto item)
+
+
+
+    {
+
+
+
+        return IsSameFinderResult(Store.CurrentFinderComments?.taskId, Store.CurrentFinderComments?.receivedAt, item.taskId, item.receivedAt);
+
+
+
+    }
+
+
+
+
+
+
+
+    private static bool IsSameFinderResult(long? currentTaskId, DateTimeOffset? currentReceivedAt, long taskId, DateTimeOffset receivedAt)
+
+
+
+    {
+
+
+
+        return currentTaskId == taskId && currentReceivedAt == receivedAt;
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task ApplyHistoryFilterAsync()
+
+    {
+
+        if (!EnsureDeviceSelected("筛选视频号历史"))
+
+        {
+
+            return;
+
+        }
+
+
+
+        if (_historyFilter.ReceivedFrom.HasValue && _historyFilter.ReceivedTo.HasValue && _historyFilter.ReceivedFrom.Value > _historyFilter.ReceivedTo.Value)
+
+        {
+
+            SetResult("筛选视频号历史", false, "开始时间不能晚于结束时间。");
+
+            return;
+
+        }
+
+
+
+        _busyKey = "history-apply";
+
+        try
+
+        {
+
+            await ReloadFinderHistoryWithCurrentFilterAsync();
+
+            SetResult("筛选视频号历史", true, "已按当前筛选条件重新加载 Finder 历史。");
+
+        }
+
+        catch (Exception ex)
+
+        {
+
+            SetResult("筛选视频号历史", false, ex.Message);
+
+        }
+
+        finally
+
+        {
+
+            _busyKey = string.Empty;
+
+        }
+
+    }
+
+
+
+    private async Task ClearHistoryFilterAsync()
+
+    {
+
+        if (!EnsureDeviceSelected("清空视频号历史筛选"))
+
+        {
+
+            _historyFilter.Reset();
+
+            return;
+
+        }
+
+
+
+        _busyKey = "history-clear";
+
+        try
+
+        {
+
+            _historyFilter.Reset();
+
+            await Store.ReloadFinderHistoryForSelectedDeviceAsync();
+
+            SetResult("清空视频号历史筛选", true, "已恢复当前设备未筛选的 Finder 历史。");
+
+        }
+
+        catch (Exception ex)
+
+        {
+
+            SetResult("清空视频号历史筛选", false, ex.Message);
+
+        }
+
+        finally
+
+        {
+
+            _busyKey = string.Empty;
+
+        }
+
+    }
+
+
+
+    private async Task ExportFinderHistoryAsync()
+
+    {
+
+        if (!EnsureDeviceSelected("导出视频号历史"))
+
+        {
+
+            return;
+
+        }
+
+
+
+        if (_historyFilter.ReceivedFrom.HasValue && _historyFilter.ReceivedTo.HasValue && _historyFilter.ReceivedFrom.Value > _historyFilter.ReceivedTo.Value)
+
+        {
+
+            SetResult("导出视频号历史", false, "开始时间不能晚于结束时间。");
+
+            return;
+
+        }
+
+
+
+        _busyKey = "history-export";
+
+        try
+
+        {
+
+            var exportModel = await Store.ExportFinderHistoryForSelectedDeviceAsync(
+                FinderHistoryExportCountPerType,
+                ResolveHistorySuccessFilter(),
+                NormalizeHistoryTaskId(_historyFilter.TaskId),
+                ResolveHistoryReceivedFrom(),
+                ResolveHistoryReceivedTo());
+            if (!exportModel.success)
+            {
+                SetResult("导出视频号历史", false, exportModel.message);
+                return;
+            }
+
+            var json = JsonSerializer.Serialize(exportModel, FinderExportJsonOptions);
+
+            var module = await GetFinderInteropModuleAsync();
+
+            await module.InvokeVoidAsync("downloadTextFile", BuildFinderHistoryExportFileName(), json, "application/json;charset=utf-8");
+
+            SetResult("导出视频号历史", true, exportModel.message);
+
+        }
+
+        catch (Exception ex)
+
+        {
+
+            SetResult("导出视频号历史", false, ex.Message);
+
+        }
+
+        finally
+
+        {
+
+            _busyKey = string.Empty;
+
+        }
+
+    }
+
+
+
+    private async Task ReloadFinderHistoryWithCurrentFilterAsync()
+
+    {
+
+        await Store.ReloadFinderHistoryForSelectedDeviceAsync(
+
+            ResolveHistorySuccessFilter(),
+
+            NormalizeHistoryTaskId(_historyFilter.TaskId),
+
+            ResolveHistoryReceivedFrom(),
+
+            ResolveHistoryReceivedTo());
+
+    }
+
+
+
+    private async Task<IJSObjectReference> GetFinderInteropModuleAsync()
+
+    {
+
+        _finderInteropModule ??= await JS.InvokeAsync<IJSObjectReference>(
+
+            "import",
+
+            "./_content/SCRM.UI/finderCenterInterop.js");
+
+        return _finderInteropModule;
+
+    }
+
+
+
+    private string BuildFinderHistoryExportFileName()
+
+    {
+
+        var deviceUuid = Store.SelectedDevice?.uuid ?? "unknown-device";
+
+        foreach (var invalidChar in System.IO.Path.GetInvalidFileNameChars())
+
+        {
+
+            deviceUuid = deviceUuid.Replace(invalidChar, '_');
+
+        }
+
+
+
+        var suffix = _historyFilter.Status == "all" && !_historyFilter.TaskId.HasValue && !_historyFilter.ReceivedFrom.HasValue && !_historyFilter.ReceivedTo.HasValue
+
+            ? "all"
+
+            : "filtered";
+
+        return $"finder-history-{deviceUuid}-{suffix}-{DateTimeOffset.UtcNow:yyyyMMdd_HHmmss}.json";
+
+    }
+
+
+
+    private bool? ResolveHistorySuccessFilter()
+
+    {
+
+        return _historyFilter.Status switch
+
+        {
+
+            "success" => true,
+
+            "fail" => false,
+
+            _ => null
+
+        };
+
+    }
+
+
+
+    private static long? NormalizeHistoryTaskId(long? taskId)
+
+    {
+
+        return taskId.HasValue && taskId.Value > 0 ? taskId : null;
+
+    }
+
+
+
+    private DateTimeOffset? ResolveHistoryReceivedFrom()
+
+    {
+
+        return _historyFilter.ReceivedFrom.HasValue
+
+            ? new DateTimeOffset(_historyFilter.ReceivedFrom.Value)
+
+            : null;
+
+    }
+
+
+
+    private DateTimeOffset? ResolveHistoryReceivedTo()
+
+    {
+
+        return _historyFilter.ReceivedTo.HasValue
+
+            ? new DateTimeOffset(_historyFilter.ReceivedTo.Value)
+
+            : null;
+
+    }
+
+
+
+    private string GetFinderHistoryFilterSummary()
+
+    {
+
+        var parts = new List<string>();
+
+
+
+        parts.Add(_historyFilter.Status switch
+
+        {
+
+            "success" => "状态=仅成功",
+
+            "fail" => "状态=仅失败",
+
+            _ => "状态=全部"
+
+        });
+
+
+
+        var taskId = NormalizeHistoryTaskId(_historyFilter.TaskId);
+
+        if (taskId.HasValue)
+
+        {
+
+            parts.Add($"TaskId={taskId.Value}");
+
+        }
+
+
+
+        if (_historyFilter.ReceivedFrom.HasValue)
+
+        {
+
+            parts.Add($"开始={_historyFilter.ReceivedFrom.Value:yyyy-MM-dd HH:mm:ss}");
+
+        }
+
+
+
+        if (_historyFilter.ReceivedTo.HasValue)
+
+        {
+
+            parts.Add($"结束={_historyFilter.ReceivedTo.Value:yyyy-MM-dd HH:mm:ss}");
+
+        }
+
+
+
+        return $"当前筛选：{string.Join(" ｜ ", parts)}";
+
+    }
+
+
+
+    /// <summary>
+    /// 表格中展示长文本时进行截断，完整内容保留在 title 中，避免视频号评论或引用内容撑开页面。
+    /// </summary>
+    private static string FormatShortText(string? value, int maxLength)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return "-";
+        }
+
+        var trimmed = value.Trim();
+        return trimmed.Length <= maxLength ? trimmed : trimmed[..maxLength] + "...";
+    }
+
+
+
+    private static string FormatReceivedAt(DateTimeOffset value)
+
+
+
+    {
+
+
+
+        return value.ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+
+
+
+    }
+
+
+
+
+
+
+
+    private static string FormatUnixSeconds(long value)
+
+
+
+    {
+
+
+
+        if (value <= 0)
+
+
+
+        {
+
+
+
+            return "-";
+
+
+
+        }
+
+
+
+
+
+
+
+        try
+
+
+
+        {
+
+
+
+            return DateTimeOffset.FromUnixTimeSeconds(value).ToLocalTime().ToString("yyyy-MM-dd HH:mm:ss");
+
+
+
+        }
+
+
+
+        catch
+
+
+
+        {
+
+
+
+            return value.ToString();
+
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
+    private static string GetGenderText(int gender)
+
+
+
+    {
+
+
+
+        return gender switch
+
+
+
+        {
+
+
+
+            1 => "男",
+
+
+
+            2 => "女",
+
+
+
+            _ => "未知"
+
+
+
+        };
+
+
+
+    }
+
+
+
+
+
+
+
+    private static string GetResultStatusText(bool success)
+
+
+
+    {
+
+
+
+        return success ? "成功" : "失败";
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task SendMentionAsync()
+
+
+
+    {
+
+
+
+        await RunTaskResultOperationAsync("mention", "视频号提及拉取", () =>
+
+
+
+            Store.SphGetMentionAsync(
+
+
+
+                _mentionForm.LastLikeId ?? 0,
+
+
+
+                _mentionForm.LastCommentId ?? 0,
+
+
+
+                _mentionForm.LastFollowId ?? 0));
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task SendCommentListAsync()
+
+
+
+    {
+
+
+
+        await RunTaskResultOperationAsync("comment-list", "视频号评论列表拉取", () =>
+
+
+
+            Store.SphGetCommentAsync(
+
+
+
+                _commentListForm.FeedId ?? 0,
+
+
+
+                _commentListForm.NonceId ?? string.Empty,
+
+
+
+                _commentListForm.FeedAuth ?? string.Empty,
+
+
+
+                _commentListForm.RefCommentId ?? 0,
+
+
+
+                _commentListForm.ReplyCommentId ?? 0,
+
+
+
+                _commentListForm.SortType ?? 0));
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task SendUserPageAsync()
+
+
+
+    {
+
+
+
+        await RunTaskResultOperationAsync("user-page", "视频号用户页拉取", () =>
+
+
+
+            Store.SphUserPageAsync(_userPageForm.SphUserName ?? string.Empty));
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task SendPostAsync()
+
+
+
+    {
+
+
+
+        await RunTaskResultOperationAsync("post", "视频号发布", () =>
+
+
+
+            Store.SphPostAsync(
+
+
+
+                _postForm.Content ?? string.Empty,
+
+
+
+                SplitLines(_postForm.MediasText),
+
+
+
+                _postForm.MediaType ?? 0,
+
+
+
+                _postForm.Cover ?? string.Empty));
+
+
+
+    }
+
+
+
+
+
+
+
+    private async Task SendCommentAsync()
+
+
+
+    {
+
+
+
+        await RunTaskResultOperationAsync("comment", "视频号评论", () =>
+
+
+
+            Store.SphCommentAsync(
+
+
+
+                _commentForm.FeedId ?? 0,
+
+
+
+                _commentForm.NonceId ?? string.Empty,
+
+
+
+                _commentForm.FeedAuth ?? string.Empty,
+
+
+
+                _commentForm.Type ?? 0,
+
+
+
+                _commentForm.Content ?? string.Empty,
+
+
+
+                _commentForm.Media ?? string.Empty,
+
+
+
+                _commentForm.ReplyCommentId ?? 0,
+
+
+
+                _commentForm.ReplyUsername ?? string.Empty));
+
+
+
+    }
+
+
+
+
+
+
+
+    private Task SendLikeAsync()
+
+
+
+    {
+
+
+
+        SetResult("视频号点赞/取消点赞", false, "当前安卓侧底层仍未实现 SphLikeTask，网页端已先行收口，避免继续下发无效任务。");
+
+
+
+        return Task.CompletedTask;
+
+
+
+    }
+
+
+
+
+
+
+
+    private Task SendDeleteCommentAsync()
+
+
+
+    {
+
+
+
+        SetResult("视频号删评", false, "当前安卓侧底层仍未实现 SphDelCommentTask，网页端已先行收口，避免继续下发无效任务。");
+
+
+
+        return Task.CompletedTask;
+
+
+
+    }
+
+
+
+
+
+
+
+    private static List<string> SplitLines(string? rawText)
+
+
+
+    {
+
+
+
+        if (string.IsNullOrWhiteSpace(rawText))
+
+
+
+        {
+
+
+
+            return new List<string>();
+
+
+
+        }
+
+
+
+
+
+
+
+        return rawText
+
+
+
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+
+
+
+            .Select(item => item.Trim())
+
+
+
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+
+
+
+            .Distinct()
+
+
+
+            .ToList();
+
+
+
+    }
+
+
+
+
+
+
+
+    /// <summary>
+
+
+
+    /// 视频号提及拉取表单。
+
+
+
+    /// </summary>
+
+
+
+    private sealed class MentionFormModel
+
+
+
+    {
+
+
+
+        public long? LastLikeId { get; set; }
+
+
+
+        public long? LastCommentId { get; set; }
+
+
+
+        public long? LastFollowId { get; set; }
+
+
+
+    }
+
+
+
+
+
+
+
+    /// <summary>
+
+
+
+    /// 视频号评论列表拉取表单。
+
+
+
+    /// </summary>
+
+
+
+    private sealed class CommentListFormModel
+
+
+
+    {
+
+
+
+        public long? FeedId { get; set; }
+
+
+
+        public string NonceId { get; set; } = string.Empty;
+
+
+
+        public string FeedAuth { get; set; } = string.Empty;
+
+
+
+        public long? RefCommentId { get; set; }
+
+
+
+        public long? ReplyCommentId { get; set; }
+
+
+
+        public int? SortType { get; set; }
+
+
+
+    }
+
+
+
+
+
+
+
+    /// <summary>
+
+
+
+    /// 视频号用户页拉取表单。
+
+
+
+    /// </summary>
+
+
+
+    private sealed class UserPageFormModel
+
+
+
+    {
+
+
+
+        public string SphUserName { get; set; } = string.Empty;
+
+
+
+    }
+
+
+
+
+
+
+
+    /// <summary>
+
+
+
+    /// 视频号发布表单。
+
+
+
+    /// </summary>
+
+
+
+    private sealed class PostFormModel
+
+
+
+    {
+
+
+
+        public string Content { get; set; } = string.Empty;
+
+
+
+        public string MediasText { get; set; } = string.Empty;
+
+
+
+        public int? MediaType { get; set; } = 0;
+
+
+
+        public string Cover { get; set; } = string.Empty;
+
+
+
+    }
+
+
+
+
+
+
+
+    /// <summary>
+
+
+
+    /// 视频号评论表单。
+
+
+
+    /// </summary>
+
+
+
+    private sealed class CommentFormModel
+
+
+
+    {
+
+
+
+        public long? FeedId { get; set; }
+
+
+
+        public string NonceId { get; set; } = string.Empty;
+
+
+
+        public string FeedAuth { get; set; } = string.Empty;
+
+
+
+        public int? Type { get; set; } = 0;
+
+
+
+        public string Content { get; set; } = string.Empty;
+
+
+
+        public string Media { get; set; } = string.Empty;
+
+
+
+        public long? ReplyCommentId { get; set; }
+
+
+
+        public string ReplyUsername { get; set; } = string.Empty;
+
+
+
+    }
+
+
+
+
+
+
+
+    /// <summary>
+
+
+
+    /// 视频号点赞表单。
+
+
+
+    /// </summary>
+
+
+
+    private sealed class LikeFormModel
+
+
+
+    {
+
+
+
+        public long? FeedId { get; set; }
+
+
+
+        public int? Type { get; set; } = 1;
+
+
+
+        public bool IsCancel { get; set; }
+
+
+
+    }
+
+
+
+
+
+
+
+    /// <summary>
+
+
+
+    /// 视频号删评表单。
+
+
+
+    /// </summary>
+
+
+
+    private sealed class DeleteCommentFormModel
+
+
+
+    {
+
+
+
+        public long? FeedId { get; set; }
+
+
+
+        public long? CommentId { get; set; }
+
+
+
+    }
+
+
+
+
+
+
+
+    /// <summary>
+
+    /// Finder 失败摘要行。
+
+    /// </summary>
+
+    private sealed class FinderFailureSummaryItem
+
+    {
+
+        public string ResultTypeName { get; set; } = string.Empty;
+
+        public long TaskId { get; set; }
+
+        public DateTimeOffset ReceivedAt { get; set; }
+
+        public string Summary { get; set; } = string.Empty;
+
+        public string ErrorMessage { get; set; } = string.Empty;
+
+    }
+
+
+
+    /// <summary>
+
+    /// Finder 历史筛选表单。
+
+    /// </summary>
+
+    private sealed class FinderHistoryFilterModel
+
+    {
+
+        public string Status { get; set; } = "all";
+
+        public long? TaskId { get; set; }
+
+        public DateTime? ReceivedFrom { get; set; }
+
+        public DateTime? ReceivedTo { get; set; }
+
+
+
+        public void Reset()
+
+        {
+
+            Status = "all";
+
+            TaskId = null;
+
+            ReceivedFrom = null;
+
+            ReceivedTo = null;
+
+        }
+
+    }
+
+
+
+    /// <summary>
+
+    /// Finder 历史状态筛选选项。
+
+    /// </summary>
+
+    private sealed class HistoryStatusOption
+
+    {
+
+        public HistoryStatusOption(string value, string label)
+
+        {
+
+            Value = value;
+
+            Label = label;
+
+        }
+
+
+
+        public string Value { get; }
+
+        public string Label { get; }
+
+    }
+
+}

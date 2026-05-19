@@ -9,4 +9,5 @@ message ChatRoomInviteApproveTaskMessage {
   int64 MsgSvrId = 3;     // 消息服务器ID
   string MsgContent = 4;  // 消息内容
   int64 taskId = 5;       // 任务ID
+  int64 MsgId = 6;        // 62203新增：群邀请确认使用的消息ID，旧链路兼容MsgSvrId
 }

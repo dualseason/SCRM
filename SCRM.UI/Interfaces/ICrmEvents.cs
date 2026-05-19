@@ -1,5 +1,6 @@
 using System;
 using SCRM.API.Models.Entities;
+using SCRM.SHARED.Models.Events;
 
 namespace SCRM.Shared.Interfaces
 {
@@ -22,6 +23,47 @@ namespace SCRM.Shared.Interfaces
         /// Action 参数: (accountId)
         /// </summary>
         IDisposable SubscribeToContactsReceived(Action<string> handler);
+
+        /// <summary>
+        /// 订阅会话列表更新
+        /// Action 参数: (accountId)
+        /// </summary>
+        IDisposable SubscribeToConversationsUpdated(Action<string> handler);
+
+        /// <summary>
+        /// 订阅好友请求列表更新。
+        /// Action 参数: (accountId)
+        /// </summary>
+        IDisposable SubscribeToFriendRequestsUpdated(Action<string> handler);
+
+        /// <summary>
+        /// 订阅群邀请列表更新。
+        /// Action 参数: (accountId)
+        /// </summary>
+        IDisposable SubscribeToGroupInvitationsUpdated(Action<string> handler);
+
+        /// <summary>
+        /// 订阅联系人标签列表更新。
+        /// Action 参数: (accountId)
+        /// </summary>
+        IDisposable SubscribeToContactLabelsUpdated(Action<string> handler);
+
+        /// <summary>
+        /// 订阅手机短信记录更新。
+        /// Action 参数: (accountId)
+        /// </summary>
+        IDisposable SubscribeToSmsRecordsUpdated(Action<string> handler);
+
+        /// <summary>
+        /// 订阅手机通话记录更新。
+        /// Action 参数: (accountId)
+        /// </summary>
+        IDisposable SubscribeToCallLogRecordsUpdated(Action<string> handler);
+
+        /// <summary>
+        /// 订阅异步任务结果。
+        /// </summary>
+        IDisposable SubscribeToTaskResults(Action<TaskResultReceivedEvent> handler);
 
         // --- 铺开模块 ---
         /// <summary>

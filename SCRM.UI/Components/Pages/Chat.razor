@@ -23,6 +23,9 @@
 else
 {
     <RadzenStack Style="height: calc(100vh - 100px); max-width: 800px; margin: 0 auto;">
+        <OperationContextHint Title="聊天当前执行对象"
+                              Description="当前联系人消息归属于当前微信账号；发送消息会通过当前执行设备下发。"
+                              Class="rz-mb-2" />
         <RadzenCard Style="flex: 1; display: flex; flex-direction: column; overflow: hidden; padding: 0;">
              <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Style="padding: 1rem; border-bottom: 1px solid var(--rz-border-color);">
                 <RadzenButton Icon="arrow_back" ButtonStyle="ButtonStyle.Light" Click="@(()=>NavManager.NavigateTo("/contacts"))" Size="ButtonSize.Small" />

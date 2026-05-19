@@ -30,15 +30,15 @@
 
     async Task AcceptRequest()
     {
-        var success = await CrmService.AcceptFriendRequestAsync(DeviceUuid, friendId, friendNick ?? "");
-        if (success)
+        var result = await CrmService.AcceptFriendRequestAsync(DeviceUuid, friendId, friendNick ?? "");
+        if (result.success)
         {
-            NotificationService.Notify(NotificationSeverity.Success, "Sent", "Accept Friend Request command sent.");
+            NotificationService.Notify(NotificationSeverity.Success, "Sent", result.message ?? "Accept Friend Request command sent.");
             DialogService.Close(true);
         }
         else
         {
-            NotificationService.Notify(NotificationSeverity.Error, "Failed", "Could not send command.");
+            NotificationService.Notify(NotificationSeverity.Error, "Failed", result.message ?? "Could not send command.");
         }
     }
 }

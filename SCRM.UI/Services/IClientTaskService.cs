@@ -4,6 +4,7 @@ namespace SCRM.UI.Services
 {
     public interface IClientTaskService
     {
-        Task<bool> SendTalkToFriendAsync(string connectionId, string friendWxId, string content);
+        Task<bool> SendTalkToFriendAsync(string connectionId, string friendWxId, string content, int contentType = 1, string atIds = "");
     }
 }
+

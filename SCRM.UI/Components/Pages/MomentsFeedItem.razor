@@ -2,19 +2,25 @@
 @using SCRM.SHARED.Models
 @using Radzen
 @using Radzen.Blazor
+@using Microsoft.AspNetCore.Components.Web
+@using SCRM.UI.Services
+@using SCRM.SHARED.Utils
 
 @inject IJSRuntime JSRuntime
+@inject CrmStore Store
+@inject NotificationService NoticeService
+@inject DialogService DialogService
 
 <RadzenCard Style="margin-bottom: 20px; border-radius: 8px;">
     <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Start" Gap="15px">
         <RadzenImage Path="@(string.IsNullOrEmpty(Moment.userName) ? "" : "")" Style="width: 50px; height: 50px; background-color: var(--rz-success); flex-shrink: 0; border-radius: 50%;" />
         <RadzenStack Orientation="Orientation.Vertical" Gap="5px" Style="flex: 1;">
             <RadzenText TextStyle="TextStyle.Subtitle2" Style="font-weight: bold; color: var(--rz-primary);">
-                @(string.IsNullOrEmpty(Moment.nickName) ? Moment.userName : Moment.nickName)
+                @DisplayMomentAuthor
             </RadzenText>
             
             <RadzenText TextStyle="TextStyle.Body1" Style="margin-bottom: 5px; white-space: pre-wrap;">
-                @Moment.content
+                @DisplayMomentContent
             </RadzenText>
 
             <!-- Images Grid -->
@@ -39,14 +45,14 @@
             }
 
             <!-- Link Card -->
-            @if (Link != null)
+            @if (HasLink)
             {
-                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Style="margin-top: 10px; background: var(--rz-base-200); padding: 5px; border-radius: 4px; cursor: pointer;" @onclick="@(() => OpenLink(Link.url))">
+                 <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Style="margin-top: 10px; background: var(--rz-base-200); padding: 5px; border-radius: 4px; cursor: pointer;" @onclick="@(() => OpenLink(Link?.url ?? string.Empty))">
                      <div style="width: 40px; height: 40px; background: var(--rz-base-0); margin-right: 10px; flex-shrink: 0;">
-                         <img src="@Link.thumb" style="width: 100%; height: 100%; object-fit: cover;" />
+                         <img src="@(Link?.thumb ?? string.Empty)" style="width: 100%; height: 100%; object-fit: cover;" />
                      </div>
                      <RadzenText TextStyle="TextStyle.Caption" Style="flex: 1; color: var(--rz-text-title-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-bottom: 0;">
-                         @Link.title
+                         @(Link?.title ?? Link?.url ?? string.Empty)
                      </RadzenText>
                  </RadzenStack>
             }
@@ -57,10 +63,24 @@
                 </RadzenText>
                 <!-- Actions -->
                 <RadzenStack Orientation="Orientation.Horizontal" Gap="15px">
-                     <RadzenIcon Icon="chat_bubble_outline" Style="cursor: pointer; color: var(--rz-text-secondary-color);" />
-                     <RadzenIcon Icon="favorite_border" Style="cursor: pointer; color: var(--rz-text-secondary-color);" />
+                     <RadzenButton Icon="chat_bubble_outline" Variant="Variant.Text" ButtonStyle="ButtonStyle.Light" Size="ButtonSize.Small"
+                                   Click="ToggleCommentBox" title="评论" />
+                     <RadzenButton Icon="@(HasLikedBySelf ? "favorite" : "favorite_border")" Variant="Variant.Text" ButtonStyle="@(HasLikedBySelf ? ButtonStyle.Danger : ButtonStyle.Light)" Size="ButtonSize.Small"
+                                   Click="ToggleLikeAsync" Disabled="@_isLiking" title="@(HasLikedBySelf ? "取消点赞" : "点赞")" />
                 </RadzenStack>
             </RadzenStack>
+
+            @if (_showCommentBox)
+            {
+                <RadzenStack Orientation="Orientation.Horizontal" Gap="0.5rem" AlignItems="AlignItems.Center" Style="margin-top: 10px;">
+                    <RadzenTextBox @bind-Value="_commentText"
+                                   @onkeydown="HandleCommentKeyDown"
+                                   Placeholder="输入评论内容，回车发送"
+                                   Style="flex: 1;" />
+                    <RadzenButton Text="发送" Icon="send" Size="ButtonSize.Small" ButtonStyle="ButtonStyle.Primary"
+                                  Click="SendCommentAsync" Disabled="@(_isCommenting || string.IsNullOrWhiteSpace(_commentText))" />
+                </RadzenStack>
+            }
 
             <!-- Comments & Likes Area (Simplified) -->
             @if (Comments.Any() || Likes.Any())
@@ -69,14 +89,19 @@
                      @if(Likes.Any())
                      {
                          <RadzenText TextStyle="TextStyle.Caption" Style="color: var(--rz-primary); margin-bottom: 5px;">
-                             <RadzenIcon Icon="favorite_border" Style="font-size: 12px; vertical-align: middle;" /> @string.Join(", ", Likes.Select(l => l.nickName))
+                             <RadzenIcon Icon="favorite_border" Style="font-size: 12px; vertical-align: middle;" /> @string.Join(", ", Likes.Select(DisplayLikeName))
                          </RadzenText>
                      }
                      
                      @foreach(var c in Comments)
                      {
-                         <RadzenText TextStyle="TextStyle.Caption" Style="margin-bottom: 0;">
-                             <span style="color: var(--rz-primary); font-weight: bold;">@c.authorName:</span> @c.content
+                         var isPendingComment = IsPendingComment(c);
+                         <RadzenText TextStyle="TextStyle.Caption" Style="@($"margin-bottom: 0;{(isPendingComment ? " opacity: 0.72;" : string.Empty)}")">
+                             <span style="color: var(--rz-primary); font-weight: bold; cursor: pointer;" title="@(isPendingComment ? "待微信回执确认，暂不能回复" : "点击回复")" @onclick="@(() => StartReply(c))">@(DisplayCommentName(c)):</span> @c.content
+                             @if (isPendingComment)
+                             {
+                                 <span style="margin-left: 0.35rem; color: var(--rz-warning); font-size: 11px;">待同步</span>
+                             }
                          </RadzenText>
                      }
                  </RadzenStack>
@@ -87,39 +112,78 @@
 
 @code {
     [Parameter]
-    public MomentsTimeline Moment { get; set; }
+    public MomentsTimeline Moment { get; set; } = new();
 
     private List<string> Images = new();
-    private string VideoUrl;
-    private SCRM.SHARED.Models.Dtos.MomentLinkDto Link;
+    private string VideoUrl = string.Empty;
+    private SCRM.SHARED.Models.Dtos.MomentLinkDto? Link;
     private List<SCRM.SHARED.Models.Dtos.MomentCommentDto> Comments = new();
     private List<SCRM.SHARED.Models.Dtos.MomentLikeDto> Likes = new();
+    private string _commentText = string.Empty;
+    private bool _showCommentBox;
+    private bool _isLiking;
+    private bool _isCommenting;
+    private long _replyCommentId;
+    private string _replyToWeChatId = string.Empty;
+    private bool HasLink => Link != null
+        && (!string.IsNullOrWhiteSpace(Link.title)
+            || !string.IsNullOrWhiteSpace(Link.url)
+            || !string.IsNullOrWhiteSpace(Link.thumb));
+
+    private string DisplayMomentAuthor => Store.ResolveContactDisplayNamePublic(Moment?.userName, Moment?.nickName);
+
+    private string DisplayMomentContent => MomentContentExtractor.FirstNonEmpty(
+        Moment?.content,
+        MomentContentExtractor.ExtractTextFromXml(Moment?.xmlContent),
+        BuildEmptyMomentLabel());
+
+    /// <summary>
+    /// 无文字朋友圈的轻量占位，避免用户误以为同步没有真实内容。
+    /// </summary>
+    private string BuildEmptyMomentLabel()
+    {
+        if (Images.Any())
+        {
+            return "[图片朋友圈]";
+        }
+
+        if (!string.IsNullOrWhiteSpace(VideoUrl))
+        {
+            return "[视频朋友圈]";
+        }
+
+        if (HasLink)
+        {
+            return "[链接朋友圈]";
+        }
+
+        if (Comments.Any() || Likes.Any())
+        {
+            return "[无文字内容]";
+        }
+
+        return string.Empty;
+    }
+
+    private string DisplayLikeName(SCRM.SHARED.Models.Dtos.MomentLikeDto like)
+    {
+        return Store.ResolveContactDisplayNamePublic(like?.userName, like?.nickName);
+    }
+
+    private string DisplayCommentName(SCRM.SHARED.Models.Dtos.MomentCommentDto comment)
+    {
+        return Store.ResolveContactDisplayNamePublic(comment?.userName, comment?.nickName);
+    }
+
+    private bool HasLikedBySelf => Likes.Any(l => string.Equals(l.userName, CurrentWechatId, StringComparison.OrdinalIgnoreCase));
+
+    private string CurrentWechatId => Store.SelectedDevice?.wx?.wechatAccount?.wxid
+        ?? Store.SelectedDevice?.weChatId
+        ?? string.Empty;
 
     protected override void OnParametersSet()
     {
-        if (Moment != null)
-        {
-            try
-            {
-                if (!string.IsNullOrEmpty(Moment.imagesJson))
-                    Images = System.Text.Json.JsonSerializer.Deserialize<List<string>>(Moment.imagesJson) ?? new();
-                
-                VideoUrl = Moment.videoUrl;
-
-                if (!string.IsNullOrEmpty(Moment.linkInfoJson))
-                     Link = System.Text.Json.JsonSerializer.Deserialize<SCRM.SHARED.Models.Dtos.MomentLinkDto>(Moment.linkInfoJson);
-
-                if (!string.IsNullOrEmpty(Moment.commentsJson))
-                    Comments = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentCommentDto>>(Moment.commentsJson) ?? new();
-                
-                if (!string.IsNullOrEmpty(Moment.likesJson))
-                    Likes = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(Moment.likesJson) ?? new();
-            }
-            catch
-            {
-                // Ignore parse errors
-            }
-        }
+        ReloadMomentPayload();
     }
 
     private string GetTimeAgo(long timestamp)
@@ -133,9 +197,148 @@
         return dt.ToLocalTime().ToString("yyyy-MM-dd HH:mm");
     }
 
+    private void ToggleCommentBox()
+    {
+        _showCommentBox = !_showCommentBox;
+        if (_showCommentBox && string.IsNullOrWhiteSpace(_replyToWeChatId))
+        {
+            _replyToWeChatId = Moment?.userName ?? string.Empty;
+            _replyCommentId = 0;
+        }
+    }
+
+    /// <summary>
+    /// 下发普通朋友圈点赞或取消点赞任务。
+    /// </summary>
+    private async Task ToggleLikeAsync()
+    {
+        if (Moment == null || _isLiking)
+        {
+            return;
+        }
+
+        _isLiking = true;
+        try
+        {
+            var actionName = HasLikedBySelf ? "取消点赞" : "点赞";
+            var confirm = await DialogService.Confirm(
+                $"将通过【{BuildCurrentExecutionLabel()}】对 {DisplayMomentAuthor} 的朋友圈执行“{actionName}”。",
+                actionName,
+                new ConfirmOptions { OkButtonText = "确定执行", CancelButtonText = "取消" });
+            if (confirm != true)
+            {
+                return;
+            }
+
+            await Store.LikeMomentAsync(Moment.snsId, HasLikedBySelf);
+            // Store 内部会先做乐观更新并触发 StateHasChanged；子组件也同步刷新本地解析缓存，避免等待下一次参数重建。
+            ReloadMomentPayload();
+        }
+        finally
+        {
+            _isLiking = false;
+        }
+    }
+
+    private void StartReply(SCRM.SHARED.Models.Dtos.MomentCommentDto comment)
+    {
+        if (IsPendingComment(comment))
+        {
+            NoticeService.Notify(NotificationSeverity.Info, "评论待同步", "该评论正在等待微信回执确认，确认前暂不能继续回复。");
+            return;
+        }
+
+        _showCommentBox = true;
+        _replyCommentId = comment.commentId;
+        _replyToWeChatId = string.IsNullOrWhiteSpace(comment.userName) ? (Moment?.userName ?? string.Empty) : comment.userName;
+        _commentText = string.IsNullOrWhiteSpace(comment.nickName) ? string.Empty : $"回复 {comment.nickName}: ";
+    }
+
+    /// <summary>
+    /// 判断评论是否为前端临时展示的待同步评论。
+    /// <para>CrmStore 在评论下发前会使用负数 commentId 做本地占位，后续以安卓端回包或详情回拉校准。</para>
+    /// </summary>
+    private static bool IsPendingComment(SCRM.SHARED.Models.Dtos.MomentCommentDto? comment)
+    {
+        return comment?.commentId < 0;
+    }
+
+    private async Task HandleCommentKeyDown(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter" && !string.IsNullOrWhiteSpace(_commentText))
+        {
+            await SendCommentAsync();
+        }
+    }
+
+    /// <summary>
+    /// 下发普通朋友圈评论/回复任务。replyCommentId 为 0 时表示直接评论该朋友圈。
+    /// </summary>
+    private async Task SendCommentAsync()
+    {
+        if (Moment == null || _isCommenting)
+        {
+            return;
+        }
+
+        var content = _commentText?.Trim() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            NoticeService.Notify(NotificationSeverity.Warning, "评论为空", "请输入评论内容。 ");
+            return;
+        }
+
+        _isCommenting = true;
+        try
+        {
+            var toWeChatId = string.IsNullOrWhiteSpace(_replyToWeChatId) ? (Moment.userName ?? string.Empty) : _replyToWeChatId;
+            var confirm = await DialogService.Confirm(
+                $"将通过【{BuildCurrentExecutionLabel()}】评论 {DisplayMomentAuthor} 的朋友圈。\n\n评论内容：{content}",
+                "发送朋友圈评论",
+                new ConfirmOptions { OkButtonText = "发送评论", CancelButtonText = "取消" });
+            if (confirm != true)
+            {
+                return;
+            }
+
+            var result = await Store.ReplyMomentCommentAsync(Moment.snsId, toWeChatId, content, _replyCommentId, false);
+            if (result.success || IsClientCallbackTimeout(result.message))
+            {
+                ReloadMomentPayload();
+                _commentText = string.Empty;
+                _replyCommentId = 0;
+                _replyToWeChatId = Moment.userName ?? string.Empty;
+                _showCommentBox = false;
+            }
+        }
+        finally
+        {
+            _isCommenting = false;
+        }
+    }
+
     private void OpenImage(string src)
     {
         // Placeholder for potentially opening a lightbox
+    }
+
+    private string BuildCurrentExecutionLabel()
+    {
+        return Store.CurrentExecutionLabel;
+    }
+
+    /// <summary>
+    /// 判断评论任务是否只是客户端完成回调未捕获。
+    /// </summary>
+    private static bool IsClientCallbackTimeout(string? message)
+    {
+        if (string.IsNullOrWhiteSpace(message))
+        {
+            return false;
+        }
+
+        return message.Contains("TimeOut WAIT_TO_FINISHED", StringComparison.OrdinalIgnoreCase)
+            || message.Contains("Timeout waiting for client response", StringComparison.OrdinalIgnoreCase);
     }
 
     private async Task OpenLink(string url)
@@ -144,5 +347,46 @@
         {
             await JSRuntime.InvokeVoidAsync("window.open", url, "_blank");
         }
+    }
+
+    /// <summary>
+    /// 从当前 Moment JSON 重新解析点赞/评论列表。
+    /// <para>点赞和评论下发后 Store 会立即改写 Moment 的 JSON，这里同步刷新子组件内部缓存。</para>
+    /// </summary>
+    private void ReloadMomentPayload()
+    {
+        Images = new();
+        Comments = new();
+        Likes = new();
+        Link = null;
+        VideoUrl = string.Empty;
+
+        if (Moment == null)
+        {
+            return;
+        }
+
+        try
+        {
+            if (!string.IsNullOrEmpty(Moment.imagesJson))
+                Images = System.Text.Json.JsonSerializer.Deserialize<List<string>>(Moment.imagesJson) ?? new();
+
+            VideoUrl = Moment.videoUrl ?? string.Empty;
+
+            if (!string.IsNullOrEmpty(Moment.linkInfoJson))
+                Link = System.Text.Json.JsonSerializer.Deserialize<SCRM.SHARED.Models.Dtos.MomentLinkDto>(Moment.linkInfoJson);
+
+            if (!string.IsNullOrEmpty(Moment.commentsJson))
+                Comments = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentCommentDto>>(Moment.commentsJson) ?? new();
+
+            if (!string.IsNullOrEmpty(Moment.likesJson))
+                Likes = System.Text.Json.JsonSerializer.Deserialize<List<SCRM.SHARED.Models.Dtos.MomentLikeDto>>(Moment.likesJson) ?? new();
+        }
+        catch
+        {
+            // 朋友圈数据来自安卓端 JSON，单条解析失败不影响整页渲染。
+        }
+
+        StateHasChanged();
     }
 }
